@@ -1,0 +1,16 @@
+[Unit]
+Description=wdistr: инициализация при первом запуске
+# Маркер: выполняется ровно один раз
+ConditionPathExists=!/var/lib/wdistr/first-boot-done
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wdistr-first-boot
+ExecStartPost=/bin/mkdir -p /var/lib/wdistr
+ExecStartPost=/bin/touch /var/lib/wdistr/first-boot-done
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -49,6 +49,9 @@ def main() -> None:
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
+        # автоинициализация первого запуска: скрипт и systemd-юнит
+        deliver(FILES / "first-boot.sh", "/usr/local/bin/wdistr-first-boot", "755"),
+        deliver(FILES / "first-boot.service", "/etc/systemd/system/wdistr-first-boot.service"),
     ]
 
     CONFIG.write_text(
