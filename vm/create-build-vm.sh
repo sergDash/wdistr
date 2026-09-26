@@ -18,25 +18,39 @@ MEMORY_MB=8192
 CPUS=4
 DISK_MB=65536
 
-# ISO — входные данные для установки; в git не попадает (.gitignore)
+# ISO — входные данные для установки; в git не попадает (.gitignore).
+# Вместе с ISO качается и файл сумм — рядом, повторно из сети не тянется.
+# Примечание: в sha256sums.txt файл называется archlinux-x86_64.iso, у нас своё имя.
+SUMS_FILE="$SCRIPT_DIR/sha256sums.txt"
+VERIFIED_FLAG="$ISO_FILE.verified"
+
 if [[ ! -f "$ISO_FILE" ]]; then
+    rm -f "$VERIFIED_FLAG"  # новое скачивание делает старый флаг недействительным
     echo "Скачиваю ISO: $ISO_URL"
     curl -fL --progress-bar -o "$ISO_FILE.part" "$ISO_URL"
     mv "$ISO_FILE.part" "$ISO_FILE"
+    curl -fsSL "${ISO_URL%/*}/sha256sums.txt" -o "$SUMS_FILE"
 fi
 
-# Целостность ISO проверяется каждый запуск: эталонная sha256 берётся с того же
-# зеркала (в sha256sums.txt файл называется archlinux-x86_64.iso — у нас своё имя)
-EXPECT_SHA=$(curl -fsSL "${ISO_URL%/*}/sha256sums.txt" | grep ' archlinux-x86_64.iso$' | cut -d' ' -f1)
-ACTUAL_SHA=$(sha256sum "$ISO_FILE" | cut -d' ' -f1)
-if [[ "$EXPECT_SHA" != "$ACTUAL_SHA" ]]; then
-    echo "ОШИБКА: контрольная сумма ISO не совпала:" >&2
-    echo "  ожидалась $EXPECT_SHA" >&2
-    echo "  получена  $ACTUAL_SHA" >&2
-    echo "Удалите '$ISO_FILE' и перезапустите скрипт для повторной загрузки." >&2
-    exit 1
+# Проверка целостности выполняется один раз: после успеха создаётся флаг,
+# и пока он на месте (а ISO не перекачивался) — суммы больше не считаем
+if [[ ! -f "$VERIFIED_FLAG" ]]; then
+    if [[ ! -f "$SUMS_FILE" ]]; then
+        curl -fsSL "${ISO_URL%/*}/sha256sums.txt" -o "$SUMS_FILE"
+    fi
+    EXPECT_SHA=$(grep ' archlinux-x86_64.iso$' "$SUMS_FILE" | cut -d' ' -f1)
+    ACTUAL_SHA=$(sha256sum "$ISO_FILE" | cut -d' ' -f1)
+    if [[ "$EXPECT_SHA" != "$ACTUAL_SHA" ]]; then
+        echo "ОШИБКА: контрольная сумма ISO не совпала:" >&2
+        echo "  ожидалась $EXPECT_SHA" >&2
+        echo "  получена  $ACTUAL_SHA" >&2
+        echo "Удалите '$ISO_FILE' и '$VERIFIED_FLAG' — при повторном запуске" >&2
+        echo "ISO будет скачан заново вместе с файлом сумм." >&2
+        exit 1
+    fi
+    touch "$VERIFIED_FLAG"
+    echo "Контрольная сумма ISO подтверждена."
 fi
-echo "Контрольная сумма ISO подтверждена."
 
 # Повторный запуск не должен молча затирать существующую машину
 if VBoxManage showvminfo "$VM_NAME" >/dev/null 2>&1; then
