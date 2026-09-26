@@ -79,3 +79,19 @@ archinstall --config-url http://10.0.2.2:8000/install/archinstall-config.json \
 - конфиг и учётные данные принимаются и по URL (`--config-url`, `--creds-url`);
 - пароли в creds-файле могут лежать открытым текстом (`!password`,
   `!root-password`) — хеширует их сам archinstall (yescrypt) при чтении.
+
+## Установка одной короткой командой
+
+В живой среде вместо длинной строки с тремя URL — одна:
+
+```sh
+curl -fsSL http://10.0.2.2:8000/install/go.sh | sh
+```
+
+Проверка без установки — та же, с `--dry-run`:
+
+```sh
+curl -fsSL http://10.0.2.2:8000/install/go.sh | sh -s -- --dry-run
+```
+
+`go.sh` (в `install/`) сам подставляет `--config-url`/`--creds-url`.

@@ -129,7 +129,8 @@
         "lightdm-gtk-greeter",
         "fish",
         "picom",
-        "keyd"
+        "keyd",
+        "virtualbox-guest-utils"
     ],
     "pacman_config": {
         "color": true,
