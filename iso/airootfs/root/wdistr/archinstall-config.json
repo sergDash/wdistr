@@ -1,0 +1,168 @@
+{
+    "app_config": {},
+    "archinstall_language": "English",
+    "auth_config": {},
+    "bootloader_config": {
+        "bootloader": "Grub",
+        "removable": false,
+        "uki": false
+    },
+    "custom_commands": [],
+    "disk_config": {
+        "btrfs_options": {
+            "snapshot_config": null
+        },
+        "config_type": "default_layout",
+        "device_modifications": [
+            {
+                "device": "/dev/sda",
+                "partitions": [
+                    {
+                        "btrfs": [],
+                        "dev_path": null,
+                        "flags": [
+                            "boot"
+                        ],
+                        "fs_type": "fat32",
+                        "mount_options": [],
+                        "mountpoint": "/boot",
+                        "obj_id": "ab08b160-a318-4682-9522-5906e358d7c2",
+                        "size": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "GiB",
+                            "value": 1
+                        },
+                        "start": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "MiB",
+                            "value": 1
+                        },
+                        "status": "create",
+                        "type": "primary"
+                    },
+                    {
+                        "btrfs": [],
+                        "dev_path": null,
+                        "flags": [],
+                        "fs_type": "ext4",
+                        "mount_options": [],
+                        "mountpoint": "/",
+                        "obj_id": "8d0dcbda-cee9-43e5-8117-414f10e72b2a",
+                        "size": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "B",
+                            "value": 67644686336
+                        },
+                        "start": {
+                            "sector_size": {
+                                "unit": "B",
+                                "value": 512
+                            },
+                            "unit": "B",
+                            "value": 1074790400
+                        },
+                        "status": "create",
+                        "type": "primary"
+                    }
+                ],
+                "wipe": true
+            }
+        ]
+    },
+    "hostname": "archlinux",
+    "kernels": [
+        "linux"
+    ],
+    "locale_config": {
+        "console_font": "Cyr_a8x16",
+        "kb_layout": "ru",
+        "sys_enc": "UTF-8",
+        "sys_lang": "ru_RU.UTF-8"
+    },
+    "mirror_config": {
+        "custom_repositories": [],
+        "custom_servers": [],
+        "mirror_regions": {
+            "Russia": [
+                "http://mirror.yandex.ru/archlinux/$repo/os/$arch",
+                "https://mirror.yandex.ru/archlinux/$repo/os/$arch",
+                "http://ru.mirrors.cicku.me/archlinux/$repo/os/$arch",
+                "https://ru.mirrors.cicku.me/archlinux/$repo/os/$arch",
+                "http://mirror.truenetwork.ru/archlinux/$repo/os/$arch",
+                "https://mirror.truenetwork.ru/archlinux/$repo/os/$arch",
+                "http://mirrors.powernet.com.ru/archlinux/$repo/os/$arch",
+                "http://repository.su/archlinux/$repo/os/$arch",
+                "https://repository.su/archlinux/$repo/os/$arch",
+                "http://mirror.nw-sys.ru/archlinux/$repo/os/$arch",
+                "https://mirror.nw-sys.ru/archlinux/$repo/os/$arch",
+                "http://mirror.kamtv.ru/archlinux/$repo/os/$arch",
+                "https://mirror.kamtv.ru/archlinux/$repo/os/$arch",
+                "http://mirror.kpfu.ru/archlinux/$repo/os/$arch",
+                "https://mirror.kpfu.ru/archlinux/$repo/os/$arch",
+                "http://archlinux.gay/archlinux/$repo/os/$arch",
+                "https://archlinux.gay/archlinux/$repo/os/$arch",
+                "http://mirror.cachy-arch.ru/archlinux/$repo/os/$arch",
+                "https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch",
+                "http://wan.metrosg.ru/archlinux/$repo/os/$arch",
+                "https://wan.metrosg.ru/archlinux/$repo/os/$arch"
+            ]
+        },
+        "optional_repositories": []
+    },
+    "network_config": {
+        "type": "nm"
+    },
+    "ntp": true,
+    "packages": [
+        "xorg-server",
+        "xfce4",
+        "lightdm",
+        "lightdm-gtk-greeter",
+        "fish",
+        "picom",
+        "keyd",
+        "virtualbox-guest-utils",
+        "pipewire",
+        "pipewire-pulse",
+        "pipewire-alsa",
+        "wireplumber",
+        "network-manager-applet",
+        "xfce4-pulseaudio-plugin",
+        "pavucontrol",
+        "ttf-dejavu",
+        "firefox",
+        "mousepad",
+        "file-roller",
+        "flatpak",
+        "nano",
+        "virtualbox"
+    ],
+    "pacman_config": {
+        "color": true,
+        "parallel_downloads": 5
+    },
+    "profile_config": {
+        "gfx_driver": null,
+        "greeter": null,
+        "profile": {}
+    },
+    "script": null,
+    "services": [
+        "lightdm"
+    ],
+    "swap": {
+        "algorithm": "zstd",
+        "enabled": true
+    },
+    "timezone": "UTC",
+    "version": "4.4"
+}

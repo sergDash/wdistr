@@ -1,0 +1,10 @@
+{
+    "users": [
+        {
+            "username": "user",
+            "sudo": true,
+            "!password": "123"
+        }
+    ],
+    "!root-password": "123"
+}
