@@ -122,7 +122,15 @@
         "type": "nm"
     },
     "ntp": true,
-    "packages": [],
+    "packages": [
+        "xorg-server",
+        "xfce4-meta",
+        "lightdm",
+        "lightdm-gtk-greeter",
+        "fish",
+        "picom",
+        "keyd"
+    ],
     "pacman_config": {
         "color": true,
         "parallel_downloads": 5
@@ -133,7 +141,9 @@
         "profile": {}
     },
     "script": null,
-    "services": [],
+    "services": [
+        "lightdm"
+    ],
     "swap": {
         "algorithm": "zstd",
         "enabled": true
