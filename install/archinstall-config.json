@@ -130,7 +130,20 @@
         "fish",
         "picom",
         "keyd",
-        "virtualbox-guest-utils"
+        "virtualbox-guest-utils",
+        "pipewire",
+        "pipewire-pulse",
+        "pipewire-alsa",
+        "wireplumber",
+        "network-manager-applet",
+        "xfce4-pulseaudio-plugin",
+        "pavucontrol",
+        "ttf-dejavu",
+        "firefox",
+        "mousepad",
+        "file-roller",
+        "flatpak",
+        "nano"
     ],
     "pacman_config": {
         "color": true,
