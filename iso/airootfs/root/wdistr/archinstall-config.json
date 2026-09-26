@@ -153,7 +153,9 @@
         "virtualbox",
         "inetutils",
         "xorg-xsetroot",
-        "xorg-setxkbmap"
+        "xorg-setxkbmap",
+        "neovim",
+        "vim"
     ],
     "pacman_config": {
         "color": true,
