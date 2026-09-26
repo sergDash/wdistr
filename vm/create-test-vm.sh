@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Создаёт тестовую VM wdistr-test для проверки СОБРАННОГО нашего ISO.
+# Вход: свежий iso/out/wdistr-*.iso (берётся последний по времени).
+# Выход: зарегистрированная VM с подключённым ISO и чистым диском.
+# Пересоздание (штатная работа): VBoxManage unregistervm wdistr-test --delete
+set -euo pipefail
+
+VM_NAME="wdistr-test"
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ISO_FILE="$(ls -t "$REPO_DIR"/iso/out/wdistr-*.iso | head -1)"
+DISK_FILE="$SCRIPT_DIR/$VM_NAME.vdi"
+
+# Ресурсы — как у сборочной машины (хост: 16 ядер, ~100 ГБ RAM)
+MEMORY_MB=8192
+CPUS=4
+DISK_MB=65536
+
+if [[ ! -f "$ISO_FILE" ]]; then
+    echo "ОШИБКА: собранный ISO не найден в $REPO_DIR/iso/out/" >&2
+    exit 1
+fi
+
+if VBoxManage showvminfo "$VM_NAME" >/dev/null 2>&1; then
+    echo "VM '$VM_NAME' уже существует. Для пересоздания:"
+    echo "  VBoxManage unregistervm $VM_NAME --delete"
+    exit 1
+fi
+
+VBoxManage createvm --name "$VM_NAME" --ostype ArchLinux_64 --register
+VBoxManage modifyvm "$VM_NAME" \
+    --memory "$MEMORY_MB" --cpus "$CPUS" \
+    --graphicscontroller vmsvga --vram 128 \
+    --nic1 nat --audio-driver none \
+    --boot1 dvd --boot2 disk
+VBoxManage createmedium disk --filename "$DISK_FILE" --size "$DISK_MB" --format VDI
+VBoxManage storagectl "$VM_NAME" --name "SATA" --add sata --controller IntelAhci
+VBoxManage storageattach "$VM_NAME" --storagectl "SATA" --port 0 --device 0 \
+    --type hdd --medium "$DISK_FILE"
+VBoxManage storageattach "$VM_NAME" --storagectl "SATA" --port 1 --device 0 \
+    --type dvddrive --medium "$ISO_FILE"
+
+echo "VM '$VM_NAME' создана с ISO: $(basename "$ISO_FILE")"
+echo "Запуск: VBoxManage startvm $VM_NAME"
