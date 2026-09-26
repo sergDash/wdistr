@@ -84,7 +84,7 @@
     ],
     "locale_config": {
         "console_font": "Cyr_a8x16",
-        "kb_layout": "ru",
+        "kb_layout": "us",
         "sys_enc": "UTF-8",
         "sys_lang": "ru_RU.UTF-8"
     },
