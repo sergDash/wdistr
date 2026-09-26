@@ -25,6 +25,19 @@ if [[ ! -f "$ISO_FILE" ]]; then
     mv "$ISO_FILE.part" "$ISO_FILE"
 fi
 
+# Целостность ISO проверяется каждый запуск: эталонная sha256 берётся с того же
+# зеркала (в sha256sums.txt файл называется archlinux-x86_64.iso — у нас своё имя)
+EXPECT_SHA=$(curl -fsSL "${ISO_URL%/*}/sha256sums.txt" | grep ' archlinux-x86_64.iso$' | cut -d' ' -f1)
+ACTUAL_SHA=$(sha256sum "$ISO_FILE" | cut -d' ' -f1)
+if [[ "$EXPECT_SHA" != "$ACTUAL_SHA" ]]; then
+    echo "ОШИБКА: контрольная сумма ISO не совпала:" >&2
+    echo "  ожидалась $EXPECT_SHA" >&2
+    echo "  получена  $ACTUAL_SHA" >&2
+    echo "Удалите '$ISO_FILE' и перезапустите скрипт для повторной загрузки." >&2
+    exit 1
+fi
+echo "Контрольная сумма ISO подтверждена."
+
 # Повторный запуск не должен молча затирать существующую машину
 if VBoxManage showvminfo "$VM_NAME" >/dev/null 2>&1; then
     echo "VM '$VM_NAME' уже существует. Для пересоздания:"
