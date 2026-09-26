@@ -111,3 +111,6 @@ cd /home/user && nohup sudo mkarchiso -v /home/user/iso > /home/user/build.log 2
 Правило: пока идёт mkarchiso, на сборочной машине ничего не ставим.
 Всё докачиваем после (в том числе htop и прочие личные утилиты).
 При таком отказе — чистка `work/`+`out/` и полная пересборка.
+- Имена файлов в `iso/airootfs/usr/local/bin/` не должны совпадать с
+  coreutils (`install` сломал две сборки — см. «Проблема - Имя install
+  ломает сборку ISO»; команда переименована в `setup`).
