@@ -49,3 +49,33 @@ VM (2026-09-25). Цель — повторяемая установка без �
   archinstall хеширует их сам при чтении);
 - пустые `packages`, `profile_config`, `services` — подтверждение, что
   установка шла без выбора программ.
+
+## Безинтерактивный запуск (проверено 2026-09-26)
+
+Установка прошла полностью без вопросов, финал лога — `Installation completed
+without any errors`.
+
+Доставка файлов в живую среду — HTTP-сервер на хосте (корень репозитория):
+
+```bash
+setsid nohup python3 -m http.server 8000 --directory <корень репозитория> \
+    </dev/null >/tmp/httpd.log 2>&1 &
+```
+
+В живой среде гость видит хост по адресу `10.0.2.2`. Сначала проверка
+(`--dry-run` скачивает файлы, собирает конфиг и выходит, не трогая диск):
+
+```sh
+archinstall --config-url http://10.0.2.2:8000/install/archinstall-config.json \
+    --creds-url http://10.0.2.2:8000/install/archinstall-creds.json \
+    --silent --dry-run
+```
+
+То же без `--dry-run` — реальная установка.
+
+Подтверждённые факты из исходников archinstall 4.4/master:
+
+- `--silent` действует только вместе с `--config` (без конфига игнорируется);
+- конфиг и учётные данные принимаются и по URL (`--config-url`, `--creds-url`);
+- пароли в creds-файле могут лежать открытым текстом (`!password`,
+  `!root-password`) — хеширует их сам archinstall (yescrypt) при чтении.
