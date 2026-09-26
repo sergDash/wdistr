@@ -7,7 +7,11 @@
         "removable": false,
         "uki": false
     },
-    "custom_commands": [],
+    "custom_commands": [
+        "sed -i '/#\\[multilib\\]/,/^#Include/ s/^#//' /etc/pacman.conf",
+        "usermod -s /usr/bin/fish root && usermod -s /usr/bin/fish user && sed -i 's|^SHELL=.*|SHELL=/usr/bin/fish|' /etc/default/useradd",
+        "mkdir -p /etc/xdg/xfce4/autostart && printf '[Desktop Entry]\\nType=Application\\nName=Fix cursor\\nExec=xsetroot -cursor_name left_ptr\\nOnlyShowIn=XFCE;\\n' > /etc/xdg/xfce4/autostart/fix-cursor.desktop"
+    ],
     "disk_config": {
         "btrfs_options": {
             "snapshot_config": null
@@ -144,7 +148,9 @@
         "file-roller",
         "flatpak",
         "nano",
-        "virtualbox"
+        "virtualbox",
+        "inetutils",
+        "xorg-xsetroot"
     ],
     "pacman_config": {
         "color": true,
