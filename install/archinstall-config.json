@@ -143,7 +143,8 @@
         "mousepad",
         "file-roller",
         "flatpak",
-        "nano"
+        "nano",
+        "virtualbox"
     ],
     "pacman_config": {
         "color": true,
