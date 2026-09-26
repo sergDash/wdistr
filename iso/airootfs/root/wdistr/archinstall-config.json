@@ -155,7 +155,12 @@
         "xorg-xsetroot",
         "xorg-setxkbmap",
         "neovim",
-        "vim"
+        "vim",
+        "flameshot",
+        "mpv",
+        "qpwgraph",
+        "ghostty",
+        "adwaita-cursors"
     ],
     "pacman_config": {
         "color": true,
