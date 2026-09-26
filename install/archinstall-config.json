@@ -124,7 +124,7 @@
     "ntp": true,
     "packages": [
         "xorg-server",
-        "xfce4-meta",
+        "xfce4",
         "lightdm",
         "lightdm-gtk-greeter",
         "fish",
