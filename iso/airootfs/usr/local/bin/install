@@ -1,0 +1,33 @@
+#!/bin/sh
+# Установка нашей системы одной командой:
+#
+#     install <имя_пользователя> <пароль>
+#
+# Пароль передаётся открытым текстом намеренно: живая среда одноразовая,
+# а открытый аргумент избавляет от опечаток при скрытом вводе (символы
+# не видны). Один пароль — для пользователя и для root.
+# Конфигурация берётся из /root/wdistr (вшита в ISO).
+
+if [ -z "$2" ]; then
+    echo "Использование: install <имя_пользователя> <пароль>"
+    echo "Пример:       install ivan 12345"
+    echo
+    echo "Пароль уйдёт открытым текстом — это осознанный выбор для живой среды."
+    exit 1
+fi
+
+CREDS=/var/tmp/wdistr-creds.json
+
+python3 - "$1" "$2" > "$CREDS" <<'PYEOF'
+import json, sys
+name, password = sys.argv[1], sys.argv[2]
+print(json.dumps({
+    "users": [{"username": name, "sudo": True, "!password": password}],
+    "!root-password": password,
+}, indent=4))
+PYEOF
+
+exec archinstall \
+    --config /root/wdistr/archinstall-config.json \
+    --creds "$CREDS" \
+    --silent
