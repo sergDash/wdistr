@@ -52,6 +52,8 @@ def main() -> None:
         # автоинициализация первого запуска: скрипт и systemd-юнит
         deliver(FILES / "first-boot.sh", "/usr/local/bin/wdistr-first-boot", "755"),
         deliver(FILES / "first-boot.service", "/etc/systemd/system/wdistr-first-boot.service"),
+        # включение юнита ТОЛЬКО после его доставки (services[] выполняется раньше)
+        "systemctl enable wdistr-first-boot.service",
     ]
 
     CONFIG.write_text(
