@@ -49,13 +49,13 @@ def main() -> None:
         # fish — оболочка по умолчанию: root, user и будущие пользователи
         "usermod -s /usr/bin/fish root && usermod -s /usr/bin/fish user && "
         "sed -i 's|^SHELL=.*|SHELL=/usr/bin/fish|' /etc/default/useradd",
-        # ИТЕРАЦИЯ графики (handbook: «Проблема - Нет курсора в XFCE»):
-        # перезапуск оконного менеджера при входе — гипотеза «композитор
-        # не стартовал» (прозрачная панель, неотрисованные окна)
+        # Лечение первого входа в сессию — итерация 2: скрипт смены режима
+        # дисплея + автозапуск (handbook: «Проблема - Нет курсора в XFCE»)
+        deliver(FILES / "fix-session-gfx.sh", "/usr/local/bin/wdistr-fix-gfx", "755"),
         "mkdir -p /etc/xdg/xfce4/autostart && printf "
-        "'[Desktop Entry]\\nType=Application\\nName=Restart xfwm4\\n"
-        "Exec=xfwm4 --replace\\nOnlyShowIn=XFCE;\\n' "
-        "> /etc/xdg/xfce4/autostart/fix-session-gfx.desktop",
+        "'[Desktop Entry]\\nType=Application\\nName=wdistr fix graphics\\n"
+        "Exec=/usr/local/bin/wdistr-fix-gfx\\nOnlyShowIn=XFCE;\\n' "
+        "> /etc/xdg/xfce4/autostart/wdistr-fix-gfx.desktop",
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
