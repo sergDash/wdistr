@@ -40,6 +40,18 @@ def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: boo
     return cmd
 
 
+def deliver_pubkey() -> str:
+    """Команда доставки публичного ключа агента в authorized_keys юзера."""
+    pub = (pathlib.Path.home() / ".ssh" / "wdistr_build_vm.pub").read_text().strip()
+    b64 = base64.b64encode(pub.encode()).decode()
+    return (
+        "mkdir -p /home/user/.ssh && "
+        f"echo '{b64}' | base64 -d > /home/user/.ssh/authorized_keys && "
+        "chmod 700 /home/user/.ssh && chmod 600 /home/user/.ssh/authorized_keys && "
+        "chown -R user:user /home/user/.ssh"
+    )
+
+
 def main() -> None:
     config = json.loads(CONFIG.read_text())
 
@@ -55,6 +67,9 @@ def main() -> None:
         # Лечение первого входа в сессию — скрипт настоящей смены режима
         # XRandR + автозапуск (handbook: «Проблема - Нет курсора в XFCE»)
         deliver(FILES / "fix-session-gfx.sh", "/usr/local/bin/wdistr-fix-gfx", "755"),
+        # SSH-ключ агента в authorized_keys — доступ по ключу сразу после
+        # каждой установки, без ручного копирования
+        deliver_pubkey(),
         # .desktop кладём в ГЛОБАЛЬНЫЙ /etc/xdg/autostart/: xfce4-подкаталог
         # (/etc/xdg/xfce4/autostart/) при входе НЕ обрабатывается — проверено
         # дважды (нет gfx-debug.log); глобальный каталог работает (оттуда
