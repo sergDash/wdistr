@@ -49,8 +49,11 @@ def main() -> None:
         # fish — оболочка по умолчанию: root, user и будущие пользователи
         "usermod -s /usr/bin/fish root && usermod -s /usr/bin/fish user && "
         "sed -i 's|^SHELL=.*|SHELL=/usr/bin/fish|' /etc/default/useradd",
-        # Лечение первого входа в сессию — итерация 2: скрипт смены режима
-        # дисплея + автозапуск (handbook: «Проблема - Нет курсора в XFCE»)
+        # ФИКС композитора: пакет picom ставит свой автозапуск и при каждом
+        # входе отбирал Composite у xfwm4 (handbook: «Проблема - picom...»)
+        "rm -f /etc/xdg/autostart/picom.desktop",
+        # Лечение первого входа в сессию — скрипт настоящей смены режима
+        # XRandR + автозапуск (handbook: «Проблема - Нет курсора в XFCE»)
         deliver(FILES / "fix-session-gfx.sh", "/usr/local/bin/wdistr-fix-gfx", "755"),
         "mkdir -p /etc/xdg/xfce4/autostart && printf "
         "'[Desktop Entry]\\nType=Application\\nName=wdistr fix graphics\\n"
