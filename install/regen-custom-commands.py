@@ -55,10 +55,14 @@ def main() -> None:
         # Лечение первого входа в сессию — скрипт настоящей смены режима
         # XRandR + автозапуск (handbook: «Проблема - Нет курсора в XFCE»)
         deliver(FILES / "fix-session-gfx.sh", "/usr/local/bin/wdistr-fix-gfx", "755"),
-        "mkdir -p /etc/xdg/xfce4/autostart && printf "
+        # .desktop кладём в ГЛОБАЛЬНЫЙ /etc/xdg/autostart/: xfce4-подкаталог
+        # (/etc/xdg/xfce4/autostart/) при входе НЕ обрабатывается — проверено
+        # дважды (нет gfx-debug.log); глобальный каталог работает (оттуда
+        # запускался picom) — подтверждено логом 2026-09-27 04:31
+        "mkdir -p /etc/xdg/autostart && printf "
         "'[Desktop Entry]\\nType=Application\\nName=wdistr fix graphics\\n"
         "Exec=/usr/local/bin/wdistr-fix-gfx\\nOnlyShowIn=XFCE;\\n' "
-        "> /etc/xdg/xfce4/autostart/wdistr-fix-gfx.desktop",
+        "> /etc/xdg/autostart/wdistr-fix-gfx.desktop",
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
