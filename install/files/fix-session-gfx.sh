@@ -12,16 +12,28 @@
 # picom — см. custom_commands в генераторе.
 
 LOG=/home/user/gfx-debug.log
+# Маркер первого лечения: симптом бывает только при первом входе после
+# чистой установки — дальше моргать нечего. После переустановки ~/.config
+# новый, маркер отсутствует, лечение повторяется (ровно как паттерн болезни).
+STATE="$HOME/.config/wdistr-gfx-done"
+
+if [ -f "$STATE" ]; then
+    exit 0
+fi
 
 {
-    echo "== wdistr fix-gfx: $(date -Is) =="
+    echo "== wdistr fix-gfx (первый вход): $(date -Is) =="
     xrandr
 } >"$LOG" 2>&1
 
-# лечебная перестройка: уход на чужой режим -> возврат к рекомендуемому
-xrandr --output Virtual-1 --mode 2560x1600 >>"$LOG" 2>&1
+# лечебная перестройка: уход на близкий чужой режим -> возврат
+# (1366x768 вместо 2560x1600 — мягче визуально, лечит так же)
+xrandr --output Virtual-1 --mode 1366x768 >>"$LOG" 2>&1
 sleep 1
 xrandr --output Virtual-1 --auto >>"$LOG" 2>&1
+
+mkdir -p "$HOME/.config"
+touch "$STATE"
 
 {
     echo "-- состояние после:"
