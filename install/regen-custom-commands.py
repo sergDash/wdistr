@@ -13,6 +13,7 @@
 (этот шаг делает скрипт автоматически — проверить вывод)."""
 
 import base64
+import gzip
 import json
 import pathlib
 import shutil
@@ -23,10 +24,17 @@ FILES = INSTALL / "files"
 PROFILE_COPY = INSTALL.parent / "iso/airootfs/root/wdistr/archinstall-config.json"
 
 
-def deliver(src: pathlib.Path, dest: str, mode: str | None = None) -> str:
-    """Команда доставки файла src в dest целевой системы."""
-    data = base64.b64encode(src.read_bytes()).decode()
-    cmd = f"echo '{data}' | base64 -d > {dest}"
+def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: bool = False) -> str:
+    """Команда доставки файла src в dest целевой системы.
+    compress=True — gzip перед base64 (для крупных файлов вроде keymap)."""
+    raw = src.read_bytes()
+    if compress:
+        payload = base64.b64encode(gzip.compress(raw)).decode()
+        reader = "base64 -d | gzip -d"
+    else:
+        payload = base64.b64encode(raw).decode()
+        reader = "base64 -d"
+    cmd = f"mkdir -p $(dirname {dest}) && echo '{payload}' | {reader} > {dest}"
     if mode:
         cmd += f" && chmod {mode} {dest}"
     return cmd
@@ -49,6 +57,9 @@ def main() -> None:
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
+        # предсобранные консольные карты раскладок (ckbcomp, ~21 мс на смену)
+        deliver(FILES / "keymaps/us.txt", "/usr/local/share/keyd/us.txt", compress=True),
+        deliver(FILES / "keymaps/ru.txt", "/usr/local/share/keyd/ru.txt", compress=True),
         # автоинициализация первого запуска: скрипт и systemd-юнит
         deliver(FILES / "first-boot.sh", "/usr/local/bin/wdistr-first-boot", "755"),
         deliver(FILES / "first-boot.service", "/etc/systemd/system/wdistr-first-boot.service"),

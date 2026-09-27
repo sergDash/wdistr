@@ -1,31 +1,43 @@
 #!/bin/sh
 # Переключение раскладки us/ru по тапу Shift (keyd запускает скрипт фоном).
-# Перенесено из /home/serg/bin/toggle-layout.sh с адаптацией под дистрибутив:
-# - XAUTHORITY — пользователь дистрибутива (user);
-# - предсобранные карты ckbcomp не используются: пакета в extra нет;
-#   работает прямой loadkeys (~150 мс по замерам автора против 21 мс с картами;
-#   если понадобит скорость — вернуть ckbcomp-карты в сборку).
+# Перенесено из /home/serg/bin/toggle-layout.sh (2026-09-27) с адаптацией путей.
+#
+# Сначала setxkbmap — X основное окружение, смена не должна ждать консоль;
+# консоль secondary: loadkeys из ПРЕДСОБРАННЫХ карт (ckbcomp ~21 мс) против
+# полной пересборки при вызове loadkeys по имени (~150 мс). Если файла нет —
+# fallback на прямую сборку.
 
 export DISPLAY=:0
 export XAUTHORITY=/home/user/.Xauthority
 
 STATE=/tmp/keyd-layout-state
+MAPS=/usr/local/share/keyd
 
 if [ ! -f "$STATE" ]; then
     echo us > "$STATE"
 fi
 
-# Порядок: сначала setxkbmap (X — основное окружение), консоль — следом.
-# Всё, что набрано во время переключения, уходит в старую раскладку.
 case "$(cat "$STATE")" in
     us)
+        # обязательно обе, иначе не работает ctrl+v
         setxkbmap -layout ru,us
-        loadkeys ru 2>>/tmp/keyd-lk.log || echo "loadkeys ru rc=$?" >>/tmp/keyd-lk.log
+        if [ -f "$MAPS/ru.txt" ]; then
+            loadkeys "$MAPS/ru.txt" 2>>/tmp/keyd-lk.log
+        else
+            loadkeys ru 2>>/tmp/keyd-lk.log
+            echo "fallback arg=ru" >>/tmp/keyd-lk.log
+        fi
         echo ru > "$STATE"
         ;;
     ru)
+        # обязательно обе, иначе не работает ctrl+v
         setxkbmap -layout us,ru
-        loadkeys us 2>>/tmp/keyd-lk.log || echo "loadkeys us rc=$?" >>/tmp/keyd-lk.log
+        if [ -f "$MAPS/us.txt" ]; then
+            loadkeys "$MAPS/us.txt" 2>>/tmp/keyd-lk.log
+        else
+            loadkeys us 2>>/tmp/keyd-lk.log
+            echo "fallback arg=us" >>/tmp/keyd-lk.log
+        fi
         echo us > "$STATE"
         ;;
 esac
