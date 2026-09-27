@@ -49,11 +49,13 @@ def main() -> None:
         # fish — оболочка по умолчанию: root, user и будущие пользователи
         "usermod -s /usr/bin/fish root && usermod -s /usr/bin/fish user && "
         "sed -i 's|^SHELL=.*|SHELL=/usr/bin/fish|' /etc/default/useradd",
-        # курсор при входе в XFCE (handbook: «Проблема - Нет курсора в XFCE»)
+        # ИТЕРАЦИЯ графики (handbook: «Проблема - Нет курсора в XFCE»):
+        # перезапуск оконного менеджера при входе — гипотеза «композитор
+        # не стартовал» (прозрачная панель, неотрисованные окна)
         "mkdir -p /etc/xdg/xfce4/autostart && printf "
-        "'[Desktop Entry]\\nType=Application\\nName=Fix cursor\\n"
-        "Exec=xsetroot -cursor_name left_ptr\\nOnlyShowIn=XFCE;\\n' "
-        "> /etc/xdg/xfce4/autostart/fix-cursor.desktop",
+        "'[Desktop Entry]\\nType=Application\\nName=Restart xfwm4\\n"
+        "Exec=xfwm4 --replace\\nOnlyShowIn=XFCE;\\n' "
+        "> /etc/xdg/xfce4/autostart/fix-session-gfx.desktop",
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
