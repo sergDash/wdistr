@@ -179,7 +179,9 @@
         "authenticator",
         "discord",
         "element-desktop",
-        "openssh"
+        "openssh",
+        "udisks2",
+        "xdg-utils"
     ],
     "pacman_config": {
         "color": true,
