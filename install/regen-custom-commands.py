@@ -81,6 +81,9 @@ def main() -> None:
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
+        # системный дефолт GTK3: тёмная тема и Papirus для всех, включая
+        # root (решение 2026-09-30; см. чек-лист «Комфортный рабочий стол»)
+        deliver(FILES / "gtk3-settings.ini", "/etc/gtk-3.0/settings.ini"),
         # предсобранные консольные карты раскладок (ckbcomp, ~21 мс на смену)
         deliver(FILES / "keymaps/us.txt", "/usr/local/share/keyd/us.txt", compress=True),
         deliver(FILES / "keymaps/ru.txt", "/usr/local/share/keyd/ru.txt", compress=True),
