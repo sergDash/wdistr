@@ -57,6 +57,7 @@ python3 - "$1" "$2" "$3" "$DISK_SIZE" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
 import json
 import pathlib
 import sys
+import urllib.request
 
 name, password, disk, disk_size, creds_path, config_path = sys.argv[1:7]
 
@@ -87,6 +88,28 @@ for part in mods[0]['partitions']:
     if part.get('mountpoint') == '/':
         part['size'] = {'value': root_size, 'unit': 'B',
                         'sector_size': part['size']['sector_size']}
+
+# Зеркала: проверить доступность и отсеять недоступные/зависшие.
+# Опыт 2026-10-08: archlinux.gay отдавал <1 байт/с и срывал pacstrap —
+# список зеркал не повод ему доверять. Проверка: HTTP-запрос 0-1 байта
+# за 4 сек; если недоступно всё — оставляем список как есть (сеть легла,
+# архinstall сам разберётся).
+for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).items():
+    kept = []
+    for url in urls:
+        probe = url.replace('$repo', 'core').replace('$arch', 'x86_64')
+        try:
+            req = urllib.request.Request(
+                probe, headers={'Range': 'bytes=0-0', 'User-Agent': 'wdistr-setup'})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                resp.read(1)
+            kept.append(url)
+        except Exception:
+            pass
+    print(f'зеркала ({name}): доступно {len(kept)} из {len(urls)}')
+    if kept:
+        region = config['mirror_config']['mirror_regions']
+        region[name] = kept
 
 pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
 PYEOF
