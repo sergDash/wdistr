@@ -28,11 +28,14 @@ if VBoxManage showvminfo "$VM_NAME" >/dev/null 2>&1; then
 fi
 
 VBoxManage createvm --name "$VM_NAME" --ostype ArchLinux_64 --register
+# Проброс ssh (2223->22) постоянный, живёт в файле .vbox: без него после
+# каждого пересоздания SSH в тестовую не работал (случай 2026-09-27)
 VBoxManage modifyvm "$VM_NAME" \
     --memory "$MEMORY_MB" --cpus "$CPUS" \
     --graphicscontroller vmsvga --vram 128 \
     --nic1 nat --audio-driver none \
-    --boot1 dvd --boot2 disk
+    --boot1 dvd --boot2 disk \
+    --natpf1 "ssh2,tcp,,2223,,22"
 VBoxManage createmedium disk --filename "$DISK_FILE" --size "$DISK_MB" --format VDI
 VBoxManage storagectl "$VM_NAME" --name "SATA" --add sata --controller IntelAhci
 VBoxManage storageattach "$VM_NAME" --storagectl "SATA" --port 0 --device 0 \
