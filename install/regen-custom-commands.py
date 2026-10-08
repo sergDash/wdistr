@@ -69,6 +69,10 @@ def main() -> None:
         "getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}' | "
         "xargs -r -I{} usermod -s /usr/bin/fish {} && "
         "sed -i 's|^SHELL=.*|SHELL=/usr/bin/fish|' /etc/default/useradd",
+        # PATH пользователя: ~/bin и ~/.local/bin — sh (login) и fish
+        # раздельно: fish /etc/profile не читает (решение 2026-10-08)
+        deliver(FILES / "profile-path.sh", "/etc/profile.d/wdistr-path.sh"),
+        deliver(FILES / "fish-path.fish", "/etc/fish/conf.d/wdistr-path.fish"),
         # ФИКС композитора: пакет picom ставит свой автозапуск и при каждом
         # входе отбирал Composite у xfwm4 (handbook: «Проблема - picom...»)
         "rm -f /etc/xdg/autostart/picom.desktop",
