@@ -64,20 +64,13 @@ def main() -> None:
         # ФИКС композитора: пакет picom ставит свой автозапуск и при каждом
         # входе отбирал Composite у xfwm4 (handbook: «Проблема - picom...»)
         "rm -f /etc/xdg/autostart/picom.desktop",
-        # Лечение первого входа в сессию — скрипт настоящей смены режима
-        # XRandR + автозапуск (handbook: «Проблема - Нет курсора в XFCE»)
-        deliver(FILES / "fix-session-gfx.sh", "/usr/local/bin/wdistr-fix-gfx", "755"),
+        # Лечение первого входа в сессию (rate-swap) УБРАНО 2026-10-08:
+        # глюк VirtualBox отрисовки курсора лечится протяжкой окна —
+        # особенность зафиксирована в README и handbook («Проблема - Нет
+        # курсора в XFCE»), автозапуск fix-session-gfx больше не ставим
         # SSH-ключ агента в authorized_keys — доступ по ключу сразу после
         # каждой установки, без ручного копирования
         deliver_pubkey(),
-        # .desktop кладём в ГЛОБАЛЬНЫЙ /etc/xdg/autostart/: xfce4-подкаталог
-        # (/etc/xdg/xfce4/autostart/) при входе НЕ обрабатывается — проверено
-        # дважды (нет gfx-debug.log); глобальный каталог работает (оттуда
-        # запускался picom) — подтверждено логом 2026-09-27 04:31
-        "mkdir -p /etc/xdg/autostart && printf "
-        "'[Desktop Entry]\\nType=Application\\nName=wdistr fix graphics\\n"
-        "Exec=/usr/local/bin/wdistr-fix-gfx\\nOnlyShowIn=XFCE;\\n' "
-        "> /etc/xdg/autostart/wdistr-fix-gfx.desktop",
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
