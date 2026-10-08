@@ -1,0 +1,8 @@
+[Unit]
+Description=wdistr: автообновление flatpak-программ
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wdistr-flatpak-update

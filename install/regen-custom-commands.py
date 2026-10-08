@@ -115,6 +115,16 @@ def main() -> None:
         deliver(FILES / "aur-update.service", "/etc/systemd/system/wdistr-aur-update.service"),
         deliver(FILES / "aur-update.timer", "/etc/systemd/system/wdistr-aur-update.timer"),
         "systemctl enable wdistr-aur-update.timer",
+        # автообновление СИСТЕМЫ и FLATPAK: тем же принципом, отдельными
+        # таймерами — системой, AUR и flatpak управляют независимо
+        deliver(FILES / "sys-update.sh", "/usr/local/bin/wdistr-sys-update", "755"),
+        deliver(FILES / "sys-update.service", "/etc/systemd/system/wdistr-sys-update.service"),
+        deliver(FILES / "sys-update.timer", "/etc/systemd/system/wdistr-sys-update.timer"),
+        "systemctl enable wdistr-sys-update.timer",
+        deliver(FILES / "flatpak-update.sh", "/usr/local/bin/wdistr-flatpak-update", "755"),
+        deliver(FILES / "flatpak-update.service", "/etc/systemd/system/wdistr-flatpak-update.service"),
+        deliver(FILES / "flatpak-update.timer", "/etc/systemd/system/wdistr-flatpak-update.timer"),
+        "systemctl enable wdistr-flatpak-update.timer",
     ]
 
     CONFIG.write_text(
