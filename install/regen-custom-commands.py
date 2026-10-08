@@ -41,14 +41,19 @@ def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: boo
 
 
 def deliver_pubkey() -> str:
-    """Команда доставки публичного ключа агента в authorized_keys юзера."""
+    """Команда доставки публичного ключа агента в authorized_keys.
+
+    Домашний каталог и владелец определяются по первому обычному
+    пользователю (uid 1000–65534) — имя из setup не захардкожено."""
     pub = (pathlib.Path.home() / ".ssh" / "wdistr_build_vm.pub").read_text().strip()
     b64 = base64.b64encode(pub.encode()).decode()
     return (
-        "mkdir -p /home/user/.ssh && "
-        f"echo '{b64}' | base64 -d > /home/user/.ssh/authorized_keys && "
-        "chmod 700 /home/user/.ssh && chmod 600 /home/user/.ssh/authorized_keys && "
-        "chown -R user:user /home/user/.ssh"
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        "mkdir -p /home/$U/.ssh && "
+        f"echo '{b64}' | base64 -d > /home/$U/.ssh/authorized_keys && "
+        "chmod 700 /home/$U/.ssh && chmod 600 /home/$U/.ssh/authorized_keys && "
+        "chown -R $U:$U /home/$U/.ssh"
     )
 
 
@@ -58,8 +63,11 @@ def main() -> None:
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
         "sed -i '/#\\[multilib\\]/,/^#Include/ s/^#//' /etc/pacman.conf",
-        # fish — оболочка по умолчанию: root, user и будущие пользователи
-        "usermod -s /usr/bin/fish root && usermod -s /usr/bin/fish user && "
+        # fish — оболочка по умолчанию: root и первый обычный пользователь
+        # (uid 1000+ определяется динамически — имя из setup не захардкожено)
+        "usermod -s /usr/bin/fish root && "
+        "getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}' | "
+        "xargs -r -I{} usermod -s /usr/bin/fish {} && "
         "sed -i 's|^SHELL=.*|SHELL=/usr/bin/fish|' /etc/default/useradd",
         # ФИКС композитора: пакет picom ставит свой автозапуск и при каждом
         # входе отбирал Composite у xfwm4 (handbook: «Проблема - picom...»)

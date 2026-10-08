@@ -8,7 +8,10 @@
 # fallback на прямую сборку.
 
 export DISPLAY=:0
-export XAUTHORITY=/home/user/.Xauthority
+# Файл авторизации — первого обычного пользователя (uid 1000+):
+# имя из setup не захардкожено, скрипт работает при любом имени
+XUSER=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}')
+export XAUTHORITY="/home/$XUSER/.Xauthority"
 
 STATE=/tmp/keyd-layout-state
 MAPS=/usr/local/share/keyd
