@@ -1,4 +1,10 @@
-# Сборка ISO (archiso)
+type: инструкция
+category: wdistr/Сборка ISO
+title: Сборка ISO (archiso)
+summary:
+  Полный конвейер: профиль → передача в сборочную VM → mkarchiso → вынос ISO
+  → тест. Плюс ловушки: чистка work/out перед сборкой и запрет pacman во время неё.
+date: 2026-10-08
 
 Полный проверенный конвейер: от профиля до тестируемого ISO (2026-09-26).
 
@@ -30,7 +36,7 @@ tar -xzf /tmp/p.tgz -C ~          # даёт ~/iso; sudo не нужен
 ## Сборка
 
 ```sh
-sudo mkarchiso -v ~/iso            # путь явный, см. проблему с профилем
+sudo mkarchiso -v ~/iso            # путь явный, см. handbook/Проблема - mkarchiso не находит профиль.md
 ```
 
 ## Вынос готового ISO на хост
@@ -111,5 +117,6 @@ cd /home/user && nohup sudo mkarchiso -v /home/user/iso > /home/user/build.log 2
 Всё докачиваем после (в том числе htop и прочие личные утилиты).
 При таком отказе — чистка `work/`+`out/` и полная пересборка.
 - Имена файлов в `iso/airootfs/usr/local/bin/` не должны совпадать с
-  coreutils (`install` сломал две сборки — см. «Проблема - Имя install
-  ломает сборку ISO»; команда переименована в `setup`).
+  coreutils (`install` сломал две сборки — см.
+  `handbook/Проблема - Имя install ломает сборку ISO.md`; команда
+  переименована в `setup`).
