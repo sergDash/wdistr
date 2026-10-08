@@ -1,0 +1,8 @@
+[Unit]
+Description=wdistr: автообновление AUR-пакетов (yay -Sua)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/wdistr-aur-update
