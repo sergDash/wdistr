@@ -77,6 +77,18 @@ def main() -> None:
         # системный дефолт GTK3: тёмная тема и Papirus для всех, включая
         # root (решение 2026-09-30; см. чек-лист «Комфортный рабочий стол»)
         deliver(FILES / "gtk3-settings.ini", "/etc/gtk-3.0/settings.ini"),
+        # курсор McMojave: tar (3.2 МБ, gzip+base64) раскрывается в
+        # /usr/share/icons/McMojave-cursors; затем два способа назначения —
+        # системный default/index.theme (для не-GTK) и глобальный дефолт
+        # сессии xfce (xfsettingsd главнее GTK) — решение 2026-10-08
+        deliver(FILES / "mcMojave-cursors.tar", "/var/tmp/mcMojave-cursors.tar", compress=True),
+        "tar -xf /var/tmp/mcMojave-cursors.tar -C /usr/share/icons "
+        "&& rm -f /var/tmp/mcMojave-cursors.tar",
+        deliver(FILES / "cursor-default-index.theme", "/usr/share/icons/default/index.theme"),
+        deliver(
+            FILES / "xfce-xsettings.xml",
+            "/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml",
+        ),
         # предсобранные консольные карты раскладок (ckbcomp, ~21 мс на смену)
         deliver(FILES / "keymaps/us.txt", "/usr/local/share/keyd/us.txt", compress=True),
         deliver(FILES / "keymaps/ru.txt", "/usr/local/share/keyd/ru.txt", compress=True),
