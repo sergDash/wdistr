@@ -114,7 +114,13 @@ for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).item
 pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
 PYEOF
 
+# --offline: archinstall берёт зеркала из локального mirrorlist (наш список
+# из mirrors.txt), а не с archlinux.org/mirrors/status — иначе в целевую
+# запишутся ВСЕ зеркала региона Russia (случай 2026-10-08: archlinux.gay
+# из глобального списка сорвал pacstrap). Побочно отключает проверку сети
+# и pacman -Sy на старте — сеть уже проверена пробами зеркал выше.
 exec archinstall \
     --config "$CONFIG" \
     --creds "$CREDS" \
-    --silent
+    --silent \
+    --offline

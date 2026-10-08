@@ -70,12 +70,17 @@ def main() -> None:
 
     # Зеркала: в mirrors.txt — просто URL построчно, этого списка
     # достаточно для archinstall (mirror_regions — массив голых URL), но
-    # самому pacman нужен файл вида 'Server = <url>'. Генерируем mirrorlist
-    # и кладём в профиль ДО сборки custom_commands: команды доставки кодируют
-    # содержимое файла, поэтому файл должен быть готов заранее.
+    # самому pacman нужен файл вида 'Server = <url>', а локальному
+    # парсеру зеркал archinstall (--offline) — заголовок региона '## Russia':
+    # без него сервера попадут в регион 'Local' и установка упадёт.
+    # Генерируем mirrorlist и кладём в профиль ДО сборки custom_commands:
+    # команды доставки кодируют содержимое файла, поэтому файл должен быть
+    # готов заранее.
     urls = [line.strip() for line in MIRRORS.read_text().splitlines() if line.strip()]
     PROFILE_MIRRORLIST.parent.mkdir(parents=True, exist_ok=True)
-    PROFILE_MIRRORLIST.write_text("".join(f"Server = {url}\n" for url in urls))
+    PROFILE_MIRRORLIST.write_text(
+        "## Russia\n" + "".join(f"Server = {url}\n" for url in urls)
+    )
     config["mirror_config"]["mirror_regions"] = {"Russia": urls}
 
     config["custom_commands"] = [
