@@ -1,33 +1,94 @@
 #!/bin/sh
 # Установка нашей системы одной командой:
 #
-#     setup <имя_пользователя> <пароль>
+#     setup <имя_пользователя> <пароль> <диск>
 #
 # Пароль передаётся открытым текстом намеренно: живая среда одноразовая,
 # а открытый аргумент избавляет от опечаток при скрытом вводе (символы
 # не видны). Один пароль — для пользователя и для root.
-# Конфигурация берётся из /root/wdistr (вшита в ISO).
+# Конфигурация берётся из /root/wdistr (вшита в ISO); диск подставляется
+# в копию конфига, размер корневого раздела пересчитывается под фактический
+# размер диска (в исходном конфиге разделы привязаны к 64-ГБ диску тестовой
+# VM). После установки система привязана по UUID (fstab и GRUB) — смена
+# имени или места диска её не убьёт.
+# Список дисков перед запуском: команда `disks`.
 
-if [ -z "$2" ]; then
-    echo "Использование: setup <имя_пользователя> <пароль>"
-    echo "Пример:       setup ivan 12345"
+usage() {
+    echo "Использование: setup <имя_пользователя> <пароль> <диск>"
+    echo "Пример:       setup ivan 12345 /dev/sda"
     echo
     echo "Пароль уйдёт открытым текстом — это осознанный выбор для живой среды."
+    echo "Доступные диски:"
+    echo
+    disks
     exit 1
+}
+
+[ -z "$3" ] && usage
+
+# Проверки целевого устройства: только целый диск, не раздел и не мусор
+if [ ! -b "$3" ]; then
+    echo "ОШИБКА: '$3' — не блочное устройство." >&2
+    echo >&2
+    usage
+fi
+if [ "$(lsblk -dnno TYPE "$3" 2>/dev/null)" != "disk" ]; then
+    echo "ОШИБКА: '$3' — нужен целый диск, а не раздел. Вывод lsblk ниже." >&2
+    echo >&2
+    usage
 fi
 
-CREDS=/var/tmp/wdistr-creds.json
+# Размер диска в байтах — для пересчёта корневого раздела
+DISK_SIZE=$(lsblk -bdno SIZE "$3")
+case "$DISK_SIZE" in
+    ''|*[!0-9]*)
+        echo "ОШИБКА: не удалось определить размер диска '$3'." >&2
+        exit 1
+        ;;
+esac
 
-python3 - "$1" "$2" > "$CREDS" <<'PYEOF'
-import json, sys
-name, password = sys.argv[1], sys.argv[2]
-print(json.dumps({
+CREDS=/var/tmp/wdistr-creds.json
+CONFIG=/var/tmp/wdistr-config.json
+
+python3 - "$1" "$2" "$3" "$DISK_SIZE" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
+import json
+import pathlib
+import sys
+
+name, password, disk, disk_size, creds_path, config_path = sys.argv[1:7]
+
+# Учётные данные: один пароль для пользователя и root
+pathlib.Path(creds_path).write_text(json.dumps({
     "users": [{"username": name, "sudo": True, "!password": password}],
     "!root-password": password,
 }, indent=4))
+
+config = json.loads(pathlib.Path('/root/wdistr/archinstall-config.json').read_text())
+mods = config['disk_config']['device_modifications']
+
+# Куда ставить: единственное захардкоженное место в конфиге
+for mod in mods:
+    mod['device'] = disk
+
+# Размер корневого раздела: весь диск за вычетом отступа (1 МиБ) и
+# загрузочного раздела (1 ГиБ), выровненный вниз по границе 1 МиБ —
+# так же, как это считает archinstall для диска тестовой VM (64 ГиБ).
+BOOT_RESERVED = 1074790400  # байт: start /boot 1 МиБ + его размер 1 ГиБ
+root_size = (int(disk_size) - BOOT_RESERVED) // 1048576 * 1048576
+if root_size < 4 * 1024**3:
+    sys.exit(
+        f"ОШИБКА: диск {disk} ({disk_size} байт) слишком мал — "
+        f"на корень остаётся {root_size} байт, нужно минимум 4 ГиБ."
+    )
+for part in mods[0]['partitions']:
+    if part.get('mountpoint') == '/':
+        part['size'] = {'value': root_size, 'unit': 'B',
+                        'sector_size': part['size']['sector_size']}
+
+pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
 PYEOF
 
 exec archinstall \
-    --config /root/wdistr/archinstall-config.json \
+    --config "$CONFIG" \
     --creds "$CREDS" \
     --silent
