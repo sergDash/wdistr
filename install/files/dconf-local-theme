@@ -1,0 +1,8 @@
+# Темная тема wdistr для всех пользователей (решение 2026-10-08).
+# libadwaita-приложения (GTK4, например Аутентификатор) читают тему не из
+# gtk-theme, а из color-scheme — этот ключ делает их тёмными; gtk-theme
+# страхует обычные GTK-приложения, которым не приходит настройка из
+# /etc/gtk-3.0/settings.ini.
+[org/gnome/desktop/interface]
+gtk-theme='Adwaita-dark'
+color-scheme='prefer-dark'

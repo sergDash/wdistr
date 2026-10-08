@@ -93,6 +93,13 @@ def main() -> None:
         deliver(MIRROR_HOOK, "/etc/pacman.d/hooks/wdistr-mirrors.hook"),
         deliver(PROFILE_MIRRORLIST, "/usr/local/share/wdistr/mirrorlist"),
         deliver(PROFILE_MIRRORLIST, "/etc/pacman.d/mirrorlist"),
+        # Тёмная тема для всех пользователей: система-дефолты dconf — их
+        # читают libadwaita-приложения (GTK4, Аутентификатор), а обычные
+        # GTK3 берут тему из /etc/gtk-3.0/settings.ini; dconf update
+        # собирает базу /etc/dconf/db/local из доставленных фрагментов
+        deliver(FILES / "dconf-profile-user", "/etc/dconf/profile/user"),
+        deliver(FILES / "dconf-local-theme", "/etc/dconf/db/local.d/00-wdistr-theme"),
+        "dconf update",
         # fish — оболочка по умолчанию: root и первый обычный пользователь
         # (uid 1000+ определяется динамически — имя из setup не захардкожено)
         "usermod -s /usr/bin/fish root && "
