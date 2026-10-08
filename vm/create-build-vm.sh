@@ -6,7 +6,7 @@
 set -euo pipefail
 
 VM_NAME="wdistr-build"
-ISO_VERSION="2026.09.01"
+ISO_VERSION="2026.10.01"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ISO_FILE="$SCRIPT_DIR/archlinux-$ISO_VERSION.iso"
 ISO_URL="https://geo.mirror.pkgbuild.com/iso/$ISO_VERSION/archlinux-x86_64.iso"
