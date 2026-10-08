@@ -60,11 +60,16 @@ if VBoxManage showvminfo "$VM_NAME" >/dev/null 2>&1; then
 fi
 
 VBoxManage createvm --name "$VM_NAME" --ostype ArchLinux_64 --register
+# Пробросы портов задаются здесь же и живут постоянно (записаны в файл .vbox,
+# переживают выключение VM): ssh — доступ агента, isoout — вынос готового ISO.
+# Подробно — handbook/Сборочная виртуальная машина.md
 VBoxManage modifyvm "$VM_NAME" \
     --memory "$MEMORY_MB" --cpus "$CPUS" \
     --graphicscontroller vmsvga --vram 128 \
     --nic1 nat --audio-driver none \
-    --boot1 dvd --boot2 disk
+    --boot1 dvd --boot2 disk \
+    --natpf1 "ssh,tcp,,2222,,22" \
+    --natpf1 "isoout,tcp,,9999,,8000"
 VBoxManage createmedium disk --filename "$DISK_FILE" --size "$DISK_MB" --format VDI
 VBoxManage storagectl "$VM_NAME" --name "SATA" --add sata --controller IntelAhci
 VBoxManage storageattach "$VM_NAME" --storagectl "SATA" --port 0 --device 0 \
@@ -73,3 +78,6 @@ VBoxManage storageattach "$VM_NAME" --storagectl "SATA" --port 1 --device 0 \
     --type dvddrive --medium "$ISO_FILE"
 
 echo "VM '$VM_NAME' создана. Запуск: VBoxManage startvm $VM_NAME"
+echo "Пробросы: ssh 2222->22, isoout 9999->8000 (постоянные)."
+echo "Дальше — установка Arch в окне VM; подготовка и работа:"
+echo "  handbook/Сборочная виртуальная машина.md"
