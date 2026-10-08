@@ -75,7 +75,8 @@ bash vm/create-test-vm.sh          # пересоздание: VBoxManage unregi
 
 ## Перед передачей профиля
 
-Если правились файлы в `install/files/` — пересобрать команды доставки:
+Если правились файлы в `install/files/` или `mirrors.txt` — пересобрать
+команды доставки:
 
 ```bash
 python3 install/regen-custom-commands.py   # сам синхронизирует конфиг с профилем

@@ -6,7 +6,7 @@
 и выполняет его внутри целевой системы, поэтому кавычки и знаки $
 в содержимом файлов не интерпретируются по пути.
 
-Правило: после любой правки install/files/* запустить:
+Правило: после любой правки install/files/* или mirrors.txt запустить:
     python3 install/regen-custom-commands.py
 и скопировать конфиг в профиль:
     cp install/archinstall-config.json iso/airootfs/root/wdistr/
@@ -22,6 +22,14 @@ INSTALL = pathlib.Path(__file__).resolve().parent
 CONFIG = INSTALL / "archinstall-config.json"
 FILES = INSTALL / "files"
 PROFILE_COPY = INSTALL.parent / "iso/airootfs/root/wdistr/archinstall-config.json"
+
+# Единый список зеркал дистрибутива (решение 2026-10-08): и живая среда,
+# и устанавливаемая работают только с ним. Отсюда он раздаётся в профиль
+# ISO (живая среда) и в custom_commands (целевая система).
+MIRRORS = INSTALL.parent / "mirrors.txt"
+MIRROR_HOOK = FILES / "wdistr-mirrors.hook"
+PROFILE_MIRRORLIST = INSTALL.parent / "iso/airootfs/usr/local/share/wdistr/mirrorlist"
+PROFILE_MIRROR_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-mirrors.hook"
 
 
 def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: bool = False) -> str:
@@ -63,6 +71,13 @@ def main() -> None:
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
         "sed -i '/#\\[multilib\\]/,/^#Include/ s/^#//' /etc/pacman.conf",
+        # Зеркала wdistr (mirrors.txt): хук + источник, затем прямая запись
+        # mirrorlist — archinstall пишет свой список до pacstrap, а пакет
+        # pacman-mirrorlist при установке затирает его стоковым; хук в
+        # дальнейшем восстанавливает список при обновлениях пакета
+        deliver(MIRROR_HOOK, "/etc/pacman.d/hooks/wdistr-mirrors.hook"),
+        deliver(MIRRORS, "/usr/local/share/wdistr/mirrorlist"),
+        deliver(MIRRORS, "/etc/pacman.d/mirrorlist"),
         # fish — оболочка по умолчанию: root и первый обычный пользователь
         # (uid 1000+ определяется динамически — имя из setup не захардкожено)
         "usermod -s /usr/bin/fish root && "
@@ -131,8 +146,14 @@ def main() -> None:
         json.dumps(config, indent=4, sort_keys=True, ensure_ascii=False) + "\n"
     )
     shutil.copyfile(CONFIG, PROFILE_COPY)
+    # Зеркала в профиль ISO: файл-источник для хука живой среды и сам хук
+    # (в airootfs до сборки, чтобы pacman-mirrorlist не остался стоковым)
+    PROFILE_MIRRORLIST.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(MIRRORS, PROFILE_MIRRORLIST)
+    shutil.copyfile(MIRROR_HOOK, PROFILE_MIRROR_HOOK)
     print(f"custom_commands: {len(config['custom_commands'])} команд(ы)")
     print(f"конфиг синхронизирован с профилем: {PROFILE_COPY}")
+    print(f"зеркала синхронизированы с профилем: {PROFILE_MIRRORLIST}")
 
 
 if __name__ == "__main__":

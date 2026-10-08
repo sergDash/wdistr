@@ -1,0 +1,19 @@
+# Восстанавливает список зеркал wdistr после установки/обновления пакета
+# pacman-mirrorlist: сам пакет при распаковке затирает /etc/pacman.d/mirrorlist
+# стоковым списком (все зеркала мира), а дистрибутив работает только со
+# списком из mirrors.txt. Источник — /usr/local/share/wdistr/mirrorlist,
+# он же mirrors.txt; доставку в обе системы делает regen-custom-commands.py.
+# Маркер «remove from airootfs» НЕ ставить: хук должен пережить сборку
+# (zzzz99 удаляет помеченные) и остаться в системе для будущих обновлений.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = pacman-mirrorlist
+
+[Action]
+Description = Applying wdistr mirrorlist (mirrors.txt)...
+When = PostTransaction
+Depends = pacman-mirrorlist
+Depends = coreutils
+Exec = /usr/bin/cp -f /usr/local/share/wdistr/mirrorlist /etc/pacman.d/mirrorlist
