@@ -68,16 +68,26 @@ def deliver_pubkey() -> str:
 def main() -> None:
     config = json.loads(CONFIG.read_text())
 
+    # Зеркала: в mirrors.txt — просто URL построчно, этого списка
+    # достаточно для archinstall (mirror_regions — массив голых URL), но
+    # самому pacman нужен файл вида 'Server = <url>'. Генерируем mirrorlist
+    # и кладём в профиль ДО сборки custom_commands: команды доставки кодируют
+    # содержимое файла, поэтому файл должен быть готов заранее.
+    urls = [line.strip() for line in MIRRORS.read_text().splitlines() if line.strip()]
+    PROFILE_MIRRORLIST.parent.mkdir(parents=True, exist_ok=True)
+    PROFILE_MIRRORLIST.write_text("".join(f"Server = {url}\n" for url in urls))
+    config["mirror_config"]["mirror_regions"] = {"Russia": urls}
+
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
         "sed -i '/#\\[multilib\\]/,/^#Include/ s/^#//' /etc/pacman.conf",
-        # Зеркала wdistr (mirrors.txt): хук + источник, затем прямая запись
-        # mirrorlist — archinstall пишет свой список до pacstrap, а пакет
-        # pacman-mirrorlist при установке затирает его стоковым; хук в
-        # дальнейшем восстанавливает список при обновлениях пакета
+        # Зеркала wdistr (mirrors.txt → mirrorlist): хук + источник, затем
+        # прямая запись mirrorlist — archinstall пишет свой список до
+        # pacstrap, а пакет pacman-mirrorlist при установке затирает его
+        # стоковым; хук в дальнейшем восстанавливает список при обновлениях
         deliver(MIRROR_HOOK, "/etc/pacman.d/hooks/wdistr-mirrors.hook"),
-        deliver(MIRRORS, "/usr/local/share/wdistr/mirrorlist"),
-        deliver(MIRRORS, "/etc/pacman.d/mirrorlist"),
+        deliver(PROFILE_MIRRORLIST, "/usr/local/share/wdistr/mirrorlist"),
+        deliver(PROFILE_MIRRORLIST, "/etc/pacman.d/mirrorlist"),
         # fish — оболочка по умолчанию: root и первый обычный пользователь
         # (uid 1000+ определяется динамически — имя из setup не захардкожено)
         "usermod -s /usr/bin/fish root && "
@@ -146,14 +156,12 @@ def main() -> None:
         json.dumps(config, indent=4, sort_keys=True, ensure_ascii=False) + "\n"
     )
     shutil.copyfile(CONFIG, PROFILE_COPY)
-    # Зеркала в профиль ISO: файл-источник для хука живой среды и сам хук
-    # (в airootfs до сборки, чтобы pacman-mirrorlist не остался стоковым)
-    PROFILE_MIRRORLIST.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(MIRRORS, PROFILE_MIRRORLIST)
+    # Хук зеркал в профиль ISO (в airootfs до сборки — чтобы в живой среде
+    # был хук, восстанавливающий список при обновлении pacman-mirrorlist)
     shutil.copyfile(MIRROR_HOOK, PROFILE_MIRROR_HOOK)
     print(f"custom_commands: {len(config['custom_commands'])} команд(ы)")
     print(f"конфиг синхронизирован с профилем: {PROFILE_COPY}")
-    print(f"зеркала синхронизированы с профилем: {PROFILE_MIRRORLIST}")
+    print(f"mirrorlist из {MIRRORS.name} ({len(urls)} зеркал): {PROFILE_MIRRORLIST}")
 
 
 if __name__ == "__main__":
