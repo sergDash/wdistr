@@ -66,7 +66,7 @@ def send(vm: str, cmd: str, reset: bool) -> None:
         elif ch in SHIFTED:
             base, need_shift = SHIFTED[ch]
             seq += tap(base, LSHIFT if need_shift else None)
-        elif ch.upper() in MAKE:  # заглавные буквы
+        elif ch.lower() in MAKE:  # заглавные буквы — через Shift
             seq += tap(MAKE[ch.lower()], LSHIFT)
         else:
             raise SystemExit(f"нет трансляции для символа {ch!r}")
