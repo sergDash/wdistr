@@ -67,6 +67,12 @@ run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
     vscodium-bin session-desktop-bin \
     lmstudio-bin arduino-ide-bin
 
+# 7. opencode собственной сборки: скрипт и патчи доставлены в ~/bin
+#    (custom_commands), здесь — первая сборка (bun + git + патчи).
+#    Версия зафиксирована в скрипте; обновление: opencode.fish <версия>
+run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
+    fish "$USER_HOME/bin/opencode.fish"
+
 # Логи принадлежат пользователю, чтобы читать без root
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
 

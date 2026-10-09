@@ -1,0 +1,74 @@
+From 2dbcf2ffef87a58dc2bafc4d8bd151cba8fbe001 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Thu, 27 Aug 2026 02:11:15 +0300
+Subject: [PATCH] fix: stabilize date in system prompt to preserve prefix
+ caching
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Capture the date once at module load instead of calling new Date() on
+every LLM request. This keeps the system prompt identical across turns
+within a process lifetime, preserving implicit prefix caching for
+Gemini/Gemma-4, OpenAI, and other providers that rely on exact prefix
+matching. The date string is cosmetic context for the model — no logic
+depends on it changing mid-session.
+---
+ packages/core/src/system-context/builtins.ts | 9 ++++++++-
+ packages/opencode/src/session/system.ts      | 6 +++++-
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/packages/core/src/system-context/builtins.ts b/packages/core/src/system-context/builtins.ts
+index b8b50577cc..95bbd33821 100644
+--- a/packages/core/src/system-context/builtins.ts
++++ b/packages/core/src/system-context/builtins.ts
+@@ -9,6 +9,13 @@ import { SystemContextRegistry } from "./registry"
+ import { FSUtil } from "../fs-util"
+ import { Global } from "../global"
+ 
++// Capture date once at module load so the system prompt stays stable within a
++// process lifetime.  This preserves implicit prefix caching (Gemini/Gemma-4,
++// OpenAI, etc.) which invalidates the entire cache when the system prompt
++// changes — even a single character difference in the date string forces full
++// reprocessing of all input tokens.
++const dateAtLoad = new Date().toDateString()
++
+ const builtIns = Layer.effectDiscard(
+   Effect.gen(function* () {
+     const location = yield* Location.Service
+@@ -33,7 +40,7 @@ const builtIns = Layer.effectDiscard(
+       SystemContext.make({
+         key: SystemContext.Key.make("core/date"),
+         codec: Schema.toCodecJson(Schema.String),
+-        load: DateTime.nowAsDate.pipe(Effect.map((date) => date.toDateString())),
++        load: Effect.succeed(dateAtLoad),
+         baseline: (date) => `Today's date: ${date}`,
+         update: (_previous, date) => `Today's date is now: ${date}`,
+       }),
+diff --git a/packages/opencode/src/session/system.ts b/packages/opencode/src/session/system.ts
+index d0c608b203..7435c17163 100644
+--- a/packages/opencode/src/session/system.ts
++++ b/packages/opencode/src/session/system.ts
+@@ -24,6 +24,10 @@ import { Reference } from "@opencode-ai/core/reference"
+ import { MCP } from "@/mcp"
+ import { PermissionV1 } from "@opencode-ai/core/v1/permission"
+ 
++// Capture date once at module load so the system prompt stays stable within a
++// process lifetime, preserving implicit prefix caching for Gemini/Gemma-4.
++const dateAtLoad = new Date().toDateString()
++
+ export function provider(model: Provider.Model) {
+   if (model.api.id.includes("muse")) {
+     const name = model.api.id.includes("muse-glimmer") ? "Muse Glimmer" : "Muse Spark"
+@@ -78,7 +82,7 @@ const layer = Layer.effect(
+             `  Workspace root folder: ${ctx.worktree}`,
+             `  Is directory a git repo: ${ctx.project.vcs === "git" ? "yes" : "no"}`,
+             `  Platform: ${process.platform}`,
+-            `  Today's date: ${new Date().toDateString()}`,
++            `  Today's date: ${dateAtLoad}`,
+             `</env>`,
+           ].join("\n"),
+           references.length === 0
+-- 
+2.43.0
+

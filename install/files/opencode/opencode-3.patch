@@ -1,0 +1,109 @@
+From a7bfc8e0ff0421545fde9e81d400cc491bf13fd5 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Wed, 9 Sep 2026 01:36:46 +0300
+Subject: [PATCH] fix(opencode): stabilize instruction files per session
+
+---
+ packages/opencode/src/session/instruction.ts | 30 +++++++++++++++++---
+ packages/opencode/src/session/prompt.ts      | 10 +++++++-
+ 2 files changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/packages/opencode/src/session/instruction.ts b/packages/opencode/src/session/instruction.ts
+index 7f593550d4..92a528c885 100644
+--- a/packages/opencode/src/session/instruction.ts
++++ b/packages/opencode/src/session/instruction.ts
+@@ -12,7 +12,7 @@ import { FSUtil } from "@opencode-ai/core/fs-util"
+ import { withTransientReadRetry } from "@/util/effect-http-client"
+ import { Global } from "@opencode-ai/core/global"
+ import type { MessageV2 } from "./message-v2"
+-import type { MessageID } from "./schema"
++import type { MessageID, SessionID } from "./schema"
+ 
+ function extract(messages: SessionV1.WithParts[]) {
+   const paths = new Set<string>()
+@@ -34,7 +34,11 @@ function extract(messages: SessionV1.WithParts[]) {
+ export interface Interface {
+   readonly clear: (messageID: MessageID) => Effect.Effect<void>
+   readonly systemPaths: () => Effect.Effect<Set<string>, FSUtil.Error>
+-  readonly system: () => Effect.Effect<string[], FSUtil.Error>
++  readonly system: (input?: {
++    sessionID?: SessionID
++    stable?: boolean
++    modelKey?: string
++  }) => Effect.Effect<string[], FSUtil.Error>
+   readonly find: (dir: string) => Effect.Effect<string | undefined, FSUtil.Error>
+   readonly resolve: (
+     messages: SessionV1.WithParts[],
+@@ -72,6 +76,7 @@ const layer: Layer.Layer<
+         Effect.succeed({
+           // Track which instruction files have already been attached for a given assistant message.
+           claims: new Map<MessageID, Set<string>>(),
++          snapshots: new Map<SessionID, { modelKey: string; value: string[] }>(),
+         }),
+       ),
+     )
+@@ -152,7 +157,17 @@ const layer: Layer.Layer<
+       return paths
+     })
+ 
+-    const system = Effect.fn("Instruction.system")(function* () {
++    const system = Effect.fn("Instruction.system")(function* (input?: {
++      sessionID?: SessionID
++      stable?: boolean
++      modelKey?: string
++    }) {
++      if (input?.stable && input.sessionID && input.modelKey) {
++        const s = yield* InstanceState.get(state)
++        const cached = s.snapshots.get(input.sessionID)
++        if (cached?.modelKey === input.modelKey) return cached.value
++      }
++
+       const config = yield* cfg.get()
+       const paths = yield* systemPaths()
+       const urls = (config.instructions ?? []).filter(
+@@ -162,10 +177,17 @@ const layer: Layer.Layer<
+       const files = yield* Effect.forEach(Array.from(paths), read, { concurrency: 8 })
+       const remote = yield* Effect.forEach(urls, fetch, { concurrency: 4 })
+ 
+-      return [
++      const result = [
+         ...Array.from(paths).flatMap((item, i) => (files[i] ? [`Instructions from: ${item}\n${files[i]}`] : [])),
+         ...urls.flatMap((item, i) => (remote[i] ? [`Instructions from: ${item}\n${remote[i]}`] : [])),
+       ]
++
++      if (input?.stable && input.sessionID && input.modelKey) {
++        const s = yield* InstanceState.get(state)
++        s.snapshots.set(input.sessionID, { modelKey: input.modelKey, value: result })
++      }
++
++      return result
+     })
+ 
+     const find = Effect.fn("Instruction.find")(function* (dir: string) {
+diff --git a/packages/opencode/src/session/prompt.ts b/packages/opencode/src/session/prompt.ts
+index 0f85d44f20..dfa5e6a696 100644
+--- a/packages/opencode/src/session/prompt.ts
++++ b/packages/opencode/src/session/prompt.ts
+@@ -1254,10 +1254,18 @@ const layer = Layer.effect(
+ 
+             yield* plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
+ 
++            const providerConfig = yield* config.get()
++            const stableInstructions = providerConfig.provider?.[model.providerID]?.options?.stableInstructions === true
+             const [skills, env, instructions, mcpInstructions, modelMsgs] = yield* Effect.all([
+               sys.skills(agent),
+               sys.environment(model),
+-              instruction.system().pipe(Effect.orDie),
++              instruction
++                .system({
++                  sessionID,
++                  stable: stableInstructions,
++                  modelKey: `${model.providerID}/${model.id}`,
++                })
++                .pipe(Effect.orDie),
+               sys.mcp(agent, session.permission),
+               MessageV2.toModelMessagesEffect(msgs, model),
+             ])
+-- 
+2.43.0
+

@@ -1,0 +1,30 @@
+From 00fe7ddf49f28fc3298729cdeb722e12b28b1ea5 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Wed, 29 Jul 2026 16:56:13 +0300
+Subject: [PATCH] fix
+
+---
+ packages/opencode/src/session/prompt.ts | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/packages/opencode/src/session/prompt.ts b/packages/opencode/src/session/prompt.ts
+index eb116f6b96..8f5f201027 100644
+--- a/packages/opencode/src/session/prompt.ts
++++ b/packages/opencode/src/session/prompt.ts
+@@ -1130,13 +1130,6 @@ const layer = Layer.effect(
+           }
+ 
+           step++
+-          if (step === 1)
+-            yield* title({
+-              session,
+-              modelID: lastUser.model.modelID,
+-              providerID: lastUser.model.providerID,
+-              history: msgs,
+-            }).pipe(Effect.ignore, Effect.forkIn(scope))
+ 
+           const model = yield* getModel(lastUser.model.providerID, lastUser.model.modelID, sessionID)
+           const task = tasks.pop()
+-- 
+2.43.0
+

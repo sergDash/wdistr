@@ -173,6 +173,21 @@ def main() -> None:
         "ln -sf /usr/lib/systemd/user/syncthing.service "
         "/home/$U/.config/systemd/user/default.target.wants/syncthing.service && "
         "chown -R $U:$U /home/$U/.config/systemd/user",
+        # opencode собственной сборки: скрипт и патчи — в ~/bin первого
+        # пользователя (паттерн с хоста разработки). Первая сборка и
+        # обновления — запуск opencode.fish от пользователя (first-boot),
+        # переменная U живёт только внутри одной команды: каждая строка
+        # custom_commands исполняется отдельным shell
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && " + " && ".join(
+            [
+                deliver(FILES / "opencode/opencode.fish", "/home/$U/bin/opencode.fish", "755"),
+                deliver(FILES / "opencode/opencode-1.patch", "/home/$U/bin/opencode-1.patch"),
+                deliver(FILES / "opencode/opencode-2.patch", "/home/$U/bin/opencode-2.patch"),
+                deliver(FILES / "opencode/opencode-3.patch", "/home/$U/bin/opencode-3.patch"),
+                "chown -R $U:$U /home/$U/bin",
+            ]
+        ),
     ]
 
     # Свои desktop-файлы: всё из files/desktop/ доставляется в
