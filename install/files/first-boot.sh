@@ -16,11 +16,19 @@ mkdir -p "$LOGDIR"
 
 echo "== wdistr: инициализация первого запуска: $(date -Is) ==" >>"$LOG"
 
-# run: команда + её код возврата — в лог, для разбора потом
+# Строгий режим (решение 2026-10-09): любая упавшая команда →
+# ненулевой код всего скрипта → systemd пометит юнит failed, маркер
+# first-boot-done НЕ создастся и инициализация повторится при
+# следующей загрузке (идемпотентные шаги повтор безопасен)
+FAILED=0
+
+# run: команда + её код возврата — в лог; ошибка помечает общий флаг
 run() {
     echo "+ $*" >>"$LOG"
     "$@" >>"$LOG" 2>&1
-    echo "  rc=$?" >>"$LOG"
+    rc=$?
+    echo "  rc=$rc" >>"$LOG"
+    if [ "$rc" -ne 0 ]; then FAILED=1; fi
 }
 
 # 1. Базы всех репозиториев (multilib включён, но база не скачана) + актуальность
@@ -76,13 +84,19 @@ run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
     pragtical-bin amneziavpn-bin \
     protonup-qt portproton librepcb jan localsend \
     vscodium-bin session-desktop-bin \
-    lmstudio-bin arduino-ide-bin
+    lmstudio-bin arduino-ide-bin jstest-gtk-git
 
-# 8. Дожидаемся фоновой сборки opencode и фиксируем итог в общем логе
+# 8. Дожидаемся фоновой сборки opencode и фиксируем её итог
 wait "$OC_PID"
-echo "+ opencode: rc=$? (подробности — $OC_LOG)" >>"$LOG"
+OC_RC=$?
+echo "+ opencode: rc=$OC_RC (подробности — $OC_LOG)" >>"$LOG"
 
 # Логи принадлежат пользователю, чтобы читать без root
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
 
+# Итог: ненулевой exit → юнит failed → маркер не встанет → повтор
+if [ "$FAILED" -ne 0 ] || [ "$OC_RC" -ne 0 ]; then
+    echo "== инициализация с ОШИБКАМИ: $(date -Is) (повтор при следующей загрузке) ==" >>"$LOG"
+    exit 1
+fi
 echo "== инициализация завершена: $(date -Is) ==" >>"$LOG"
