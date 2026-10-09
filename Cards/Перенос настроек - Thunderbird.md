@@ -2,60 +2,54 @@ type: инструкция
 category: wdistr/Перенос
 title: Перенос настроек Thunderbird
 summary:
-  Как перенести thunderbird с рабочей машины на чистую установку wdistr.
-  Ловушка: на хосте thunderbird — flatpak, актуальный профиль в
-  ~/.var/app, а старый ~/.thunderbird от ESR-установки переносить нельзя.
+  Руками: скопировать профиль thunderbird с бэкапа и вписать profiles.ini.
+  Внимание: на хосте thunderbird — flatpak, брать его профиль из
+  ~/.var/app, а НЕ старый ~/.thunderbird.
 date: 2026-10-09
 
-## Ловушка хоста (главное)
+Рабочий профиль хоста: `1rwi47i4.default-release` (письма, адресная
+книга, календарь, PGP-ключи — всё внутри).
 
-Thunderbird на хосте работает как **flatpak** (org.mozilla.thunderbird),
-и его актуальный профиль (письма, настройки, PGP) лежит в контейнере:
+**Не перепутай источник.** Thunderbird на хосте — flatpak, его свежий
+профиль лежит в контейнере `~/.var/app/org.mozilla.thunderbird/`.
+Каталог `~/.thunderbird` в бэкапе — остаток старой установки 2025
+года, с ним работать нельзя.
 
-    <бэкап>/home/serg/.var/app/org.mozilla.thunderbird/.thunderbird/
+## 1. На хосте — свежий бэкап
 
-При этом в домашнем каталоге остаётся и **старый** родной профиль
-`~/.thunderbird` — остаток ESR-установки от июня 2025 года. Его
-переносить нельзя — это годичной давности почта. rsync-бэкап копирует
-оба каталога (в исключениях бэкапа только внешние кэши), поэтому в
-бэкапе есть и свежий, и устаревший — выбрать надо свежий.
-`settings/setup.sh` (обновлён 2026-10-09) берёт flatpak-профиль
-автоматически; родной `~/.thunderbird` — только фолбэк, если
-flatpak-каталога в бэкапе нет.
+Закрыть thunderbird, запустить `backup_rsync`.
 
-## Источник
+## 2. На новой машине — скопировать профиль
 
-    <бэкап>/home/serg/.var/app/org.mozilla.thunderbird/.thunderbird/
+Диск подключён, thunderbird ещё НЕ запускался (иначе удали
+`~/.thunderbird` целиком):
 
-Актуальность — по дате `installs.ini` внутри (у свежего профиля —
-2026 год).
+```sh
+mkdir -p ~/.thunderbird
+cp -a /media/serg/4TB/rsync/home/serg/.var/app/org.mozilla.thunderbird/.thunderbird/1rwi47i4.default-release ~/.thunderbird/
+rm -f ~/.thunderbird/1rwi47i4.default-release/{lock,parent.lock,.parentlock}
+```
 
-## Что переносится
+## 3. Файл profiles.ini
 
-- письма — локальные копии IMAP (`ImapMail/`);
-- адресная книга (`abook.sqlite`), календарь;
-- расширения и пароли (как у firefox);
-- PGP-ключи и ключевые файлы.
+Вставить в `~/.thunderbird/profiles.ini`:
 
-## Как перенести
+```ini
+[Profile0]
+Name=default
+IsRelative=1
+Path=1rwi47i4.default-release
+Default=1
 
-1. Закрыть thunderbird на хосте, обновить бэкап (`backup_rsync`).
-2. Подключить диск к новой системе.
-3. `settings/setup.sh` из репозитория — скрипт сам найдёт
-   flatpak-профиль, скопирует рабочий профиль в `~/.thunderbird`
-   (родная thunderbird дистрибутива) и назначит его по умолчанию.
-4. Запустить thunderbird — почта, адреска и PGP на месте.
+[General]
+StartWithLastProfile=1
+Version=2
+```
 
-Лог — `~/install-log/settings.log`.
+Зачем: выбор «рабочего» профиля у mozilla-программ привязан к хэшу
+старой установки (`installs.ini`), на новой машине его нет — без
+чистого `profiles.ini` откроется пустой профиль.
 
-## Почему нельзя просто скопировать каталог
+## 4. Запустить thunderbird
 
-Та же причина, что у firefox: рабочий профиль в бэкапе выбран через
-`installs.ini` (хэш старой установки), а `Default=1` в `profiles.ini`
-стоит у пустого профиля. `setup.sh` копирует только рабочий профиль и
-генерирует чистый `profiles.ini`.
-
-Если `~/.thunderbird` уже существует (thunderbird запускался) — скрипт
-откажется перезаписывать, каталог нужно удалить вручную.
-
-Подробнее — `handbook/Перенос настроек программ.md`.
+Письма, адреска и PGP на месте.
