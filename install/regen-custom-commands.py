@@ -183,6 +183,12 @@ def main() -> None:
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
         "usermod -aG docker \"$U\"",
+        # Cinnamon при первом входе перебивает системный dconf-дефолт
+        # (gtk-theme, шрифты) — одноразовый скрипт через системный
+        # autostart ставит наши значения; маркер в ~/.config/wdistr не
+        # даёт лезть в ручные настройки пользователя (решение 2026-10-09)
+        deliver(FILES / "cinnamon-defaults.sh", "/usr/local/bin/wdistr-cinnamon-defaults", "755"),
+        deliver(FILES / "wdistr-cinnamon-defaults.desktop", "/etc/xdg/autostart/wdistr-cinnamon-defaults.desktop"),
         # opencode собственной сборки: скрипт и патчи — в ~/bin первого
         # пользователя (паттерн с хоста разработки). Первая сборка и
         # обновления — запуск opencode.fish от пользователя (first-boot),

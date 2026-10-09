@@ -1,0 +1,8 @@
+# Автозапуск настроек Cinnamon по умолчанию (wdistr): системный
+# autostart запускает скрипт при входе каждого пользователя; сам скрипт
+# решает по маркеру, делать ли что-то (идемпотентно, см. cinnamon-defaults.sh)
+[Desktop Entry]
+Type=Application
+Name=wdistr: настройки Cinnamon по умолчанию
+Exec=/usr/local/bin/wdistr-cinnamon-defaults
+NoDisplay=true
