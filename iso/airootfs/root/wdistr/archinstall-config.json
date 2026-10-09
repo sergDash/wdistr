@@ -94,7 +94,7 @@
                         "btrfs": [],
                         "dev_path": null,
                         "flags": [],
-                        "fs_type": "ext4",
+                        "fs_type": "btrfs",
                         "mount_options": [],
                         "mountpoint": "/",
                         "obj_id": "8d0dcbda-cee9-43e5-8117-414f10e72b2a",
@@ -122,7 +122,7 @@
             }
         ]
     },
-    "hostname": "archlinux",
+    "hostname": "arch",
     "kernels": [
         "linux"
     ],
@@ -221,7 +221,9 @@
         "nodejs",
         "cinnamon",
         "cinnamon-translations",
-        "docker"
+        "docker",
+        "ttf-ubuntu-font-family",
+        "teamspeak3"
     ],
     "pacman_config": {
         "color": true,
