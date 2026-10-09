@@ -154,7 +154,6 @@
     "ntp": true,
     "packages": [
         "xorg-server",
-        "xfce4",
         "lightdm",
         "lightdm-gtk-greeter",
         "fish",
@@ -166,7 +165,6 @@
         "pipewire-alsa",
         "wireplumber",
         "network-manager-applet",
-        "xfce4-pulseaudio-plugin",
         "pavucontrol",
         "ttf-dejavu",
         "firefox",
@@ -216,7 +214,10 @@
         "stellarium",
         "rsync",
         "bun",
-        "nodejs"
+        "nodejs",
+        "cinnamon",
+        "cinnamon-translations",
+        "docker"
     ],
     "pacman_config": {
         "color": true,
@@ -231,7 +232,8 @@
     "services": [
         "lightdm",
         "keyd",
-        "sshd"
+        "sshd",
+        "docker"
     ],
     "swap": {
         "algorithm": "zstd",
