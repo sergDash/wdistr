@@ -93,7 +93,13 @@ if root_size < 4 * 1024**3:
         f"на корень остаётся {root_size} байт, нужно минимум 4 ГиБ."
     )
 for part in mods[0]['partitions']:
-    if part.get('mountpoint') == '/':
+    # Корневой раздел: mountpoint == '/' (старый формат) либо
+    # btrfs-сабволюмы с mountpoint '/' (после 15b5034 mountpoint у
+    # корня null — сабволюмы сами монтируются, иначе система в top-level)
+    is_root = part.get('mountpoint') == '/' or any(
+        sv.get('mountpoint') == '/' for sv in part.get('btrfs', [])
+    )
+    if is_root:
         part['size'] = {'value': root_size, 'unit': 'B',
                         'sector_size': part['size']['sector_size']}
 
