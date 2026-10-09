@@ -112,7 +112,7 @@
                         "flags": [],
                         "fs_type": "btrfs",
                         "mount_options": [],
-                        "mountpoint": "/",
+                        "mountpoint": null,
                         "obj_id": "8d0dcbda-cee9-43e5-8117-414f10e72b2a",
                         "size": {
                             "sector_size": {
