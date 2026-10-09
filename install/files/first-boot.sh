@@ -36,6 +36,8 @@ run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flath
 FLATPAK_APPS="
 com.valvesoftware.Steam
 com.ktechpit.whatsie
+net.xmind.XMind
+org.dash.dash-core
 "
 for app in $FLATPAK_APPS; do
     run flatpak install --noninteractive -y flathub "$app"
@@ -63,7 +65,7 @@ run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
     pragtical-bin amneziavpn-bin \
     protonup-qt portproton librepcb jan localsend \
     vscodium-bin session-desktop-bin \
-    lmstudio-bin xmind arduino-ide-bin dash-qt
+    lmstudio-bin arduino-ide-bin
 
 # Логи принадлежат пользователю, чтобы читать без root
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
