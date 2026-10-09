@@ -64,6 +64,14 @@ bash vm/create-test-vm.sh          # пересоздание: VBoxManage unregi
 
 В госте: `sh /root/wdistr/go.sh --dry-run`, затем `sh /root/wdistr/go.sh`.
 
+**Память тестовой VM: 8 ГБ МАЛО** (случай 2026-10-09): первый запуск
+(AUR-сборки librepcb, jan, localsend) даёт пик памяти ~6.8 ГБ, и OOM
+killer убивает `wdistr-first-boot` (юнит `failed`, повтор при загрузке
+помогает двигаться дальше, но бесконечные повторы не заменяют память).
+Для теста поднимать до 16 ГБ: `VBoxManage modifyvm wdistr-test --memory
+16384` (на выключенной машине). На реальном железе с большой RAM
+проблемы нет.
+
 ## Известные особенности
 
 - В живой среде нет команды `hostname` — проверять `cat /etc/hostname`.
