@@ -26,7 +26,18 @@ run() {
 # 1. Базы всех репозиториев (multilib включён, но база не скачана) + актуальность
 run pacman -Syu --noconfirm
 
-# 2. Flathub
+# 2. opencode собственной сборки — СРАЗУ И В ФОНЕ (решение 2026-10-09):
+#    зависимостей от yay нет (git/bun/node-gyp стоят pacstrap'ом), поэтому
+#    сборка идёт параллельно с flatpak и AUR — librepcb не задерживает
+#    opencode. Дожидаемся в конце скрипта: systemd убивает дочерние
+#    процессы юнита после его завершения. Версия зафиксирована в скрипте;
+#    обновление вручную: opencode.fish <версия>
+OC_LOG="$LOGDIR/opencode-build.log"
+nohup fish "$USER_HOME/bin/opencode.fish" > "$OC_LOG" 2>&1 &
+OC_PID=$!
+echo "+ opencode.fish в фоне (pid $OC_PID), лог: $OC_LOG" >>"$LOG"
+
+# 3. Flathub
 run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # 3. Flatpak-программы состава (решение 2026-10-09: приоритет — AUR,
@@ -67,11 +78,9 @@ run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
     vscodium-bin session-desktop-bin \
     lmstudio-bin arduino-ide-bin
 
-# 7. opencode собственной сборки: скрипт и патчи доставлены в ~/bin
-#    (custom_commands), здесь — первая сборка (bun + git + патчи).
-#    Версия зафиксирована в скрипте; обновление: opencode.fish <версия>
-run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
-    fish "$USER_HOME/bin/opencode.fish"
+# 8. Дожидаемся фоновой сборки opencode и фиксируем итог в общем логе
+wait "$OC_PID"
+echo "+ opencode: rc=$? (подробности — $OC_LOG)" >>"$LOG"
 
 # Логи принадлежат пользователю, чтобы читать без root
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
