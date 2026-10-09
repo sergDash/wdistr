@@ -29,17 +29,12 @@ run pacman -Syu --noconfirm
 # 2. Flathub
 run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-# 3. Flatpak-программы состава (согласовано 2026-10-08; состав и обоснования —
-#    Cards/Базовый набор программ, раздел «Приложения»)
+# 3. Flatpak-программы состава (решение 2026-10-09: приоритет — AUR,
+#    в flatpak остаётся steam — его multilib-версия задаёт интерактивный
+#    вопрос vulkan-драйверов, а flatpak-версия ставится без вопросов;
+#    состав и обоснования — Cards/Базовый набор программ, раздел «Приложения»)
 FLATPAK_APPS="
 com.valvesoftware.Steam
-net.davidotek.pupgui2
-ru.linux_gaming.PortProton
-org.librepcb.LibrePCB
-ai.jan.Jan
-org.localsend.localsend_app
-com.vscodium.codium
-network.loki.Session
 com.ktechpit.whatsie
 "
 for app in $FLATPAK_APPS; do
@@ -60,9 +55,15 @@ run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
     sh -c "cd '$TMP/yay' && makepkg -si --noconfirm"
 rm -rf "$TMP"
 
-# 6. AUR: разрешённый список пакетов (Cards/Базовый набор программ)
+# 6. AUR: разрешённый список пакетов (Cards/Базовый набор программ).
+#    -bin-варианты предпочтительнее сборок из исходников (готовый бинарь
+#    вместо компиляции — решение 2026-10-08)
 run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
-    yay -S --noconfirm --needed pragtical-bin amneziavpn-bin
+    yay -S --noconfirm --needed \
+    pragtical-bin amneziavpn-bin \
+    protonup-qt portproton librepcb jan localsend \
+    vscodium-bin session-desktop-bin \
+    lmstudio-bin xmind arduino-ide-bin dash-qt
 
 # Логи принадлежат пользователю, чтобы читать без root
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
