@@ -1,0 +1,25 @@
+# Свой desktop-файл: пакет syncthing в extra содержит только демон
+# (бинарник, systemd-юниты, man), пункта в меню приложений у него нет.
+#
+# Поведение пункта (решение 2026-10-09):
+# - демон включён как ПОЛЬЗОВАТЕЛЬСКИЙ сервис — установка ставит симлинк
+#   в default.target.wants, поэтому при входе в десктоп синхронизация
+#   запускается сама, без ручных действий;
+# - Exec без параметров: если демон уже работает — syncthing только
+#   открывает веб-панель в браузере; если не запущен — сначала запускает
+#   его и потом открывает панель (проверено на v2.1.6: при работающем
+#   демоне пишет «Seems to already be running, launching GUI instead»);
+# - иконка syncthing.svg берётся из темы Papirus (есть там);
+# - TryExec скрывает пункт, если пакет syncthing не установлен
+#   (например, в живой среде ISO).
+[Desktop Entry]
+Type=Application
+Name=Syncthing
+Comment=Синхронизация файлов: открывает панель Syncthing в браузере
+Keywords=синхронизация;sync;файлы;
+Icon=syncthing
+Exec=/usr/bin/syncthing
+TryExec=/usr/bin/syncthing
+Terminal=false
+StartupNotify=false
+Categories=Network;FileTransfer;

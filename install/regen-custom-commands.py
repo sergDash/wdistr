@@ -162,7 +162,28 @@ def main() -> None:
         deliver(FILES / "flatpak-update.service", "/etc/systemd/system/wdistr-flatpak-update.service"),
         deliver(FILES / "flatpak-update.timer", "/etc/systemd/system/wdistr-flatpak-update.timer"),
         "systemctl enable wdistr-flatpak-update.timer",
+        # syncthing: ПОЛЬЗОВАТЕЛЬСКИЙ сервис включаем заранее — при первом
+        # входе в десктоп user-менеджер поднимет синхронизацию без ручных
+        # действий. systemctl --user из chroot недоступен (user-шины ещё
+        # нет), поэтому пишем симлинк вручную — ровно то, что делает
+        # enable: цель user-юнитов по умолчанию default.target
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        "mkdir -p /home/$U/.config/systemd/user/default.target.wants && "
+        "ln -sf /usr/lib/systemd/user/syncthing.service "
+        "/home/$U/.config/systemd/user/default.target.wants/syncthing.service && "
+        "chown -R $U:$U /home/$U/.config/systemd/user",
     ]
+
+    # Свои desktop-файлы: всё из files/desktop/ доставляется в
+    # /usr/share/applications (вариант А, решение 2026-10-09). Новый файл
+    # просто кладётся в папку — правка скрипта не нужна. Имена несут
+    # префикс wdistr-: файл не принадлежит ни одному пакету, и при
+    # обновлении pacman не должен упираться в чужой файл с тем же именем.
+    for desktop in sorted((FILES / "desktop").glob("*.desktop")):
+        config["custom_commands"].append(
+            deliver(desktop, f"/usr/share/applications/{desktop.name}")
+        )
 
     CONFIG.write_text(
         json.dumps(config, indent=4, sort_keys=True, ensure_ascii=False) + "\n"
