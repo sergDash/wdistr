@@ -72,7 +72,8 @@
                         "btrfs": [],
                         "dev_path": null,
                         "flags": [
-                            "boot"
+                            "boot",
+                            "esp"
                         ],
                         "fs_type": "fat32",
                         "mount_options": [],
