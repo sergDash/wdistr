@@ -23,6 +23,10 @@ gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 gsettings set org.cinnamon.desktop.interface enable-animations false
 gsettings set org.gnome.desktop.interface enable-animations false
 dconf write /org/cinnamon/desktop/effects/enable-animations false
+# Галочка «Эффекты» в настройках Cinnamon — это отдельный ключ
+# корневой схемы org.cinnamon (находка 2026-10-09: GTK-ключ enable-
+# animations на неё не влияет, она жива даже при GTK-выключении)
+gsettings set org.cinnamon desktop-effects-workspace false
 
 # Шрифты Ubuntu (пакет ttf-ubuntu-font-family): интерфейс, документы,
 # моноширинный, заголовок окна, рабочий стол (nemo)
