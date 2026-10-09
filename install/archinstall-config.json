@@ -98,7 +98,16 @@
                         "type": "primary"
                     },
                     {
-                        "btrfs": [],
+                        "btrfs": [
+                            {
+                                "mountpoint": "/",
+                                "name": "@"
+                            },
+                            {
+                                "mountpoint": "/home",
+                                "name": "@home"
+                            }
+                        ],
                         "dev_path": null,
                         "flags": [],
                         "fs_type": "btrfs",
