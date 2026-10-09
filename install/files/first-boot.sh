@@ -41,7 +41,8 @@ run pacman -Syu --noconfirm
 #    процессы юнита после его завершения. Версия зафиксирована в скрипте;
 #    обновление вручную: opencode.fish <версия>
 OC_LOG="$LOGDIR/opencode-build.log"
-nohup fish "$USER_HOME/bin/opencode.fish" > "$OC_LOG" 2>&1 &
+nohup sudo -u "$USER_NAME" env HOME="$USER_HOME" \
+    fish "$USER_HOME/bin/opencode.fish" > "$OC_LOG" 2>&1 &
 OC_PID=$!
 echo "+ opencode.fish в фоне (pid $OC_PID), лог: $OC_LOG" >>"$LOG"
 
