@@ -3,9 +3,6 @@
     "users": [
         {
             "!password": "123",
-            "groups": [
-                "docker"
-            ],
             "sudo": true,
             "username": "user"
         }

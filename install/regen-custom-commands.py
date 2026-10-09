@@ -166,13 +166,23 @@ def main() -> None:
         # входе в десктоп user-менеджер поднимет синхронизацию без ручных
         # действий. systemctl --user из chroot недоступен (user-шины ещё
         # нет), поэтому пишем симлинк вручную — ровно то, что делает
-        # enable: цель user-юнитов по умолчанию default.target
+        # enable: цель user-юнитов по умолчанию default.target.
+        # chown — на весь .config: mkdir -p создаёт его от root, и без
+        # полного chown dconf/Cinnamon падают на своей папке
+        # (случай 2026-10-09: сломанный первый вход в Cinnamon)
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
         "mkdir -p /home/$U/.config/systemd/user/default.target.wants && "
         "ln -sf /usr/lib/systemd/user/syncthing.service "
         "/home/$U/.config/systemd/user/default.target.wants/syncthing.service && "
-        "chown -R $U:$U /home/$U/.config/systemd/user",
+        "chown -R $U:$U /home/$U/.config",
+        # docker: пользователь в группе docker — доступ к демону без sudo.
+        # Поле groups в archinstall-creds.json группа НЕ назначает (проверено
+        # установкой 2026-10-09: в /etc/group состав пуст) — назначаем сами,
+        # как и shell у пользователя
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        "usermod -aG docker \"$U\"",
         # opencode собственной сборки: скрипт и патчи — в ~/bin первого
         # пользователя (паттерн с хоста разработки). Первая сборка и
         # обновления — запуск opencode.fish от пользователя (first-boot),
