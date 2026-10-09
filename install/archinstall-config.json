@@ -230,7 +230,8 @@
         "cinnamon-translations",
         "docker",
         "ttf-ubuntu-font-family",
-        "teamspeak3"
+        "teamspeak3",
+        "node-gyp"
     ],
     "pacman_config": {
         "color": true,
