@@ -110,8 +110,20 @@ EOF
 
 log "== перенос настроек: начало =="
 
+# Thunderbird на хосте работает как flatpak (решение 2026-10-09): актуальный
+# профиль лежит в контейнере ~/.var/app/org.mozilla.thunderbird/.thunderbird
+# (бэкап ~/.var копирует полностью). Родной ~/.thunderbird — остаток старой
+# ESR-установки от 2025 года, брать его нельзя; он остаётся фолбэком на
+# случай, если flatpak-профиля в бэкапе нет.
+TB_SRC="$SRC/.var/app/org.mozilla.thunderbird/.thunderbird"
+if [ ! -f "$TB_SRC/profiles.ini" ]; then
+    TB_SRC="$SRC/.thunderbird"
+fi
+
+FF_SRC="$SRC/.mozilla/firefox"
+
 # Диск подключён, если в корне бэкапа нашёлся хотя бы один каталог профиля
-if [ ! -f "$SRC/.mozilla/firefox/profiles.ini" ] && [ ! -f "$SRC/.thunderbird/profiles.ini" ]; then
+if [ ! -f "$FF_SRC/profiles.ini" ] && [ ! -f "$TB_SRC/profiles.ini" ]; then
     log "ОШИБКА: в $SRC нет ни firefox, ни thunderbird — диск подключён? путь к бэкапу верный?"
     exit 1
 fi
@@ -121,8 +133,8 @@ log "источник: $SRC"
 # --- разложение по программам ---
 
 FAIL=0
-install_profile firefox   "$SRC/.mozilla/firefox" "$HOME/.mozilla/firefox"     || FAIL=1
-install_profile thunderbird "$SRC/.thunderbird"   "$HOME/.thunderbird"         || FAIL=1
+install_profile firefox   "$FF_SRC"  "$HOME/.mozilla/firefox"  || FAIL=1
+install_profile thunderbird "$TB_SRC" "$HOME/.thunderbird"     || FAIL=1
 
 if [ "$FAIL" -ne 0 ]; then
     log "== перенос настроек: завершён с ошибками =="
