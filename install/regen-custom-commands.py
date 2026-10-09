@@ -189,6 +189,18 @@ def main() -> None:
         # даёт лезть в ручные настройки пользователя (решение 2026-10-09)
         deliver(FILES / "cinnamon-defaults.sh", "/usr/local/bin/wdistr-cinnamon-defaults", "755"),
         deliver(FILES / "wdistr-cinnamon-defaults.desktop", "/etc/xdg/autostart/wdistr-cinnamon-defaults.desktop"),
+        # Тема дистрибутива (Mint-Y-Dark-Aqua-10, правленная: острые
+        # контрастные рамки) — tar раскрывается в /usr/share/themes
+        deliver(FILES / "mint-y-dark-aqua-10.tar", "/var/tmp/wdistr-theme.tar", compress=True),
+        "tar -xf /var/tmp/wdistr-theme.tar -C /usr/share/themes "
+        "&& rm -f /var/tmp/wdistr-theme.tar",
+        # Сетевые правила пользователя (enp6s0, шлюз 192.168.0.1 —
+        # железо хоста разработки): юниты системные, включение после
+        # доставки; на машине с другим интерфейсом юнит упадёт по
+        # таймауту ожидания сети — безвредно, включается только здесь
+        deliver(FILES / "port-routing.service", "/etc/systemd/system/port-routing.service"),
+        deliver(FILES / "ip-routing.service", "/etc/systemd/system/ip-routing.service"),
+        "systemctl enable port-routing.service ip-routing.service",
         # opencode собственной сборки: скрипт и патчи — в ~/bin первого
         # пользователя (паттерн с хоста разработки). Первая сборка и
         # обновления — запуск opencode.fish от пользователя (first-boot),

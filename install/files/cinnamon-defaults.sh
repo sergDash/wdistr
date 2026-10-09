@@ -14,8 +14,8 @@ mkdir -p "$HOME/.config/wdistr"
 
 # Тёмная тема: GTK и libadwaita (системный dconf-дефолт держит
 # color-scheme, но cinnamon мог перебить и это)
-gsettings set org.cinnamon.desktop.interface gtk-theme 'Adwaita-dark'
-gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+gsettings set org.cinnamon.desktop.interface gtk-theme 'Mint-Y-Dark-Aqua-10'
+gsettings set org.gnome.desktop.interface gtk-theme 'Mint-Y-Dark-Aqua-10'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 
 # Без анимаций: GTK-ключ и effects-путь dconf (модуль «Эффекты»

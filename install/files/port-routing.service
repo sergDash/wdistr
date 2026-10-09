@@ -1,0 +1,51 @@
+[Unit]
+Description=Apply port routing rules
+After=network-online.target
+Wants=network-online.target
+#BindsTo=sys-subsystem-net-devices-enp6s0.device
+#After=sys-subsystem-net-devices-enp6s0.device
+
+[Service]
+Type=oneshot
+Environment="INTERFACE=enp6s0"
+Environment="GW=192.168.0.1"
+ExecStartPre=/bin/bash -c 'ip rule show | grep -w port | while read prio from all rest; do ip rule del $rest; done; true'
+ExecStartPre=/bin/bash -c 'grep -q "port" /etc/iproute2/rt_tables || echo "100 port" >> /etc/iproute2/rt_tables'
+ExecStartPre=/bin/bash -c 'while ! ip addr show dev ${INTERFACE} | grep -q "inet "; do sleep 1; done; sleep 1'
+
+ExecStart=/sbin/ip route replace default via ${GW} dev ${INTERFACE} table port
+ExecStart=/sbin/ip rule add sport 80 table port
+ExecStart=/sbin/ip rule add sport 443 table port
+ExecStart=/sbin/ip rule add sport 25 table port
+ExecStart=/sbin/ip rule add sport 587 table port
+ExecStart=/sbin/ip rule add sport 993 table port
+ExecStart=/sbin/ip rule add sport 143 table port
+ExecStart=/sbin/ip rule add sport 9987 table port
+ExecStart=/sbin/ip rule add sport 25565 table port
+ExecStart=/sbin/ip rule add sport 37860 table port
+ExecStart=/sbin/ip rule add sport 28015 table port
+ExecStart=/sbin/ip rule add sport 16261 table port
+ExecStart=/sbin/ip rule add sport 16262 table port
+ExecStart=/sbin/ip rule add sport 16263 table port
+ExecStart=/sbin/ip rule add sport 16264 table port
+
+ExecStop=/sbin/ip rule del sport 80 table port
+ExecStop=/sbin/ip rule del sport 443 table port
+ExecStop=/sbin/ip rule del sport 25 table port
+ExecStop=/sbin/ip rule del sport 587 table port
+ExecStop=/sbin/ip rule del sport 993 table port
+ExecStop=/sbin/ip rule del sport 143 table port
+ExecStop=/sbin/ip rule del sport 9987 table port
+ExecStop=/sbin/ip rule del sport 25565 table port
+ExecStop=/sbin/ip rule del sport 37860 table port
+ExecStop=/sbin/ip rule del sport 28015 table port
+ExecStop=/sbin/ip rule del sport 16261 table port
+ExecStop=/sbin/ip rule del sport 16262 table port
+ExecStop=/sbin/ip rule del sport 16263 table port
+ExecStop=/sbin/ip rule del sport 16264 table port
+ExecStop=/sbin/ip route del default via ${GW} dev ${INTERFACE} table port
+
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
