@@ -28,6 +28,11 @@ git switch -f dev; or fail
 git reset --hard origin/dev; or fail
 
 git switch --detach v$VER; or fail
+# pkg.pr.new мёртв (NXDOMAIN) — заменяем URL @solidjs/start на npm-версию,
+# иначе bun install падает; зависимость нужна packages/enterprise (веб),
+# CLI от неё не зависит, нам важно лишь пройти установку (опыт 2026-10-10)
+sed -i 's|https://pkg.pr.new/@solidjs/start@dfb2020|2.0.5|' package.json; or fail
+rm -f bun.lock; or fail  # сломанный lock мешает — bun решит зависимости заново
 bun install; or fail
 
 git apply ~/bin/opencode-1.patch; or fail
