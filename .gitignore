@@ -10,3 +10,7 @@ out/
 work/
 # Временный тарбол для передачи профиля в сборочную VM
 iso-profile.tgz
+
+# Бинарник opencode для ISO (170 МБ, в git не версионируется):
+# кладётся перед сборкой ISO, см. Cards/Сборка ISO archiso
+iso/airootfs/usr/local/bin/opencode-*
