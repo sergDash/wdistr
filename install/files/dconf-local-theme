@@ -6,3 +6,10 @@
 [org/gnome/desktop/interface]
 gtk-theme='Adwaita-dark'
 color-scheme='prefer-dark'
+
+# Портал xapp (Cinnamon/Linux Mint): Electron-приложения (Signal и др.)
+# читают цветовую схему через org.freedesktop.portal.Settings, а xapp-бэкенд
+# возвращает значение из org.x.apps.portal — без него portal отдаёт
+# «без предпочтения» и Electron-программы остаются светлыми (опыт 2026-10-10)
+[org/x/apps/portal]
+color-scheme='prefer-dark'
