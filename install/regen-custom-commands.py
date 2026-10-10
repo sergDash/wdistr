@@ -100,6 +100,15 @@ def main() -> None:
         deliver(FILES / "dconf-profile-user", "/etc/dconf/profile/user"),
         deliver(FILES / "dconf-local-theme", "/etc/dconf/db/local.d/00-wdistr-theme"),
         "dconf update",
+        # Тёмная тема для Mozilla-приложений (Firefox, Thunderbird): у них
+        # своя система тем, GTK/dconf они не читают — «системная» тема
+        # следует за pref'ом ui.systemUsesDarkTheme. Дефолтный pref в
+        # defaults/pref/, перекрывается about:config; pacman не трогает
+        # при обновлениях (файл не в манифесте пакета)
+        deliver(FILES / "mozilla-dark-theme.js",
+                "/usr/lib/firefox/defaults/pref/wdistr-dark-theme.js"),
+        deliver(FILES / "mozilla-dark-theme.js",
+                "/usr/lib/thunderbird/defaults/pref/wdistr-dark-theme.js"),
         # fish — оболочка по умолчанию: root и первый обычный пользователь
         # (uid 1000+ определяется динамически — имя из setup не захардкожено)
         "usermod -s /usr/bin/fish root && "
