@@ -69,13 +69,17 @@ echo '%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman' > /etc/sudoers.d/wheel-pacman
 chmod 440 /etc/sudoers.d/wheel-pacman
 
 # 5. AUR: helper yay — сборка от ПОЛЬЗОВАТЕЛЯ (makepkg от root запрещён),
-#    установка через sudo pacman (NOPASSWD из шага 4)
-TMP="$(mktemp -d)"
-run git clone https://aur.archlinux.org/yay.git "$TMP/yay"
-chown -R "$USER_NAME" "$TMP"
-run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
-    sh -c "cd '$TMP/yay' && makepkg -si --noconfirm"
-rm -rf "$TMP"
+#    установка через sudo pacman (NOPASSWD из шага 4). Проверка перед
+#    сборкой: повторный запуск (перезагрузка, restart) не должен заново
+#    клонировать и собирать yay — идемпотентность без лишней работы
+if ! command -v yay >/dev/null 2>&1; then
+    TMP="$(mktemp -d)"
+    run git clone https://aur.archlinux.org/yay.git "$TMP/yay"
+    chown -R "$USER_NAME" "$TMP"
+    run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
+        sh -c "cd '$TMP/yay' && makepkg -si --noconfirm"
+    rm -rf "$TMP"
+fi
 
 # 6. AUR: разрешённый список пакетов (Cards/Базовый набор программ).
 #    -bin-варианты предпочтительнее сборок из исходников (готовый бинарь
