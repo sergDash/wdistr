@@ -63,6 +63,13 @@ for app in $FLATPAK_APPS; do
     run flatpak install --noninteractive -y flathub "$app"
 done
 
+# Сессия Cinnamon могла стартовать раньше установки flatpak (первый запуск
+# идёт параллельно с входом пользователя) — дёрнуть перечитывание списка
+# приложений, иначе новые программы не появятся в меню до перезапуска
+# сессии (опыт 2026-10-10: whatsie ставился после старта сессии, в меню
+# не был виден). Если Cinnamon не запущен — ошибка глушится.
+sudo -u "$USER_NAME" killall -HUP cinnamon 2>/dev/null || true
+
 # 4. AUR: sudo без пароля только для pacman — иначе yay и сборка пакетов
 #    не пройдут без интерактивного ввода (первый запуск — фоновый сервис)
 echo '%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman' > /etc/sudoers.d/wheel-pacman
