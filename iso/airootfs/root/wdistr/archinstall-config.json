@@ -258,7 +258,8 @@
         "wget",
         "yt-dlp",
         "usbutils",
-        "smartmontools"
+        "smartmontools",
+        "zeal"
     ],
     "pacman_config": {
         "color": true,
