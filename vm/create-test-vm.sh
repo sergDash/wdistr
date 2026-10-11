@@ -11,8 +11,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ISO_FILE="$(ls -t "$REPO_DIR"/iso/out/wdistr-*.iso | head -1)"
 DISK_FILE="$SCRIPT_DIR/$VM_NAME.vdi"
 
-# Ресурсы — как у сборочной машины (хост: 16 ядер, ~100 ГБ RAM)
-MEMORY_MB=8192
+# Ресурсы — как у сборочной машины (хост: 16 ядер, ~100 ГБ RAM).
+# Память 16 ГБ: первому запуску (AUR-сборки) нужно ~6.8 ГБ пиком,
+# с 8 ГБ OOM killer убивает first-boot (случай 2026-10-09, см.
+# Cards/Сборка ISO archiso)
+MEMORY_MB=16384
 CPUS=4
 DISK_MB=65536
 
