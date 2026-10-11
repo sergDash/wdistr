@@ -256,7 +256,9 @@
         "deltachat-desktop",
         "gnome-calculator",
         "wget",
-        "yt-dlp"
+        "yt-dlp",
+        "usbutils",
+        "smartmontools"
     ],
     "pacman_config": {
         "color": true,
