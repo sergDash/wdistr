@@ -244,7 +244,15 @@
         "node-gyp",
         "xfce4-terminal",
         "7zip",
-        "udftools"
+        "udftools",
+        "solaar",
+        "gnome-disk-utility",
+        "thunderbird",
+        "signal-desktop",
+        "deltachat-desktop",
+        "gnome-calculator",
+        "wget",
+        "yt-dlp"
     ],
     "pacman_config": {
         "color": true,
