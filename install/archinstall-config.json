@@ -259,7 +259,15 @@
         "yt-dlp",
         "usbutils",
         "smartmontools",
-        "zeal"
+        "zeal",
+        "godot",
+        "keepassxc",
+        "obsidian",
+        "okular",
+        "qt6-multimedia-ffmpeg",
+        "copyq",
+        "qbittorrent",
+        "pasystray"
     ],
     "pacman_config": {
         "color": true,
