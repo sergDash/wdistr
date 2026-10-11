@@ -1,0 +1,13 @@
+[Unit]
+Description=wdistr: проверка расписания Timeshift (снапшот по правилам)
+# Последний в очереди обновлений: снимок фиксирует уже обновлённое
+# состояние, а не распаковку посреди процесса. Сеть не нужна —
+# резервная копия на локальном диске (timeshift.json: backup_device_uuid).
+# cronie НЕ включать: ежечасная проверка живёт здесь, а cron-запуск из
+# /etc/cron.d/timeshift-hourly (создаётся самим Timeshift при сохранении
+# настроек) обошёл бы flock и вернул бы коллизию (опыт 2026-10-11).
+After=wdistr-sys-update.service wdistr-aur-update.service wdistr-flatpak-update.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/flock /run/wdistr.lock /usr/local/bin/wdistr-timeshift-check

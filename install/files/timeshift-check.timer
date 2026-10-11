@@ -1,0 +1,9 @@
+[Unit]
+Description=wdistr: ежечасная проверка расписания Timeshift
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

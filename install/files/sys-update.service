@@ -5,4 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/wdistr-sys-update
+# flock вокруг скрипта: /run/wdistr.lock — общая очередь всех
+# автообновлений и проверки Timeshift. Блокировка держится, пока скрипт
+# выполняется, — конкурирующий запуск встаёт в очередь, а не падает.
+# Опыт 2026-10-11: без неё таймеры после пропущенного окна (Persistent)
+# стартовали одновременно и дрались о /var/lib/pacman/db.lck, а
+# почасовая проверка Timeshift могла снять снапшот посреди распаковки.
+ExecStart=/usr/bin/flock /run/wdistr.lock /usr/local/bin/wdistr-sys-update

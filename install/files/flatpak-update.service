@@ -1,8 +1,10 @@
 [Unit]
 Description=wdistr: автообновление flatpak-программ
-After=network-online.target
+# Цепочка After= задаёт порядок очереди при одновременном старте:
+# система → AUR → flatpak (фактическая блокировка — flock в ExecStart).
+After=network-online.target wdistr-sys-update.service wdistr-aur-update.service
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/wdistr-flatpak-update
+ExecStart=/usr/bin/flock /run/wdistr.lock /usr/local/bin/wdistr-flatpak-update

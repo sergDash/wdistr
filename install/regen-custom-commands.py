@@ -171,6 +171,16 @@ def main() -> None:
         deliver(FILES / "flatpak-update.service", "/etc/systemd/system/wdistr-flatpak-update.service"),
         deliver(FILES / "flatpak-update.timer", "/etc/systemd/system/wdistr-flatpak-update.timer"),
         "systemctl enable wdistr-flatpak-update.timer",
+        # Проверка расписания Timeshift тем же замком (решение 2026-10-11):
+        # ежечасный --check идёт в общей flock-очереди с автообновлениями,
+        # снапшот не попадает в середину распаковки. cronie остаётся
+        # выключенным — его cron-запуск обошёл бы блокировку; файл
+        # /etc/cron.d/timeshift-hourly не трогаем (Timeshift пересоздаёт
+        # его при сохранении настроек, он инертен)
+        deliver(FILES / "timeshift-check.sh", "/usr/local/bin/wdistr-timeshift-check", "755"),
+        deliver(FILES / "timeshift-check.service", "/etc/systemd/system/wdistr-timeshift-check.service"),
+        deliver(FILES / "timeshift-check.timer", "/etc/systemd/system/wdistr-timeshift-check.timer"),
+        "systemctl enable wdistr-timeshift-check.timer",
         # syncthing: ПОЛЬЗОВАТЕЛЬСКИЙ сервис включаем заранее — при первом
         # входе в десктоп user-менеджер поднимет синхронизацию без ручных
         # действий. systemctl --user из chroot недоступен (user-шины ещё

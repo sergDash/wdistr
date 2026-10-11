@@ -1,8 +1,11 @@
 [Unit]
 Description=wdistr: автообновление AUR-пакетов (yay -Sua)
-After=network-online.target
+# Сначала sys-update: yay оценивает AUR уже после обновления системы.
+# After= действует только при одновременной постановке в очередь
+# (оба таймера срабатывают в одну секунду); реальный мьютекс — flock.
+After=network-online.target wdistr-sys-update.service
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/wdistr-aur-update
+ExecStart=/usr/bin/flock /run/wdistr.lock /usr/local/bin/wdistr-aur-update
