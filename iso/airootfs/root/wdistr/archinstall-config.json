@@ -242,7 +242,9 @@
         "ttf-ubuntu-font-family",
         "teamspeak3",
         "node-gyp",
-        "xfce4-terminal"
+        "xfce4-terminal",
+        "7zip",
+        "udftools"
     ],
     "pacman_config": {
         "color": true,
