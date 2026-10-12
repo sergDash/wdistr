@@ -267,7 +267,10 @@
         "qt6-multimedia-ffmpeg",
         "copyq",
         "qbittorrent",
-        "pasystray"
+        "pasystray",
+        "archiso",
+        "qemu-img",
+        "linux-headers"
     ],
     "pacman_config": {
         "color": true,
