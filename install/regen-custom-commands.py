@@ -48,23 +48,6 @@ def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: boo
     return cmd
 
 
-def deliver_pubkey() -> str:
-    """Команда доставки публичного ключа агента в authorized_keys.
-
-    Домашний каталог и владелец определяются по первому обычному
-    пользователю (uid 1000–65534) — имя из setup не захардкожено."""
-    pub = (pathlib.Path.home() / ".ssh" / "wdistr_build_vm.pub").read_text().strip()
-    b64 = base64.b64encode(pub.encode()).decode()
-    return (
-        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
-        "test -n \"$U\" && "
-        "mkdir -p /home/$U/.ssh && "
-        f"echo '{b64}' | base64 -d > /home/$U/.ssh/authorized_keys && "
-        "chmod 700 /home/$U/.ssh && chmod 600 /home/$U/.ssh/authorized_keys && "
-        "chown -R $U:$U /home/$U/.ssh"
-    )
-
-
 def main() -> None:
     config = json.loads(CONFIG.read_text())
 
@@ -126,9 +109,10 @@ def main() -> None:
         # глюк VirtualBox отрисовки курсора лечится протяжкой окна —
         # особенность зафиксирована в README и handbook («Проблема - Нет
         # курсора в XFCE»), автозапуск fix-session-gfx больше не ставим
-        # SSH-ключ агента в authorized_keys — доступ по ключу сразу после
-        # каждой установки, без ручного копирования
-        deliver_pubkey(),
+        # SSH-ключ агента в authorized_keys больше НЕ доставляется
+        # (решение 2026-10-12): вход агента в тестовую систему — sshpass
+        # с паролем из setup; встроенный ключ был лишней скрытой связью
+        # и лишним base64 в конфиге
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
