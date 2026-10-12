@@ -15,6 +15,11 @@ iso-profile.tgz
 # кладётся перед сборкой ISO, см. Cards/Сборка ISO archiso
 iso/airootfs/usr/local/bin/opencode-*
 
+# Шрифты Windows для ISO (342 МиБ, в git не версионируются):
+# копируются из install/files/winfonts перед сборкой, см.
+# Cards/Шрифты - Windows-шрифты.md
+iso/airootfs/usr/share/fonts/winfonts/
+
 # Образ Windows 11 для извлечения шрифтов (6,2 ГиБ, в git не версионируется):
 # качается wget -c в корень, см. Cards/Шрифты - Windows-шрифты.md
 win11-eval.iso
