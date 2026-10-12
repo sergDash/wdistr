@@ -18,3 +18,10 @@ iso/airootfs/usr/local/bin/opencode-*
 # Образ Windows 11 для извлечения шрифтов (6,2 ГиБ, в git не версионируется):
 # качается wget -c в корень, см. Cards/Шрифты - Windows-шрифты.md
 win11-eval.iso
+
+# Извлечённые из него Windows-шрифты (342 МиБ, механизм доставки в ISO
+# ещё не выбран), см. Cards/Шрифты - Windows-шрифты.md
+install/files/winfonts/
+
+# Локальные настройки редактора (файл расширения закладок VS Code)
+.vscode/
