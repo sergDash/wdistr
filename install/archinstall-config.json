@@ -270,7 +270,10 @@
         "pasystray",
         "archiso",
         "qemu-img",
-        "linux-headers"
+        "linux-headers",
+        "less",
+        "sshfs",
+        "sshpass"
     ],
     "pacman_config": {
         "color": true,
