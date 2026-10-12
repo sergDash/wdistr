@@ -196,8 +196,23 @@ if ! cp -a /usr/share/kbd/consolefonts/ter-u16n.psf.gz /mnt/usr/share/kbd/consol
     FAIL=$((FAIL + 1))
 fi
 
+# Курсоры, тема дистрибутива и карты раскладок keyd — бывшие большие
+# base64-доставки (переезд 2026-10-12): каталоги копируются целиком
+mkdir -p /mnt/usr/share/icons /mnt/usr/share/themes
+for d in /usr/share/icons/McMojave-cursors /usr/share/themes/Mint-Y-Dark-Aqua-10; do
+    if ! cp -a "$d" "/mnt${d}"; then
+        echo "ОШИБКА доставки: $d" >&2
+        FAIL=$((FAIL + 1))
+    fi
+done
+mkdir -p /mnt/usr/local/share/keyd
+if ! cp -a /usr/local/share/keyd/us.txt /usr/local/share/keyd/ru.txt /mnt/usr/local/share/keyd/; then
+    echo "ОШИБКА доставки: карты раскладок keyd (us.txt, ru.txt)" >&2
+    FAIL=$((FAIL + 1))
+fi
+
 if [ "$FAIL" -eq 0 ]; then
-    echo "Доставка из живой среды готова: opencode (/usr/local/bin), шрифты Windows (usr/share/fonts/winfonts), консоль (vconsole.conf + ter-u16n)."
+    echo "Доставка из живой среды готова: opencode, шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n)."
 else
     echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
 fi

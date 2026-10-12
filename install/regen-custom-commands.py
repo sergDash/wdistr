@@ -119,21 +119,16 @@ def main() -> None:
         # системный дефолт GTK3: тёмная тема и Papirus для всех, включая
         # root (решение 2026-09-30; см. чек-лист «Комфортный рабочий стол»)
         deliver(FILES / "gtk3-settings.ini", "/etc/gtk-3.0/settings.ini"),
-        # курсор McMojave: tar (3.2 МБ, gzip+base64) раскрывается в
-        # /usr/share/icons/McMojave-cursors; затем два способа назначения —
-        # системный default/index.theme (для не-GTK) и глобальный дефолт
-        # сессии xfce (xfsettingsd главнее GTK) — решение 2026-10-08
-        deliver(FILES / "mcMojave-cursors.tar", "/var/tmp/mcMojave-cursors.tar", compress=True),
-        "tar -xf /var/tmp/mcMojave-cursors.tar -C /usr/share/icons "
-        "&& rm -f /var/tmp/mcMojave-cursors.tar",
+        # Курсоры McMojave, тема дистрибутива и карты раскладок keyd с
+        # 2026-10-12 доставляются копированием из живой среды (шаг setup
+        # после archinstall) — раньше шли gzip+base64 в JSON, для 3.4 МБ
+        # курсоров это было непропорционально. Мелкие конфиги ниже
+        # остаются base64.
         deliver(FILES / "cursor-default-index.theme", "/usr/share/icons/default/index.theme"),
         deliver(
             FILES / "xfce-xsettings.xml",
             "/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml",
         ),
-        # предсобранные консольные карты раскладок (ckbcomp, ~21 мс на смену)
-        deliver(FILES / "keymaps/us.txt", "/usr/local/share/keyd/us.txt", compress=True),
-        deliver(FILES / "keymaps/ru.txt", "/usr/local/share/keyd/ru.txt", compress=True),
         # автоинициализация первого запуска: скрипт и systemd-юнит
         deliver(FILES / "first-boot.sh", "/usr/local/bin/wdistr-first-boot", "755"),
         deliver(FILES / "first-boot.service", "/etc/systemd/system/wdistr-first-boot.service"),
@@ -192,11 +187,6 @@ def main() -> None:
         # даёт лезть в ручные настройки пользователя (решение 2026-10-09)
         deliver(FILES / "cinnamon-defaults.sh", "/usr/local/bin/wdistr-cinnamon-defaults", "755"),
         deliver(FILES / "wdistr-cinnamon-defaults.desktop", "/etc/xdg/autostart/wdistr-cinnamon-defaults.desktop"),
-        # Тема дистрибутива (Mint-Y-Dark-Aqua-10, правленная: острые
-        # контрастные рамки) — tar раскрывается в /usr/share/themes
-        deliver(FILES / "mint-y-dark-aqua-10.tar", "/var/tmp/wdistr-theme.tar", compress=True),
-        "tar -xf /var/tmp/wdistr-theme.tar -C /usr/share/themes "
-        "&& rm -f /var/tmp/wdistr-theme.tar",
         # Сетевые правила пользователя (enp6s0, шлюз 192.168.0.1 —
         # железо хоста разработки): юниты системные, включение после
         # доставки; на машине с другим интерфейсом юнит упадёт по
