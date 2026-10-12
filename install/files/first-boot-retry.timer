@@ -1,0 +1,18 @@
+[Unit]
+Description=wdistr: повтор инициализации через час после падения
+# Маркер успеха уже стоит — таймер не нужен и не активируется вообще
+# (экономит и просыпания, и записи «condition failed» в журнал)
+ConditionPathExists=!/var/lib/wdistr/first-boot-done
+
+[Timer]
+# Отсчёт от деактивации юнита, а не от его старта: упал (сеть не готова,
+# зеркало молчало) — повтор ровно через час; успех — wdistr-first-boot
+# остаётся active (RemainAfterExit=yes), деактивации нет, будильник
+# не срабатывает. Опыт 2026-10-12: первый запуск в тестовой VM падал
+# из-за DNS, не готового к 13:44, — без такого повтора маркер
+# first-boot-done не вставал бы до ручного вмешательства.
+OnUnitInactiveSec=1h
+Unit=wdistr-first-boot.service
+
+[Install]
+WantedBy=timers.target

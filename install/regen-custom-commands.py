@@ -134,6 +134,12 @@ def main() -> None:
         deliver(FILES / "first-boot.service", "/etc/systemd/system/wdistr-first-boot.service"),
         # включение юнита ТОЛЬКО после его доставки (services[] выполняется раньше)
         "systemctl enable wdistr-first-boot.service",
+        # повтор после падения: пока маркер first-boot-done не стоит,
+        # таймер будит упавший юнит через час (сеть/зеркала при первом
+        # запуске могут быть не готовы — опыт 2026-10-12). После успеха
+        # условие таймера гасит его самого
+        deliver(FILES / "first-boot-retry.timer", "/etc/systemd/system/wdistr-first-boot-retry.timer"),
+        "systemctl enable wdistr-first-boot-retry.timer",
         # автообновление AUR: скрипт + юнит + еженедельный таймер
         # (обновляется только AUR через yay -Sua — система «на самотек»)
         deliver(FILES / "aur-update.sh", "/usr/local/bin/wdistr-aur-update", "755"),
