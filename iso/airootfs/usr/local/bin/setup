@@ -182,8 +182,22 @@ if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/ 2>/dev/null; then
     fi
 fi
 
+# Консоль с кириллицей (опыт 2026-10-12): конфиг vconsole и шрифт
+# ter-u16n из состава лайва. Без них в целевой после тапа Shift русские
+# буквы печатаются квадратиками — airootfs в целевую не копируется,
+# а terminus-font в её составе нет
+if ! cp -a /etc/vconsole.conf /mnt/etc/vconsole.conf; then
+    echo "ОШИБКА доставки: /etc/vconsole.conf" >&2
+    FAIL=$((FAIL + 1))
+fi
+mkdir -p /mnt/usr/share/kbd/consolefonts
+if ! cp -a /usr/share/kbd/consolefonts/ter-u16n.psf.gz /mnt/usr/share/kbd/consolefonts/; then
+    echo "ОШИБКА доставки: /usr/share/kbd/consolefonts/ter-u16n.psf.gz" >&2
+    FAIL=$((FAIL + 1))
+fi
+
 if [ "$FAIL" -eq 0 ]; then
-    echo "Доставка из живой среды готова: opencode (/usr/local/bin), шрифты Windows (usr/share/fonts/winfonts)."
+    echo "Доставка из живой среды готова: opencode (/usr/local/bin), шрифты Windows (usr/share/fonts/winfonts), консоль (vconsole.conf + ter-u16n)."
 else
     echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
 fi
