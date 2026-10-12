@@ -11,6 +11,9 @@
 # размер диска (в исходном конфиге разделы привязаны к 64-ГБ диску тестовой
 # VM). После установки система привязана по UUID (fstab и GRUB) — смена
 # имени или места диска её не убьёт.
+# После archinstall из живой среды в целевую копируются файлы, которые не
+# влезают и не должны жить в base64 custom_commands: бинарник opencode и
+# шрифты Windows (решение 2026-10-12).
 # Список дисков: команда `disks` либо просто `setup` без аргументов — тогда
 # печатается эта же справка и под ней список дисков.
 
@@ -133,8 +136,59 @@ PYEOF
 # запишутся ВСЕ зеркала региона Russia (случай 2026-10-08: archlinux.gay
 # из глобального списка сорвал pacstrap). Побочно отключает проверку сети
 # и pacman -Sy на старте — сеть уже проверена пробами зеркал выше.
-exec archinstall \
+archinstall \
     --config "$CONFIG" \
     --creds "$CREDS" \
     --silent \
     --offline
+ARCH_RC=$?
+
+# Доставка файлов из живой среды в целевую (решение 2026-10-12).
+# Проверяем не код archinstall, а сам результат: смонтируется ли
+# btrfs-раздел с установленной системой — это покрывает и успешный
+# установщик с любым кодом, и честный отказ при упавшей установке.
+BOOT_PART=$(lsblk -lnpo NAME,FSTYPE "$3" | awk '$2=="vfat"{print $1; exit}')
+ROOT_PART=$(lsblk -lnpo NAME,FSTYPE "$3" | awk '$2=="btrfs"{print $1; exit}')
+if [ -z "$ROOT_PART" ] || [ -z "$BOOT_PART" ]; then
+    echo "ОШИБКА: после archinstall (код $ARCH_RC) на $3 нет vfat+btrfs разделов." >&2
+    echo "Доставка файлов отменена, целевая система не тронута." >&2
+    exit 1
+fi
+
+umount -R /mnt 2>/dev/null
+mount -o subvol=/@ "$ROOT_PART" /mnt || {
+    echo "ОШИБКА: корень целевой (/@) не смонтировался — доставка отменена." >&2
+    exit 1
+}
+mount "$BOOT_PART" /mnt/boot
+mount -o subvol=/@home "$ROOT_PART" /mnt/home
+
+# Счётчик сбоев доставки: суммируем и печатаем в конце, чтобы частичная
+# доставка не осталась незамеченной (тихая поломка хуже громкой)
+FAIL=0
+for f in /usr/local/bin/opencode /usr/local/bin/opencode-*; do
+    [ -e "$f" ] || continue
+    mkdir -p /mnt/usr/local/bin
+    if ! cp -a "$f" /mnt/usr/local/bin/; then
+        echo "ОШИБКА доставки: $f -> /mnt/usr/local/bin/" >&2
+        FAIL=$((FAIL + 1))
+    fi
+done
+if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/ 2>/dev/null; then
+    mkdir -p /mnt/usr/share/fonts
+    if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/; then
+        echo "ОШИБКА доставки: /usr/share/fonts/winfonts -> /mnt/usr/share/fonts/" >&2
+        FAIL=$((FAIL + 1))
+    fi
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+    echo "Доставка из живой среды готова: opencode (/usr/local/bin), шрифты Windows (usr/share/fonts/winfonts)."
+else
+    echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
+fi
+
+umount /mnt/home /mnt/boot /mnt
+echo
+echo "Установка завершена (код archinstall: $ARCH_RC). Перезагрузитесь"
+echo "и уберите установочный носитель. Вход: $1 / ваш пароль."
