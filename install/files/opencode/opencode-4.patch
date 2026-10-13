@@ -1,0 +1,397 @@
+From daf0898e4264894a392474660b386987dea030d0 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Tue, 13 Oct 2026 17:57:15 +0300
+Subject: [PATCH] fix(tui): hold message window while transcript is scrolled up
+
+The sync store keeps a window of the last 100 messages per session and evicts the oldest from the top on every new message. For a reader who has scrolled the history up this removes rows above the viewport, so every remaining message shifts up and the visible text jumps forward by the evicted height on each agent message. Register a reader-at-bottom gate from the session route: while the reader is away from the bottom the window only grows, and everything accumulated above it is dropped in one pass once they return to the bottom, where the drop is off-screen.
+---
+ packages/tui/src/context/sync.tsx             |  58 ++++--
+ packages/tui/src/routes/session/index.tsx     |  21 ++
+ .../cmd/tui/scroll-window-eviction.test.tsx   | 181 ++++++++++++++++++
+ .../tui/test/cli/cmd/tui/sync-fixture.tsx     |   5 +-
+ 4 files changed, 249 insertions(+), 16 deletions(-)
+ create mode 100644 packages/tui/test/cli/cmd/tui/scroll-window-eviction.test.tsx
+
+diff --git a/packages/tui/src/context/sync.tsx b/packages/tui/src/context/sync.tsx
+index 71e050d11e..cc1cda74aa 100644
+--- a/packages/tui/src/context/sync.tsx
++++ b/packages/tui/src/context/sync.tsx
+@@ -57,6 +57,11 @@ function compareMessage(a: Message, b: Message) {
+ 
+ const messageKey = (message: Message) => message.time.created + message.id
+ 
++// Window of the last MESSAGE_WINDOW messages per session: sync keeps only
++// the tail of the transcript in memory, evicting the oldest from the top as
++// new messages arrive.
++const MESSAGE_WINDOW = 100
++
+ export const {
+   context: SyncContext,
+   use: useSync,
+@@ -150,6 +155,14 @@ export const {
+     const fullSyncedSessions = new Set<string>()
+     const syncingSessions = new Map<string, Promise<void>>()
+     const hydratingSessions = new Map<string, { messages: Set<string>; parts: Set<string> }>()
++    // Evicting the oldest message removes rows from the top of the list, so
++    // every remaining message shifts up by the evicted height — for a reader
++    // who has scrolled the history up this moves the visible text. The
++    // session route therefore holds a gate "reader is at the bottom": while
++    // it returns false the window grows, and shrinks back in a single pass
++    // once the reader returns to the bottom. Without a gate (background
++    // sessions) the window shrinks as usual.
++    const evictionGates = new Map<string, () => boolean>()
+     const touchMessage = (sessionID: string, messageID: string) => {
+       hydratingSessions.get(sessionID)?.messages.add(messageID)
+     }
+@@ -319,39 +332,47 @@ export const {
+         }
+ 
+         case "message.updated": {
+-          touchMessage(event.properties.info.sessionID, event.properties.info.id)
+-          const messages = store.message[event.properties.info.sessionID]
++          const sessionID = event.properties.info.sessionID
++          touchMessage(sessionID, event.properties.info.id)
++          const messages = store.message[sessionID]
+           if (!messages) {
+-            setStore("message", event.properties.info.sessionID, [event.properties.info])
++            setStore("message", sessionID, [event.properties.info])
+             break
+           }
+           const result = search(messages, messageKey(event.properties.info), messageKey)
+           if (result.found) {
+-            setStore("message", event.properties.info.sessionID, result.index, reconcile(event.properties.info))
++            setStore("message", sessionID, result.index, reconcile(event.properties.info))
+             break
+           }
+           setStore(
+             "message",
+-            event.properties.info.sessionID,
++            sessionID,
+             produce((draft) => {
+               draft.splice(result.index, 0, event.properties.info)
+             }),
+           )
+-          const updated = store.message[event.properties.info.sessionID]
+-          if (updated.length > 100) {
+-            const oldest = updated[0]
++          const updated = store.message[sessionID]
++          const gate = evictionGates.get(sessionID)
++          // A gate returning false means the reader is away from the bottom:
++          // appending below the viewport is invisible to them, while eviction
++          // would shift the visible text by the evicted height. Once the gate
++          // allows it, everything accumulated above the window is dropped in
++          // one pass, and the reader is back at the bottom where the drop is
++          // off-screen.
++          if (updated.length > MESSAGE_WINDOW && (!gate || gate())) {
++            const evicted = updated.slice(0, updated.length - MESSAGE_WINDOW)
+             batch(() => {
+               setStore(
+                 "message",
+-                event.properties.info.sessionID,
++                sessionID,
+                 produce((draft) => {
+-                  draft.shift()
++                  draft.splice(0, evicted.length)
+                 }),
+               )
+               setStore(
+                 "part",
+                 produce((draft) => {
+-                  delete draft[oldest.id]
++                  for (const message of evicted) delete draft[message.id]
+                 }),
+               )
+             })
+@@ -600,7 +621,7 @@ export const {
+           const task = (async () => {
+             const [session, messages, todo, diff] = await Promise.all([
+               sdk.client.session.get({ sessionID }, { throwOnError: true }),
+-              sdk.client.session.messages({ sessionID, limit: 100 }),
++              sdk.client.session.messages({ sessionID, limit: MESSAGE_WINDOW }),
+               sdk.client.session.todo({ sessionID }),
+               sdk.client.session.diff({ sessionID }),
+             ])
+@@ -622,8 +643,8 @@ export const {
+                   ),
+                 )
+                 infos.sort(compareMessage)
+-                const removed = infos.slice(0, -100)
+-                const visible = infos.slice(-100)
++                const removed = infos.slice(0, -MESSAGE_WINDOW)
++                const visible = infos.slice(-MESSAGE_WINDOW)
+                 const visibleIDs = new Set(visible.map((message) => message.id))
+                 for (const message of messages.data ?? []) {
+                   if (!visibleIDs.has(message.info.id)) {
+@@ -666,6 +687,15 @@ export const {
+           return task
+         },
+       },
++      message: {
++        // Registers the "reader is at the bottom" gate for a session. While
++        // the gate returns false the message window is not shrunk, so the
++        // transcript the user is reading keeps its top rows in place.
++        setEvictionGate(sessionID: string, gate?: () => boolean) {
++          if (gate) evictionGates.set(sessionID, gate)
++          else evictionGates.delete(sessionID)
++        },
++      },
+       bootstrap,
+     }
+     return result
+diff --git a/packages/tui/src/routes/session/index.tsx b/packages/tui/src/routes/session/index.tsx
+index 2b54f21671..63b13759dc 100644
+--- a/packages/tui/src/routes/session/index.tsx
++++ b/packages/tui/src/routes/session/index.tsx
+@@ -427,6 +427,16 @@ export function Session() {
+     }, 50)
+   }
+ 
++  // Sync drops the oldest message once the window overflows, which removes
++  // rows from the top of the list and shifts the visible text by the evicted
++  // height. The gate below lets sync shrink the window only while this
++  // reader sits at the bottom of the transcript, where the dropped rows are
++  // off-screen; while the history is scrolled up the window just grows.
++  function atBottom() {
++    if (!scroll || scroll.isDestroyed) return true
++    return scroll.scrollTop >= scroll.scrollHeight - scroll.viewport.height
++  }
++
+   const local = useLocal()
+ 
+   function enterChild(sessionID: string) {
+@@ -1154,6 +1164,17 @@ export function Session() {
+   // snap to bottom when session changes
+   createEffect(on(() => route.sessionID, toBottom))
+ 
++  // hand the message-window gate to sync for the active session
++  createEffect(
++    on(
++      () => route.sessionID,
++      (sessionID) => {
++        sync.message.setEvictionGate(sessionID, atBottom)
++        onCleanup(() => sync.message.setEvictionGate(sessionID, undefined))
++      },
++    ),
++  )
++
+   return (
+     <LocationProvider location={location()}>
+       <context.Provider
+diff --git a/packages/tui/test/cli/cmd/tui/scroll-window-eviction.test.tsx b/packages/tui/test/cli/cmd/tui/scroll-window-eviction.test.tsx
+new file mode 100644
+index 0000000000..fa58fcf6a8
+--- /dev/null
++++ b/packages/tui/test/cli/cmd/tui/scroll-window-eviction.test.tsx
+@@ -0,0 +1,181 @@
++/** @jsxImportSource @opentui/solid */
++import { expect, test } from "bun:test"
++import { For } from "solid-js"
++import type { ScrollBoxRenderable } from "@opentui/core"
++import type { GlobalEvent } from "@opencode-ai/sdk/v2"
++import type { JSX } from "@opentui/solid"
++import { tmpdir } from "../../../fixture/fixture"
++import { json, mount, wait } from "./sync-fixture"
++import { useSync } from "../../../../src/context/sync"
++
++const sessionID = "ses_window"
++const session = {
++  id: sessionID,
++  title: "window",
++  time: { created: 0, updated: 0 },
++  version: "1.19.0",
++  directory: "/tmp/opencode/packages/tui",
++}
++
++// Timestamps stay 13 digits long so the string search key (`time.created +
++// id`) orders exactly like the numeric time comparison in compareMessage.
++const BASE = 1791900000000
++
++function assistant(id: string, created: number) {
++  return {
++    id,
++    sessionID,
++    role: "assistant" as const,
++    agent: "build",
++    modelID: "model",
++    providerID: "test",
++    mode: "build",
++    parentID: "msg_user",
++    path: { cwd: session.directory, root: session.directory },
++    cost: 0,
++    tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
++    time: { created, completed: created + 1 },
++  }
++}
++
++function initialMessages() {
++  return Array.from({ length: 100 }, (_, index) => ({
++    info: assistant(`msg_${String(index).padStart(3, "0")}`, BASE + index),
++    parts: [],
++  }))
++}
++
++function fetchSession(url: URL) {
++  if (url.pathname === `/session/${sessionID}`) return json(session)
++  if (url.pathname === `/session/${sessionID}/message`) return json(initialMessages())
++  if (url.pathname === `/session/${sessionID}/todo` || url.pathname === `/session/${sessionID}/diff`)
++    return json([])
++  return undefined
++}
++
++function global(payload: GlobalEvent["payload"]): GlobalEvent {
++  return { directory: "/tmp/other", project: "proj_test", payload }
++}
++
++// A fresh agent message: the list grows past the window, which is the exact
++// moment the oldest message used to be evicted from the top.
++function emitAgentMessage(emit: (event: GlobalEvent) => void, seq: number) {
++  emit(
++    global({
++      id: `evt_agent_message_${seq}`,
++      type: "message.updated",
++      properties: { sessionID, info: assistant(`msg_${900 + seq}`, BASE + 100 + seq) },
++    }),
++  )
++}
++
++// Mirrors the session view: sticky-bottom scrollbox with fixed-height
++// message rows, so content moves are visible in the captured frame.
++function Transcript(props: { onScroll: (scroll: ScrollBoxRenderable) => void }) {
++  const sync = useSync()
++  return (
++    <scrollbox ref={props.onScroll} stickyScroll={true} stickyStart="bottom" height={10} width={40}>
++      <For each={sync.data.message[sessionID] ?? []}>
++        {(message) => (
++          <box height={4}>
++            <text>{message.id}</text>
++          </box>
++        )}
++      </For>
++    </scrollbox>
++  )
++}
++
++async function openSession(state: string, children?: () => JSX.Element) {
++  await Bun.write(`${state}/kv.json`, "{}")
++  return mount(fetchSession, state, children)
++}
++
++test("the message window holds while the reader is scrolled up", async () => {
++  await using tmp = await tmpdir()
++
++  let scroll: ScrollBoxRenderable | undefined
++  const { app, emit, sync } = await openSession(tmp.path, () => (
++    <Transcript onScroll={(value) => (scroll = value)} />
++  ))
++
++  try {
++    // Same gate the session route registers for the active session.
++    const atBottom = () => {
++      if (!scroll || scroll.isDestroyed) return true
++      return scroll.scrollTop >= scroll.scrollHeight - scroll.viewport.height
++    }
++    sync.message.setEvictionGate(sessionID, atBottom)
++
++    await sync.session.sync(sessionID)
++    await wait(() => sync.data.message[sessionID]?.length === 100)
++
++    await app.renderOnce()
++    await app.renderOnce()
++
++    // The reader scrolls up by 12 rows and stays away from the bottom.
++    scroll!.scrollBy(-12)
++    await app.renderOnce()
++    const scrollTopBefore = scroll!.scrollTop
++    const frameBefore = app.captureCharFrame()
++
++    emitAgentMessage(emit, 0)
++    await wait(() => sync.data.message[sessionID]?.length === 101)
++    await app.renderOnce()
++    await app.renderOnce()
++
++    // Nothing is evicted from the top, so the visible transcript does not
++    // move: scrollTop stays and the same message rows remain on screen.
++    expect(sync.data.message[sessionID][0].id).toBe("msg_000")
++    expect(scroll!.scrollTop).toBe(scrollTopBefore)
++    expect(app.captureCharFrame()).toBe(frameBefore)
++  } finally {
++    app.renderer.destroy()
++  }
++})
++
++test("the window shrinks back in one pass once the reader is at the bottom", async () => {
++  await using tmp = await tmpdir()
++
++  const { app, emit, sync } = await openSession(tmp.path)
++
++  try {
++    // The reader is scrolled up: every new message only appends.
++    sync.message.setEvictionGate(sessionID, () => false)
++    await sync.session.sync(sessionID)
++    await wait(() => sync.data.message[sessionID]?.length === 100)
++
++    for (let seq = 0; seq < 5; seq++) emitAgentMessage(emit, seq)
++    await wait(() => sync.data.message[sessionID]?.length === 105)
++
++    // The reader returns to the bottom: the next message drops everything
++    // accumulated above the window in a single pass.
++    sync.message.setEvictionGate(sessionID, () => true)
++    emitAgentMessage(emit, 5)
++    await wait(() => sync.data.message[sessionID].at(-1)?.id === "msg_905")
++
++    expect(sync.data.message[sessionID]).toHaveLength(100)
++    expect(sync.data.message[sessionID][0].id).toBe("msg_006")
++  } finally {
++    app.renderer.destroy()
++  }
++})
++
++test("a session without a registered gate keeps shrinking its window", async () => {
++  await using tmp = await tmpdir()
++
++  const { app, emit, sync } = await openSession(tmp.path)
++
++  try {
++    await sync.session.sync(sessionID)
++    await wait(() => sync.data.message[sessionID]?.length === 100)
++
++    emitAgentMessage(emit, 0)
++    await wait(() => sync.data.message[sessionID].at(-1)?.id === "msg_900")
++
++    expect(sync.data.message[sessionID]).toHaveLength(100)
++    expect(sync.data.message[sessionID][0].id).toBe("msg_001")
++  } finally {
++    app.renderer.destroy()
++  }
++})
+diff --git a/packages/tui/test/cli/cmd/tui/sync-fixture.tsx b/packages/tui/test/cli/cmd/tui/sync-fixture.tsx
+index f81c4401a6..3feba98a29 100644
+--- a/packages/tui/test/cli/cmd/tui/sync-fixture.tsx
++++ b/packages/tui/test/cli/cmd/tui/sync-fixture.tsx
+@@ -1,5 +1,5 @@
+ /** @jsxImportSource @opentui/solid */
+-import { testRender } from "@opentui/solid"
++import { testRender, type JSX } from "@opentui/solid"
+ import { onMount } from "solid-js"
+ import { ArgsProvider } from "../../../../src/context/args"
+ import { KVProvider, useKV } from "../../../../src/context/kv"
+@@ -22,7 +22,7 @@ export async function wait(fn: () => boolean, timeout = 2000) {
+ 
+ type Ctx = { kv: ReturnType<typeof useKV>; project: ReturnType<typeof useProject>; sync: ReturnType<typeof useSync> }
+ 
+-export async function mount(override?: FetchHandler, state?: string) {
++export async function mount(override?: FetchHandler, state?: string, children?: () => JSX.Element) {
+   const calls = createFetch(override)
+   const events = createEventSource()
+   let sync!: ReturnType<typeof useSync>
+@@ -53,6 +53,7 @@ export async function mount(override?: FetchHandler, state?: string) {
+               <ProjectProvider>
+                 <ExitProvider exit={() => {}}>
+                   <SyncProvider>
++                    {children?.()}
+                     <Probe />
+                   </SyncProvider>
+                 </ExitProvider>
+-- 
+2.56.0
+

@@ -40,11 +40,18 @@ run pacman -Syu --noconfirm
 #    opencode. Дожидаемся в конце скрипта: systemd убивает дочерние
 #    процессы юнита после его завершения. Версия зафиксирована в скрипте;
 #    обновление вручную: opencode.fish <версия>
-OC_LOG="$LOGDIR/opencode-build.log"
-nohup sudo -u "$USER_NAME" env HOME="$USER_HOME" \
-    fish "$USER_HOME/bin/opencode.fish" > "$OC_LOG" 2>&1 &
-OC_PID=$!
-echo "+ opencode.fish в фоне (pid $OC_PID), лог: $OC_LOG" >>"$LOG"
+# РЕШЕНИЕ 2026-10-13: сборка на первом запуске ОТКЛЮЧЕНА — оставлено для
+#    истории. Причина: opencode уже входит в дистрибутив (бинарник в
+#    iso/airootfs, доставка копированием), обновление — вручную
+#    opencode.fish <версия>; сборка одной и той же версии при каждой
+#    установке — лишняя трата времени и места (~6 ГиБ ~/src/opencode
+#    плюс кэш bun), а какая версия будет свежей на момент установки —
+#    заранее неизвестно.
+# OC_LOG="$LOGDIR/opencode-build.log"
+# nohup sudo -u "$USER_NAME" env HOME="$USER_HOME" \
+#     fish "$USER_HOME/bin/opencode.fish" > "$OC_LOG" 2>&1 &
+# OC_PID=$!
+# echo "+ opencode.fish в фоне (pid $OC_PID), лог: $OC_LOG" >>"$LOG"
 
 # 3. Flathub
 run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -120,15 +127,19 @@ for pkg in $AUR_PACKAGES; do
 done
 
 # 8. Дожидаемся фоновой сборки opencode и фиксируем её итог
-wait "$OC_PID"
-OC_RC=$?
-echo "+ opencode: rc=$OC_RC (подробности — $OC_LOG)" >>"$LOG"
+# Отключено вместе со сборкой (решение 2026-10-13, шаг 2) — оставлено
+# для истории. OC_PID не задаётся, wait на несуществующую переменную
+# в set -u упал бы.
+# wait "$OC_PID"
+# OC_RC=$?
+# echo "+ opencode: rc=$OC_RC (подробности — $OC_LOG)" >>"$LOG"
 
 # Логи принадлежат пользователю, чтобы читать без root
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
 
 # Итог: ненулевой exit → юнит failed → маркер не встанет → повтор
-if [ "$FAILED" -ne 0 ] || [ "$OC_RC" -ne 0 ]; then
+# (проверка OC_RC убрана вместе со сборкой opencode — шаг 2)
+if [ "$FAILED" -ne 0 ]; then
     echo "== инициализация с ОШИБКАМИ: $(date -Is) (повтор при следующей загрузке) ==" >>"$LOG"
     exit 1
 fi

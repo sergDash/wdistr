@@ -9,7 +9,10 @@ VM_NAME="wdistr-test"
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ISO_FILE="$(ls -t "$REPO_DIR"/iso/out/wdistr-*.iso | head -1)"
-DISK_FILE="$SCRIPT_DIR/$VM_NAME.vdi"
+# VDI держим на внешнем диске EVO1TB — 64 ГиБ не помещаются в репозиторий
+# (перенос 2026-10-13). Если диска нет — createmedium упадёт с ошибкой пути.
+# DISK_FILE="$SCRIPT_DIR/$VM_NAME.vdi"
+DISK_FILE="/run/media/serg/EVO1TB/VirtualBox VMs/$VM_NAME/$VM_NAME.vdi"
 
 # Ресурсы — под рабочую машину (16 ядер, ~123 ГБ RAM).
 # Память 16 ГБ: первому запуску (AUR-сборки) нужно ~6.8 ГБ пиком,

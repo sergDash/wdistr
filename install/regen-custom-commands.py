@@ -207,9 +207,10 @@ def main() -> None:
         deliver(FILES / "ip-routing.service", "/etc/systemd/system/ip-routing.service"),
         "systemctl enable port-routing.service ip-routing.service",
         # opencode собственной сборки: скрипт и патчи — в ~/bin первого
-        # пользователя (паттерн с хоста разработки). Первая сборка и
-        # обновления — запуск opencode.fish от пользователя (first-boot),
-        # переменная U живёт только внутри одной команды: каждая строка
+        # пользователя (паттерн с хоста разработки). Сборка на первом
+        # запуске отключена (решение 2026-10-13) — opencode приходит
+        # бинарником из ISO, обновления вручную: opencode.fish <версия>.
+        # Переменная U живёт только внутри одной команды: каждая строка
         # custom_commands исполняется отдельным shell
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && " + " && ".join(
@@ -218,6 +219,7 @@ def main() -> None:
                 deliver(FILES / "opencode/opencode-1.patch", "/home/$U/bin/opencode-1.patch"),
                 deliver(FILES / "opencode/opencode-2.patch", "/home/$U/bin/opencode-2.patch"),
                 deliver(FILES / "opencode/opencode-3.patch", "/home/$U/bin/opencode-3.patch"),
+                deliver(FILES / "opencode/opencode-4.patch", "/home/$U/bin/opencode-4.patch"),
                 "chown -R $U:$U /home/$U/bin",
             ]
         ),

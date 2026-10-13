@@ -1,13 +1,16 @@
 #!/usr/bin/fish
 # Сборка opencode собственной сборки с патчами (wdistr).
 #
-# Версия по умолчанию фиксирована — патчи рукописные, а теги ветки 2.0
-# пока не разбирали; для пересборки новой версии 1.x укажи её первым
-# аргументом: opencode.fish 1.19.1
+# Версия ОБЯЗАТЕЛЬНА первым аргументом — дефолта нет (решение
+# 2026-10-13): патчи рукописные, а теги ветки 2.0 пока не разбирали;
+# какая версия будет свежей на момент сборки — заранее неизвестно.
+# Пример: opencode.fish 1.19.1
 
 set VER $argv[1]
 if test -z "$VER"
-    set VER 1.19.0
+    echo "Укажите версию первым аргументом: opencode.fish <версия>" >&2
+    echo "Например: opencode.fish 1.19.1" >&2
+    exit 1
 end
 
 function fail
@@ -38,6 +41,7 @@ bun install; or fail
 git apply ~/bin/opencode-1.patch; or fail
 git apply ~/bin/opencode-2.patch; or fail
 git apply ~/bin/opencode-3.patch; or fail
+git apply ~/bin/opencode-4.patch; or fail
 
 # Если не указать версию, будет 0.0.0--дата
 OPENCODE_VERSION=$VER ./packages/opencode/script/build.ts --single; or fail
