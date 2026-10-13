@@ -291,6 +291,6 @@
         "algorithm": "zstd",
         "enabled": false
     },
-    "timezone": "UTC",
+    "timezone": "Europe/Moscow",
     "version": "4.4"
 }
