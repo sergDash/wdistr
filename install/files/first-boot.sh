@@ -101,10 +101,18 @@ fi
 #    при таймерном повторе --needed пропускает стоящее и добирает
 #    только упавшее.
 AUR_PACKAGES="
-pragtical-bin amneziavpn-bin
-protonup-qt portproton librepcb jan localsend
-vscodium-bin session-desktop-bin
-lmstudio-bin arduino-ide-bin jstest-gtk-git
+amneziavpn-bin
+pragtical-bin
+protonup-qt
+portproton
+librepcb
+jan
+localsend
+vscodium-bin
+session-desktop-bin
+lmstudio-bin
+arduino-ide-bin
+jstest-gtk-git
 "
 for pkg in $AUR_PACKAGES; do
     run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
