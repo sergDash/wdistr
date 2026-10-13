@@ -1,5 +1,6 @@
-http://mirror.yandex.ru/archlinux/$repo/os/$arch
-https://mirror.yandex.ru/archlinux/$repo/os/$arch
+# mirror.yandex.ru убран 2026-10-13: проблемы с датацентрами, скачивание
+# падает на первой же установке (решение пользователя). Возвращать только
+# по явному решению, список зеркал закрыт (AGENTS.md).
 http://mirror.truenetwork.ru/archlinux/$repo/os/$arch
 https://mirror.truenetwork.ru/archlinux/$repo/os/$arch
 http://mirrors.powernet.com.ru/archlinux/$repo/os/$arch

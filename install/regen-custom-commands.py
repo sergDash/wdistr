@@ -58,8 +58,14 @@ def main() -> None:
     # без него сервера попадут в регион 'Local' и установка упадёт.
     # Генерируем mirrorlist и кладём в профиль ДО сборки custom_commands:
     # команды доставки кодируют содержимое файла, поэтому файл должен быть
-    # готов заранее.
-    urls = [line.strip() for line in MIRRORS.read_text().splitlines() if line.strip()]
+    # готов заранее. Строки с # — комментарии-обоснования в списке,
+    # в mirrorlist и mirror_regions они не идут (опыт 2026-10-13:
+    # без фильтра комментарий превращался в битую строку Server).
+    urls = [
+        line.strip()
+        for line in MIRRORS.read_text().splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
     PROFILE_MIRRORLIST.parent.mkdir(parents=True, exist_ok=True)
     PROFILE_MIRRORLIST.write_text(
         "## Russia\n" + "".join(f"Server = {url}\n" for url in urls)
