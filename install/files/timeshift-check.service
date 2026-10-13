@@ -1,12 +1,17 @@
 [Unit]
 Description=wdistr: проверка расписания Timeshift (снапшот по правилам)
-# Последний в очереди обновлений: снимок фиксирует уже обновлённое
-# состояние, а не распаковку посреди процесса. Сеть не нужна —
-# резервная копия на локальном диске (timeshift.json: backup_device_uuid).
+# Первым в очереди относительно обновлений: снимок фиксирует состояние
+# ДО обновления — эталон для отката (решение 2026-10-13; прежде снимок
+# шёл после обновлений — After). Порядок действует при одновременном
+# старте (пн 00:00 — weekly-обновление и почасовой тик проверки):
+# systemd ставит проверку впереди, обновление ждёт её в очереди, а
+# flock не даёт снимку попасть в середину распаковки.
+# Сеть не нужна — резервная копия на локальном диске (timeshift.json:
+# backup_device_uuid).
 # cronie НЕ включать: ежечасная проверка живёт здесь, а cron-запуск из
 # /etc/cron.d/timeshift-hourly (создаётся самим Timeshift при сохранении
 # настроек) обошёл бы flock и вернул бы коллизию (опыт 2026-10-11).
-After=wdistr-sys-update.service wdistr-aur-update.service wdistr-flatpak-update.service
+Before=wdistr-sys-update.service wdistr-aur-update.service wdistr-flatpak-update.service
 
 [Service]
 Type=oneshot
