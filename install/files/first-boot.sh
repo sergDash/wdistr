@@ -102,17 +102,17 @@ fi
 #    только упавшее.
 AUR_PACKAGES="
 amneziavpn-bin
-pragtical-bin
+vscodium-bin
+jstest-gtk-git
 protonup-qt
 portproton
-librepcb
-jan
-localsend
-vscodium-bin
 session-desktop-bin
 lmstudio-bin
 arduino-ide-bin
-jstest-gtk-git
+localsend
+pragtical-bin
+librepcb
+jan
 "
 for pkg in $AUR_PACKAGES; do
     run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
