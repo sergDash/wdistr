@@ -95,12 +95,21 @@ fi
 # 6. AUR: разрешённый список пакетов (Cards/Базовый набор программ).
 #    -bin-варианты предпочтительнее сборок из исходников (готовый бинарь
 #    вместо компиляции — решение 2026-10-08)
-run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
-    yay -S --noconfirm --needed \
-    pragtical-bin amneziavpn-bin \
-    protonup-qt portproton librepcb jan localsend \
-    vscodium-bin session-desktop-bin \
-    lmstudio-bin arduino-ide-bin jstest-gtk-git
+#    Каждый пакет отдельным вызовом (решение 2026-10-13, паттерн flatpak
+#    выше): упавший пакет (опыт 2026-10-13: lmstudio-bin с устаревшим
+#    sha256 в PKGBUILD) помечает FAILED, но остальные дособираются;
+#    при таймерном повторе --needed пропускает стоящее и добирает
+#    только упавшее.
+AUR_PACKAGES="
+pragtical-bin amneziavpn-bin
+protonup-qt portproton librepcb jan localsend
+vscodium-bin session-desktop-bin
+lmstudio-bin arduino-ide-bin jstest-gtk-git
+"
+for pkg in $AUR_PACKAGES; do
+    run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
+        yay -S --noconfirm --needed "$pkg"
+done
 
 # 8. Дожидаемся фоновой сборки opencode и фиксируем её итог
 wait "$OC_PID"
