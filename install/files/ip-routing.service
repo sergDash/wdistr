@@ -5,22 +5,24 @@ Wants=network-online.target
 #BindsTo=sys-subsystem-net-devices-enp6s0.device
 #After=sys-subsystem-net-devices-enp6s0.device
 
+# Шаблон: маршруты закомментированы, адреса — демонстрационные
+# (123.123.123.123). Чтобы включить: заменить INTERFACE/GW под свою
+# сеть, раскомментировать строки маршрутов и ExecStartPre ожидания.
 [Service]
 Type=oneshot
 Environment="INTERFACE=enp6s0"
-Environment="GW=192.168.0.1"
+Environment="GW=123.123.123.123"
+# Ожидание адреса на интерфейсе (нужен свой INTERFACE, иначе зависание
+# до таймаута systemd 90 с на машине без такого интерфейса):
+#ExecStartPre=/bin/bash -c 'while ! ip addr show dev ${INTERFACE} | grep -q "inet "; do sleep 1; done; sleep 1'
 
-ExecStartPre=/bin/bash -c 'while ! ip addr show dev ${INTERFACE} | grep -q "inet "; do sleep 1; done; sleep 1'
+# Маршруты (демо-адрес → свой): пары ExecStart/ExecStop на каждый хост
+#ExecStart=/sbin/ip route replace 123.123.123.123 via ${GW} dev ${INTERFACE}
+#ExecStop=/sbin/ip route del 123.123.123.123 via ${GW} dev ${INTERFACE}
 
-#ExecStart=/sbin/ip route replace 185.82.127.83 via ${GW} dev ${INTERFACE}
-#ExecStart=/sbin/ip route replace 45.130.212.163 via ${GW} dev ${INTERFACE}
-ExecStart=/sbin/ip route replace 62.113.107.38 via ${GW} dev ${INTERFACE}
-ExecStart=/sbin/ip route replace 130.17.16.223 via ${GW} dev ${INTERFACE}
-
-#ExecStop=/sbin/ip route del 185.82.127.83 via ${GW} dev ${INTERFACE}
-#ExecStop=/sbin/ip route del 45.130.212.163 via ${GW} dev ${INTERFACE}
-ExecStop=/sbin/ip route del 62.113.107.38 via ${GW} dev ${INTERFACE}
-ExecStop=/sbin/ip route del 130.17.16.223 via ${GW} dev ${INTERFACE}
+# Пустой успешный запуск, пока маршруты закомментированы —
+# юнит стартует и завершается без ошибок
+ExecStart=/bin/true
 
 RemainAfterExit=yes
 
