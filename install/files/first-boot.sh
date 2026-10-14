@@ -118,6 +118,7 @@ lmstudio-bin
 arduino-ide-bin
 localsend
 pragtical-bin
+android-studio
 librepcb
 jan
 "
