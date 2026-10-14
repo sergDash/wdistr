@@ -24,6 +24,7 @@ file_permissions=(
   ["/usr/local/bin/Installation_guide"]="0:0:755"
   ["/usr/local/bin/livecd-sound"]="0:0:755"
   ["/usr/local/bin/setup"]="0:0:755"
+  ["/usr/local/bin/setup-continue"]="0:0:755"
   ["/usr/local/bin/disks"]="0:0:755"
   # archiso копирует airootfs с --no-preserve=mode: без этой записи файл
   # приходит в живую среду без +x (опыт 2026-10-12: opencode отдавал

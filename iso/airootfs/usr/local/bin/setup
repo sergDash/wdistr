@@ -1,25 +1,31 @@
 #!/bin/sh
-# Установка нашей системы одной командой:
+# Установка нашей системы одной командой (двухфазная, решение 2026-10-14):
 #
 #     setup <имя_пользователя> <пароль> <диск>
+#
+# Фаза 1 (этот скрипт, офлайн): проверки диска и РАЗМЕТКА СВОИМИ
+# руками — parted, mkfs, сабволюмы @ и @home. Разметка отобрана у
+# archinstall: единый проход означал бы, что повтор после обрыва сети
+# стирает диск вместе с кэшем частично скачанных пакетов.
+#
+# Фаза 2 (команда setup-continue, сеть): закачка пакетов и настройка через
+# archinstall в режиме pre_mounted_config — на уже размеченном. При
+# обрыве сети повторяется только setup-continue, диск не трогается, кэш
+# pacstrap переиспользуется.
 #
 # Пароль передаётся открытым текстом намеренно: живая среда одноразовая,
 # а открытый аргумент избавляет от опечаток при скрытом вводе (символы
 # не видны). Один пароль — для пользователя и для root.
-# Конфигурация берётся из /root/wdistr (вшита в ISO); диск подставляется
-# в копию конфига, размер корневого раздела пересчитывается под фактический
-# размер диска (в исходном конфиге разделы привязаны к 64-ГБ диску тестовой
-# VM). После установки система привязана по UUID (fstab и GRUB) — смена
-# имени или места диска её не убьёт.
-# После archinstall из живой среды в целевую копируются файлы, которые не
-# влезают и не должны жить в base64 custom_commands: бинарник opencode и
-# шрифты Windows (решение 2026-10-12).
 # Список дисков: команда `disks` либо просто `setup` без аргументов — тогда
 # печатается эта же справка и под ней список дисков.
 
 usage() {
     echo "Использование: setup <имя_пользователя> <пароль> <диск>"
     echo "Пример:       setup ivan 12345 /dev/sda"
+    echo
+    echo "Установка двухфазная: setup размечает диск, setup-continue ставит"
+    echo "систему. Повтор после обрыва сети: setup-continue с теми же"
+    echo "аргументами — без переразметки."
     echo
     echo "Список дисков: запустите «setup» без аргументов или команду «disks»."
     echo "Пароль уйдёт открытым текстом — это осознанный выбор для живой среды."
@@ -44,8 +50,8 @@ if [ "$(lsblk -dnno TYPE "$3" 2>/dev/null)" != "disk" ]; then
     usage
 fi
 
-# Размер диска в байтах — для пересчёта корневого раздела
-DISK_SIZE=$(lsblk -bdno SIZE "$3")
+# Размер диска в байтах — для расчёта конца корневого раздела
+DISK_SIZE=$(lsblk -bdno "$3" 2>/dev/null | tr -d ' ')
 case "$DISK_SIZE" in
     ''|*[!0-9]*)
         echo "ОШИБКА: не удалось определить размер диска '$3'." >&2
@@ -53,188 +59,90 @@ case "$DISK_SIZE" in
         ;;
 esac
 
-CREDS=/var/tmp/wdistr-creds.json
-CONFIG=/var/tmp/wdistr-config.json
-
-python3 - "$1" "$2" "$3" "$DISK_SIZE" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
-import json
-import pathlib
-import sys
-import urllib.request
-
-name, password, disk, disk_size, creds_path, config_path = sys.argv[1:7]
-
-# Учётные данные: один пароль для пользователя и root
-pathlib.Path(creds_path).write_text(json.dumps({
-    "users": [{"username": name, "sudo": True, "!password": password}],
-    "!root-password": password,
-}, indent=4))
-
-config = json.loads(pathlib.Path('/root/wdistr/archinstall-config.json').read_text())
-mods = config['disk_config']['device_modifications']
-
-# Куда ставить: единственное захардкоженное место в конфиге
-for mod in mods:
-    mod['device'] = disk
-
-# Размер корневого раздела: весь диск за вычетом отступа (1 МиБ) и
-# загрузочного раздела (1 ГиБ), выровненный вниз по границе 1 МиБ —
-# так же, как это считает archinstall для диска тестовой VM (64 ГиБ).
-# Запас в конце диска (END_MARGIN): в конце GPT держит резервную копию
-# таблицы разделов — 33 сектора (16,5 КиБ). Округления вниз до МиБ
-# недостаточно: на дисках, кратных МиБ, остаток от деления ровно ноль,
-# и последний раздел упирается в резервные секторы (parted жалуется).
-# Поэтому после округления вычитаем целый мегабайт — запас становится
-# 1...2 МиБ в зависимости от кратности размера диска (опыт 2026-10-09:
-# на NVMe 1,9 ТиБ формула воспроизводит разметку, собранную вручную).
-BOOT_RESERVED = 1074790400  # байт: start /boot 1 МиБ + его размер 1 ГиБ
-END_MARGIN = 1048576        # байт: запас в конце диска под резерв GPT
-root_size = (int(disk_size) - BOOT_RESERVED) // 1048576 * 1048576 - END_MARGIN
-if root_size < 4 * 1024**3:
-    sys.exit(
-        f"ОШИБКА: диск {disk} ({disk_size} байт) слишком мал — "
-        f"на корень остаётся {root_size} байт, нужно минимум 4 ГиБ."
-    )
-for part in mods[0]['partitions']:
-    # Корневой раздел: mountpoint == '/' (старый формат) либо
-    # btrfs-сабволюмы с mountpoint '/' (после 15b5034 mountpoint у
-    # корня null — сабволюмы сами монтируются, иначе система в top-level)
-    is_root = part.get('mountpoint') == '/' or any(
-        sv.get('mountpoint') == '/' for sv in part.get('btrfs', [])
-    )
-    if is_root:
-        part['size'] = {'value': root_size, 'unit': 'B',
-                        'sector_size': part['size']['sector_size']}
-
-# Зеркала: проверить доступность и отсеять недоступные/зависшие.
-# Опыт 2026-10-08: archlinux.gay отдавал <1 байт/с и срывал pacstrap —
-# список зеркал не повод ему доверять. Проверка: HTTP-запрос 0-1 байта
-# за 4 сек; если недоступно всё — оставляем список как есть (сеть легла,
-# архinstall сам разберётся). Поимённый вывод результатов (запрос
-# 2026-10-14): видно, какое зеркало отвалилось и почему — по нему
-# анализируют стабильность и чистят mirrors.txt.
-for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).items():
-    kept = []
-    for url in urls:
-        probe = url.replace('$repo', 'core').replace('$arch', 'x86_64')
-        try:
-            req = urllib.request.Request(
-                probe, headers={'Range': 'bytes=0-0', 'User-Agent': 'wdistr-setup'})
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                resp.read(1)
-            kept.append(url)
-            print(f'  [доступно]   {url}')
-        except Exception as exc:
-            detail = f'{type(exc).__name__}: {exc}'
-            print(f'  [НЕ доступно] {url}  ({detail[:80]})')
-    print(f'зеркала ({name}): доступно {len(kept)} из {len(urls)}')
-    if kept:
-        region = config['mirror_config']['mirror_regions']
-        region[name] = kept
-
-pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
-PYEOF
-
-# --offline: archinstall берёт зеркала из локального mirrorlist (наш список
-# из mirrors.txt), а не с archlinux.org/mirrors/status — иначе в целевую
-# запишутся ВСЕ зеркала региона Russia (случай 2026-10-08: archlinux.gay
-# из глобального списка сорвал pacstrap). Побочно отключает проверку сети
-# и pacman -Sy на старте — сеть уже проверена пробами зеркал выше.
-archinstall \
-    --config "$CONFIG" \
-    --creds "$CREDS" \
-    --silent \
-    --offline
-ARCH_RC=$?
-
-# Код archinstall — основной признак успеха. Опыт 2026-10-14: при
-# прерванной закачке пакетов pacstrap падал, но разделы к тому моменту
-# уже стояли (разметка идёт до закачки) — прежняя проверка только по
-# lsblk пропускала битую установку: печаталась «Доставка готова», а
-# перезагрузка уводила в недокачанную систему. Ненулевой код —
-# честная ошибка с просьбой повторить установку.
-if [ "$ARCH_RC" -ne 0 ]; then
-    echo "ОШИБКА: archinstall завершился с кодом $ARCH_RC — установка НЕ завершена." >&2
-    echo "Частая причина — прерванная закачка пакетов (сеть)." >&2
-    echo "Повторите setup с теми же аргументами — диск будет размечен заново," >&2
-    echo "недокачанное скачается с зеркал заново." >&2
+# Схема разделов — как у archinstall default_layout (воспроизведена
+# 2026-10-14): загрузочный 1 ГиБ с 1 МиБ, корень — остаток диска.
+# END_MARGIN: в конце GPT резервная копия таблицы — 33 сектора; после
+# округления вниз вычитаем целый мегабайт (опыт 2026-10-09: на кратных
+# МиБ дисках остаток ноль и parted жалуется на упор в резерв).
+END_MARGIN=1048576
+BOOT_END_MB=1025                      # 1 МиБ отступ + 1 ГиБ загрузочный
+ROOT_END_MB=$(( (DISK_SIZE - END_MARGIN) / 1048576 ))
+ROOT_BYTES=$(( (ROOT_END_MB - BOOT_END_MB) * 1048576 ))
+if [ "$ROOT_BYTES" -lt $((4 * 1024 * 1024 * 1024)) ]; then
+    echo "ОШИБКА: диск $3 ($DISK_SIZE байт) слишком мал — на корень" >&2
+    echo "остаётся $ROOT_BYTES байт, нужно минимум 4 ГиБ." >&2
     exit 1
 fi
 
-# Доставка файлов из живой среды в целевую (решение 2026-10-12).
-# Страховка при нулевом коде: сверяем сам результат — смонтируется ли
-# btrfs-раздел с установленной системой.
-BOOT_PART=$(lsblk -lnpo NAME,FSTYPE "$3" | awk '$2=="vfat"{print $1; exit}')
-ROOT_PART=$(lsblk -lnpo NAME,FSTYPE "$3" | awk '$2=="btrfs"{print $1; exit}')
-if [ -z "$ROOT_PART" ] || [ -z "$BOOT_PART" ]; then
-    echo "ОШИБКА: после archinstall (код $ARCH_RC) на $3 нет vfat+btrfs разделов." >&2
-    echo "Доставка файлов отменена, целевая система не тронута." >&2
-    exit 1
+echo "== фаза 1/2: разметка $3 (диск $((DISK_SIZE / 1048576)) МиБ, корень до ${ROOT_END_MB} МиБ) =="
+
+# Таблица: GPT на UEFI (ESP-флаг обязателен, без него UEFI не видит
+# раздел — опыт 2026-10-09), MBR на BIOS (тестовая VM)
+if [ -d /sys/firmware/efi ]; then
+    TABLE=gpt
+else
+    TABLE=msdos
 fi
 
-umount -R /mnt 2>/dev/null
-mount -o subvol=/@ "$ROOT_PART" /mnt || {
-    echo "ОШИБКА: корень целевой (/@) не смонтировался — доставка отменена." >&2
+parted -s "$3" mklabel "$TABLE" || {
+    echo "ОШИБКА: parted не создал таблицу $TABLE на $3." >&2
     exit 1
 }
-mount "$BOOT_PART" /mnt/boot
-mount -o subvol=/@home "$ROOT_PART" /mnt/home
-
-# Счётчик сбоев доставки: суммируем и печатаем в конце, чтобы частичная
-# доставка не осталась незамеченной (тихая поломка хуже громкой)
-FAIL=0
-for f in /usr/local/bin/opencode /usr/local/bin/opencode-*; do
-    [ -e "$f" ] || continue
-    mkdir -p /mnt/usr/local/bin
-    if ! cp -a "$f" /mnt/usr/local/bin/; then
-        echo "ОШИБКА доставки: $f -> /mnt/usr/local/bin/" >&2
-        FAIL=$((FAIL + 1))
-    fi
-done
-if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/ 2>/dev/null; then
-    mkdir -p /mnt/usr/share/fonts
-    if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/; then
-        echo "ОШИБКА доставки: /usr/share/fonts/winfonts -> /mnt/usr/share/fonts/" >&2
-        FAIL=$((FAIL + 1))
-    fi
-fi
-
-# Консоль с кириллицей (опыт 2026-10-12): конфиг vconsole и шрифт
-# ter-u16n из состава лайва. Без них в целевой после тапа Shift русские
-# буквы печатаются квадратиками — airootfs в целевую не копируется,
-# а terminus-font в её составе нет
-if ! cp -a /etc/vconsole.conf /mnt/etc/vconsole.conf; then
-    echo "ОШИБКА доставки: /etc/vconsole.conf" >&2
-    FAIL=$((FAIL + 1))
-fi
-mkdir -p /mnt/usr/share/kbd/consolefonts
-if ! cp -a /usr/share/kbd/consolefonts/ter-u16n.psf.gz /mnt/usr/share/kbd/consolefonts/; then
-    echo "ОШИБКА доставки: /usr/share/kbd/consolefonts/ter-u16n.psf.gz" >&2
-    FAIL=$((FAIL + 1))
-fi
-
-# Курсоры, тема дистрибутива и карты раскладок keyd — бывшие большие
-# base64-доставки (переезд 2026-10-12): каталоги копируются целиком
-mkdir -p /mnt/usr/share/icons /mnt/usr/share/themes
-for d in /usr/share/icons/McMojave-cursors /usr/share/themes/Mint-Y-Dark-Aqua-10; do
-    if ! cp -a "$d" "/mnt${d}"; then
-        echo "ОШИБКА доставки: $d" >&2
-        FAIL=$((FAIL + 1))
-    fi
-done
-mkdir -p /mnt/usr/local/share/keyd
-if ! cp -a /usr/local/share/keyd/us.txt /usr/local/share/keyd/ru.txt /mnt/usr/local/share/keyd/; then
-    echo "ОШИБКА доставки: карты раскладок keyd (us.txt, ru.txt)" >&2
-    FAIL=$((FAIL + 1))
-fi
-
-if [ "$FAIL" -eq 0 ]; then
-    echo "Доставка из живой среды готова: opencode, шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n)."
+parted -s "$3" mkpart primary fat32 1MiB "${BOOT_END_MB}MiB" || exit 1
+if [ "$TABLE" = "gpt" ]; then
+    parted -s "$3" set 1 esp on || exit 1
+    parted -s "$3" set 1 boot on || exit 1
 else
-    echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
+    parted -s "$3" set 1 boot on || exit 1
 fi
+parted -s "$3" mkpart primary btrfs "${BOOT_END_MB}MiB" "${ROOT_END_MB}MiB" || exit 1
+partprobe "$3" 2>/dev/null
+udevadm settle 2>/dev/null
 
-umount /mnt/home /mnt/boot /mnt
-echo
-echo "Установка завершена (код archinstall: $ARCH_RC). Перезагрузитесь"
-echo "и уберите установочный носитель. Вход: $1 / ваш пароль."
+BOOT_PART="${3}1"
+ROOT_PART="${3}2"
+# Ждём появления разделов у udev (на NVMe/sda имена одинаковы —
+# номер после имени диска)
+tries=0
+while [ ! -b "$BOOT_PART" ] || [ ! -b "$ROOT_PART" ]; do
+    tries=$((tries + 1))
+    if [ "$tries" -gt 20 ]; then
+        echo "ОШИБКА: разделы $BOOT_PART/$ROOT_PART не появились." >&2
+        exit 1
+    fi
+    sleep 0.5
+done
+
+mkfs.fat -F32 "$BOOT_PART" || {
+    echo "ОШИБКА: mkfs.fat на $BOOT_PART." >&2
+    exit 1
+}
+mkfs.btrfs -f "$ROOT_PART" || {
+    echo "ОШИБКА: mkfs.btrfs на $ROOT_PART." >&2
+    exit 1
+}
+
+# Сабволюмы @ и @home — по структуре из конфига archinstall (@ → /,
+# @home → /home). Создаём в top-level, монтирование делает фаза 2.
+umount -R /mnt 2>/dev/null
+mount "$ROOT_PART" /mnt || {
+    echo "ОШИБКА: не смонтировался свежий btrfs ($ROOT_PART)." >&2
+    exit 1
+}
+btrfs subvolume create /mnt/@ || {
+    umount /mnt
+    echo "ОШИБКА: не создался сабволюм @." >&2
+    exit 1
+}
+btrfs subvolume create /mnt/@home || {
+    umount /mnt
+    echo "ОШИБКА: не создался сабволюм @home." >&2
+    exit 1
+}
+umount /mnt
+
+echo "== фаза 1/2 завершена: разметка готова, эстафета в setup-continue =="
+
+# Фаза 2 — закачка и настройка (сеть); при обрыве её можно повторить
+# отдельно: setup-continue <имя> <пароль> <диск>
+setup-continue "$1" "$2" "$3"

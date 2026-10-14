@@ -1,0 +1,232 @@
+#!/bin/sh
+# Фаза 2 установки wdistr — закачка пакетов и настройка целевой системы:
+#
+#     setup-continue <имя_пользователя> <пароль> <диск>
+#
+# Разметка здесь НЕ делается: диск должен быть уже размечен фазой 1
+# (команда setup делает это сама и сразу вызывает setup-continue).
+#
+# setup-continue — штатный этап и точка возобновления (решение 2026-10-14):
+# если сеть оборвала закачку, повторите эту команду с теми же
+# аргументами — диск не переразмечается, кэш частично скачанных пакетов
+# (/var/cache/pacman/pkg на целевом) цел и переиспользуется, докачивается
+# только недостающее. Разметка отобрана у archinstall: единый проход
+# означал бы при повторе стирание диска вместе с кэшем.
+#
+# Механика: разделы монтируются вручную, archinstall запускается в
+# режиме pre_mounted_config (ставит систему на смонтированное, ничего
+# не стирая), после — обычная доставка файлов из живой среды.
+
+usage() {
+    echo "Использование: setup-continue <имя_пользователя> <пароль> <диск>"
+    echo "Пример:       setup-continue ivan 12345 /dev/sda"
+    echo
+    echo "Это фаза 2 установки (закачка и настройка). Обычно её запускает"
+    echo "setup автоматически после разметки. Повтор вручную нужен, если"
+    echo "установка оборвалась (сеть) — тогда продолжение идёт без"
+    echo "переразметки диска."
+    echo
+    echo "Доступные диски:"
+    echo
+    disks
+    exit 1
+}
+
+[ -z "$3" ] && usage
+
+# Проверки целевого устройства: только целый диск, не раздел и не мусор
+if [ ! -b "$3" ]; then
+    echo "ОШИБКА: '$3' — не блочное устройство." >&2
+    echo >&2
+    usage
+fi
+if [ "$(lsblk -dnno TYPE "$3" 2>/dev/null)" != "disk" ]; then
+    echo "ОШИБКА: '$3' — нужен целый диск, а не раздел. Вывод lsblk ниже." >&2
+    echo >&2
+    usage
+fi
+
+# Размечен ли диск фазой 1: ищем vfat (загрузочный) и btrfs (корень)
+BOOT_PART=$(lsblk -lnpo NAME,FSTYPE "$3" | awk '$2=="vfat"{print $1; exit}')
+ROOT_PART=$(lsblk -lnpo NAME,FSTYPE "$3" | awk '$2=="btrfs"{print $1; exit}')
+if [ -z "$ROOT_PART" ] || [ -z "$BOOT_PART" ]; then
+    echo "ОШИБКА: на $3 нет разделов vfat+btrfs — диск не размечен." >&2
+    echo "Сначала выполните: setup <имя> <пароль> $3" >&2
+    exit 1
+fi
+
+# Проверка сабволюмов @ и @home: монтируем top-level временно и смотрим.
+# Без них ставить некуда — честный отказ вместо частичной установки.
+umount -R /mnt 2>/dev/null
+if ! mount "$ROOT_PART" /mnt; then
+    echo "ОШИБКА: не смонтировался корень btrfs ($ROOT_PART)." >&2
+    exit 1
+fi
+SUBVOLS_OK=1
+[ -d /mnt/@ ] && [ -d /mnt/@home ] || SUBVOLS_OK=0
+umount /mnt
+if [ "$SUBVOLS_OK" -ne 1 ]; then
+    echo "ОШИБКА: на $ROOT_PART нет сабволюмов @ и @home —" >&2
+    echo "диск размечен не этой установкой. Выполните: setup <имя> <пароль> $3" >&2
+    exit 1
+fi
+
+CREDS=/var/tmp/wdistr-creds.json
+CONFIG=/var/tmp/wdistr-config.json
+
+python3 - "$1" "$2" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
+import json
+import pathlib
+import sys
+import urllib.request
+
+name, password, creds_path, config_path = sys.argv[1:5]
+
+# Учётные данные: один пароль для пользователя и root
+pathlib.Path(creds_path).write_text(json.dumps({
+    "users": [{"username": name, "sudo": True, "!password": password}],
+    "!root-password": password,
+}, indent=4))
+
+config = json.loads(pathlib.Path('/root/wdistr/archinstall-config.json').read_text())
+
+# Разметку делает фаза 1 своими руками (parted/mkfs/sabволюмы) — для
+# archinstall диск объявляется пред-монтированным (pre_mounted_config):
+# он ставит систему в /mnt и ничего не стирает. Режим есть в archinstall
+# 4.5 (DiskLayoutType.Pre_mount, models/device.py).
+config['disk_config'] = {
+    'config_type': 'pre_mounted_config',
+    'mountpoint': '/mnt',
+}
+
+# Зеркала: проверить доступность и отсеять недоступные/зависшие.
+# Опыт 2026-10-08: archlinux.gay отдавал <1 байт/с и срывал pacstrap —
+# список зеркал не повод ему доверять. Проверка: HTTP-запрос 0-1 байта
+# за 4 сек; если недоступно всё — оставляем список как есть (сеть легла,
+# архinstall сам разберётся). Поимённый вывод результатов (запрос
+# 2026-10-14): видно, какое зеркало отвалилось и почему — по нему
+# анализируют стабильность и чистят mirrors.txt.
+for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).items():
+    kept = []
+    for url in urls:
+        probe = url.replace('$repo', 'core').replace('$arch', 'x86_64')
+        try:
+            req = urllib.request.Request(
+                probe, headers={'Range': 'bytes=0-0', 'User-Agent': 'wdistr-setup'})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                resp.read(1)
+            kept.append(url)
+            print(f'  [доступно]   {url}')
+        except Exception as exc:
+            detail = f'{type(exc).__name__}: {exc}'
+            print(f'  [НЕ доступно] {url}  ({detail[:80]})')
+    print(f'зеркала ({name}): доступно {len(kept)} из {len(urls)}')
+    if kept:
+        region = config['mirror_config']['mirror_regions']
+        region[name] = kept
+
+pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
+PYEOF
+
+# Монтируем целевую в /mnt: сабволюмы @, @home и загрузочный раздел.
+# archinstall в pre_mounted-режиме увидит смонтированное дерево и
+# построит по нему fstab.
+umount -R /mnt 2>/dev/null
+mount -o subvol=/@ "$ROOT_PART" /mnt || {
+    echo "ОШИБКА: сабволюм @ не смонтировался." >&2
+    exit 1
+}
+mount -o subvol=/@home "$ROOT_PART" /mnt/home || {
+    echo "ОШИБКА: сабволюм @home не смонтировался." >&2
+    exit 1
+}
+mount "$BOOT_PART" /mnt/boot || {
+    echo "ОШИБКА: загрузочный раздел не смонтировался в /mnt/boot." >&2
+    exit 1
+}
+
+# --offline: archinstall берёт зеркала из локального mirrorlist (наш список
+# из mirrors.txt), а не с archlinux.org/mirrors/status — иначе в целевую
+# запишутся ВСЕ зеркала региона Russia (случай 2026-10-08: archlinux.gay
+# из глобального списка сорвал pacstrap). Побочно отключает проверку сети
+# и pacman -Sy на старте — сеть уже проверена пробами зеркал выше.
+archinstall \
+    --config "$CONFIG" \
+    --creds "$CREDS" \
+    --silent \
+    --offline
+ARCH_RC=$?
+
+# Код archinstall — основной признак успеха (опыт 2026-10-14: при
+# прерванной закачке pacstrap падал — ненулевой код это и ловит).
+# При провале НЕ переразмечаем: повторите setup-continue с теми же аргументами,
+# докачается только недостающее.
+if [ "$ARCH_RC" -ne 0 ]; then
+    echo "ОШИБКА: archinstall завершился с кодом $ARCH_RC — установка НЕ завершена." >&2
+    echo "Частая причина — прерванная закачка пакетов (сеть)." >&2
+    echo "Повторите setup-continue с теми же аргументами: диск НЕ переразмечается," >&2
+    echo "уже скачанные пакеты переиспользуются, докачается только недостающее." >&2
+    exit 1
+fi
+
+# Доставка файлов из живой среды в целевую (решение 2026-10-12):
+# бинарник opencode и шрифты Windows не влезают в base64 custom_commands,
+# остальное — курсоры, тема, карты keyd, консоль.
+# Счётчик сбоев доставки: суммируем и печатаем в конце, чтобы частичная
+# доставка не осталась незамеченной (тихая поломка хуже громкой)
+FAIL=0
+for f in /usr/local/bin/opencode /usr/local/bin/opencode-*; do
+    [ -e "$f" ] || continue
+    mkdir -p /mnt/usr/local/bin
+    if ! cp -a "$f" /mnt/usr/local/bin/; then
+        echo "ОШИБКА доставки: $f -> /mnt/usr/local/bin/" >&2
+        FAIL=$((FAIL + 1))
+    fi
+done
+if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/ 2>/dev/null; then
+    mkdir -p /mnt/usr/share/fonts
+    if ! cp -a /usr/share/fonts/winfonts /mnt/usr/share/fonts/; then
+        echo "ОШИБКА доставки: /usr/share/fonts/winfonts -> /mnt/usr/share/fonts/" >&2
+        FAIL=$((FAIL + 1))
+    fi
+fi
+
+# Консоль с кириллицей (опыт 2026-10-12): конфиг vconsole и шрифт
+# ter-u16n из состава лайва. Без них в целевой после тапа Shift русские
+# буквы печатаются квадратиками — airootfs в целевую не копируется,
+# а terminus-font в её составе нет
+if ! cp -a /etc/vconsole.conf /mnt/etc/vconsole.conf; then
+    echo "ОШИБКА доставки: /etc/vconsole.conf" >&2
+    FAIL=$((FAIL + 1))
+fi
+mkdir -p /mnt/usr/share/kbd/consolefonts
+if ! cp -a /usr/share/kbd/consolefonts/ter-u16n.psf.gz /mnt/usr/share/kbd/consolefonts/; then
+    echo "ОШИБКА доставки: /usr/share/kbd/consolefonts/ter-u16n.psf.gz" >&2
+    FAIL=$((FAIL + 1))
+fi
+
+# Курсоры, тема дистрибутива и карты раскладок keyd — бывшие большие
+# base64-доставки (переезд 2026-10-12): каталоги копируются целиком
+mkdir -p /mnt/usr/share/icons /mnt/usr/share/themes
+for d in /usr/share/icons/McMojave-cursors /usr/share/themes/Mint-Y-Dark-Aqua-10; do
+    if ! cp -a "$d" "/mnt${d}"; then
+        echo "ОШИБКА доставки: $d" >&2
+        FAIL=$((FAIL + 1))
+    fi
+done
+mkdir -p /mnt/usr/local/share/keyd
+if ! cp -a /usr/local/share/keyd/us.txt /usr/local/share/keyd/ru.txt /mnt/usr/local/share/keyd/; then
+    echo "ОШИБКА доставки: карты раскладок keyd (us.txt, ru.txt)" >&2
+    FAIL=$((FAIL + 1))
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+    echo "Доставка из живой среды готова: opencode, шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n)."
+else
+    echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
+fi
+
+umount /mnt/home /mnt/boot /mnt
+echo
+echo "Установка завершена (код archinstall: $ARCH_RC). Перезагрузитесь"
+echo "и уберите установочный носитель. Вход: $1 / ваш пароль."
