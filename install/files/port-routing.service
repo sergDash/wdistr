@@ -11,7 +11,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 Environment="INTERFACE=enp6s0"
-Environment="GW=123.123.123.123"
+Environment="GW=192.168.0.1"
 # Идемпотентность: чистка старых правил с именем «port» — безопасна,
 # при пустом шаблоне ничего не находит
 ExecStartPre=/bin/bash -c 'ip rule show | grep -w port | while read prio from all rest; do ip rule del $rest; done; true'
@@ -26,16 +26,21 @@ ExecStartPre=/bin/bash -c 'mkdir -p /etc/iproute2; touch /etc/iproute2/rt_tables
 
 # Маршрут таблицы port и правила по исходящим портам (свои порты):
 #ExecStart=/sbin/ip route replace default via ${GW} dev ${INTERFACE} table port
+# Веб
 #ExecStart=/sbin/ip rule add sport 80 table port
 #ExecStart=/sbin/ip rule add sport 443 table port
+# Почта: 25/587 — SMTP (отправка), 993/143 — IMAP (чтение)
 #ExecStart=/sbin/ip rule add sport 25 table port
 #ExecStart=/sbin/ip rule add sport 587 table port
 #ExecStart=/sbin/ip rule add sport 993 table port
 #ExecStart=/sbin/ip rule add sport 143 table port
+# Teamspeak server (если поставите на свой компьютер)
 #ExecStart=/sbin/ip rule add sport 9987 table port
+# Minecraft server
 #ExecStart=/sbin/ip rule add sport 25565 table port
-#ExecStart=/sbin/ip rule add sport 37860 table port
+# Игра Rust (сервер)
 #ExecStart=/sbin/ip rule add sport 28015 table port
+# Игра Project Zomboid (сервер), диапазон 16261–16264
 #ExecStart=/sbin/ip rule add sport 16261 table port
 #ExecStart=/sbin/ip rule add sport 16262 table port
 #ExecStart=/sbin/ip rule add sport 16263 table port
@@ -50,7 +55,6 @@ ExecStartPre=/bin/bash -c 'mkdir -p /etc/iproute2; touch /etc/iproute2/rt_tables
 #ExecStop=/sbin/ip rule del sport 143 table port
 #ExecStop=/sbin/ip rule del sport 9987 table port
 #ExecStop=/sbin/ip rule del sport 25565 table port
-#ExecStop=/sbin/ip rule del sport 37860 table port
 #ExecStop=/sbin/ip rule del sport 28015 table port
 #ExecStop=/sbin/ip rule del sport 16261 table port
 #ExecStop=/sbin/ip rule del sport 16262 table port

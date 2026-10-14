@@ -11,7 +11,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 Environment="INTERFACE=enp6s0"
-Environment="GW=123.123.123.123"
+Environment="GW=192.168.0.1"
 # Ожидание адреса на интерфейсе (нужен свой INTERFACE, иначе зависание
 # до таймаута systemd 90 с на машине без такого интерфейса):
 #ExecStartPre=/bin/bash -c 'while ! ip addr show dev ${INTERFACE} | grep -q "inet "; do sleep 1; done; sleep 1'
