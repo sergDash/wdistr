@@ -146,7 +146,7 @@
         "linux"
     ],
     "locale_config": {
-        "console_font": "Cyr_a8x16",
+        "console_font": "ter-u16n",
         "kb_layout": "us",
         "sys_enc": "UTF-8",
         "sys_lang": "ru_RU.UTF-8"
@@ -272,7 +272,8 @@
         "nload",
         "baobab",
         "android-tools",
-        "zig"
+        "zig",
+        "terminus-font"
     ],
     "pacman_config": {
         "color": true,
