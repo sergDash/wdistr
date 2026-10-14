@@ -54,8 +54,12 @@ def main() -> None:
     # Зеркала: в mirrors.txt — просто URL построчно, этого списка
     # достаточно для archinstall (mirror_regions — массив голых URL), но
     # самому pacman нужен файл вида 'Server = <url>', а локальному
-    # парсеру зеркал archinstall (--offline) — заголовок региона '## Russia':
-    # без него сервера попадут в регион 'Local' и установка упадёт.
+    # парсеру зеркал archinstall (--offline) — заголовок региона
+    # '## wdistr': имя региона в файле обязано совпадать с ключом
+    # mirror_regions, иначе get_status_by_region падает по KeyError
+    # (опыт 2026-10-08: без заголовка сервера уходили в 'Local' и
+    # установка вставала). Страна в заголовке не нужна — регион наш,
+    # по-русски описываем его обычной строкой комментария (не '## ').
     # Генерируем mirrorlist и кладём в профиль ДО сборки custom_commands:
     # команды доставки кодируют содержимое файла, поэтому файл должен быть
     # готов заранее. Строки с # — комментарии-обоснования в списке,
@@ -68,9 +72,11 @@ def main() -> None:
     ]
     PROFILE_MIRRORLIST.parent.mkdir(parents=True, exist_ok=True)
     PROFILE_MIRRORLIST.write_text(
-        "## Russia\n" + "".join(f"Server = {url}\n" for url in urls)
+        "# Наш статический список хороших серверов: состав закрыт,\n"
+        "# правится только файлом mirrors.txt в репозитории.\n"
+        "## wdistr\n" + "".join(f"Server = {url}\n" for url in urls)
     )
-    config["mirror_config"]["mirror_regions"] = {"Russia": urls}
+    config["mirror_config"]["mirror_regions"] = {"wdistr": urls}
 
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет

@@ -147,10 +147,11 @@ mount "$BOOT_PART" /mnt/boot || {
     exit 1
 }
 
-# --offline: archinstall берёт зеркала из локального mirrorlist (наш список
-# из mirrors.txt), а не с archlinux.org/mirrors/status — иначе в целевую
-# запишутся ВСЕ зеркала региона Russia (случай 2026-10-08: archlinux.gay
-# из глобального списка сорвал pacstrap). Побочно отключает проверку сети
+# --offline: archinstall берёт зеркала из локального mirrorlist (наш
+# статический список из mirrors.txt), а не с archlinux.org/mirrors/status —
+# иначе он возьмёт глобальный список по имени региона, игнорируя URL из
+# конфига (случай 2026-10-08: archlinux.gay из такого списка сорвал
+# pacstrap). Побочно отключает проверку сети
 # и pacman -Sy на старте — сеть уже проверена пробами зеркал выше.
 archinstall \
     --config "$CONFIG" \
