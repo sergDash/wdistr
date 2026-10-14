@@ -1,4 +1,3 @@
 ## Russia
 Server = https://mirror.truenetwork.ru/archlinux/$repo/os/$arch
 Server = https://mirror.nw-sys.ru/archlinux/$repo/os/$arch
-Server = https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch
