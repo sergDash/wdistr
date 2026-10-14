@@ -82,6 +82,17 @@ def main() -> None:
         deliver(MIRROR_HOOK, "/etc/pacman.d/hooks/wdistr-mirrors.hook"),
         deliver(PROFILE_MIRRORLIST, "/usr/local/share/wdistr/mirrorlist"),
         deliver(PROFILE_MIRRORLIST, "/etc/pacman.d/mirrorlist"),
+        # AGENTS.md установленной системы — инструкция для агента в
+        # целевой: логика двухфазной установки, логи, самопроверка
+        # (идея 2026-09-26, реализация 2026-10-14). Системная копия —
+        # источник; вторая — рядом с логами в ~/install-log первого
+        # пользователя (uid 1000+ определяется динамически)
+        deliver(FILES / "AGENTS-system.md", "/usr/local/share/wdistr/AGENTS.md"),
+        "H=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $6; exit}') && "
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "[ -n \"$H\" ] && mkdir -p \"$H/install-log\" && "
+        "cp /usr/local/share/wdistr/AGENTS.md \"$H/install-log/AGENTS.md\" && "
+        "chown \"$U\" \"$H/install-log/AGENTS.md\"",
         # Тёмная тема для всех пользователей: система-дефолты dconf — их
         # читают libadwaita-приложения (GTK4, Аутентификатор), а обычные
         # GTK3 берут тему из /etc/gtk-3.0/settings.ini; dconf update
