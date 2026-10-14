@@ -130,12 +130,14 @@ PYEOF
 
 # Монтируем целевую в /mnt: сабволюмы @, @home и загрузочный раздел.
 # archinstall в pre_mounted-режиме увидит смонтированное дерево и
-# построит по нему fstab.
+# построит по нему fstab. Каталоги home и boot в свежем сабволюме @
+# пусты — mount отказал бы без точек монтирования (ошибка 2026-10-14).
 umount -R /mnt 2>/dev/null
 mount -o subvol=/@ "$ROOT_PART" /mnt || {
     echo "ОШИБКА: сабволюм @ не смонтировался." >&2
     exit 1
 }
+mkdir -p /mnt/home /mnt/boot
 mount -o subvol=/@home "$ROOT_PART" /mnt/home || {
     echo "ОШИБКА: сабволюм @home не смонтировался." >&2
     exit 1
