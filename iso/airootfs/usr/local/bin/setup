@@ -51,7 +51,7 @@ if [ "$(lsblk -dnno TYPE "$3" 2>/dev/null)" != "disk" ]; then
 fi
 
 # Размер диска в байтах — для расчёта конца корневого раздела
-DISK_SIZE=$(lsblk -bdno "$3" 2>/dev/null | tr -d ' ')
+DISK_SIZE=$(lsblk -bdno SIZE "$3" | tr -d ' ')
 case "$DISK_SIZE" in
     ''|*[!0-9]*)
         echo "ОШИБКА: не удалось определить размер диска '$3'." >&2
