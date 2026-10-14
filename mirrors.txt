@@ -1,10 +1,12 @@
 # mirror.yandex.ru убран 2026-10-13: проблемы с датацентрами, скачивание
 # падает на первой же установке (решение пользователя). Возвращать только
 # по явному решению, список зеркал закрыт (AGENTS.md).
-http://mirror.truenetwork.ru/archlinux/$repo/os/$arch
+# mirrors.powernet.com.ru убран 2026-10-14: крайне долгий отклик при
+# проверке зеркал в setup — поимённый вывод показал зависание, решение
+# пользователя.
+# http-варианты убраны 2026-10-14: все наши зеркала редиректят http на
+# https (замер 2026-10-13), pacman следует редиректу — на каждую
+# попытку уходят лишние секунды; остаёмся только на https.
 https://mirror.truenetwork.ru/archlinux/$repo/os/$arch
-http://mirrors.powernet.com.ru/archlinux/$repo/os/$arch
-http://mirror.nw-sys.ru/archlinux/$repo/os/$arch
 https://mirror.nw-sys.ru/archlinux/$repo/os/$arch
-http://mirror.cachy-arch.ru/archlinux/$repo/os/$arch
 https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch

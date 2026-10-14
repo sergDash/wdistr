@@ -110,7 +110,9 @@ for part in mods[0]['partitions']:
 # Опыт 2026-10-08: archlinux.gay отдавал <1 байт/с и срывал pacstrap —
 # список зеркал не повод ему доверять. Проверка: HTTP-запрос 0-1 байта
 # за 4 сек; если недоступно всё — оставляем список как есть (сеть легла,
-# архinstall сам разберётся).
+# архinstall сам разберётся). Поимённый вывод результатов (запрос
+# 2026-10-14): видно, какое зеркало отвалилось и почему — по нему
+# анализируют стабильность и чистят mirrors.txt.
 for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).items():
     kept = []
     for url in urls:
@@ -121,8 +123,10 @@ for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).item
             with urllib.request.urlopen(req, timeout=4) as resp:
                 resp.read(1)
             kept.append(url)
-        except Exception:
-            pass
+            print(f'  [доступно]   {url}')
+        except Exception as exc:
+            detail = f'{type(exc).__name__}: {exc}'
+            print(f'  [НЕ доступно] {url}  ({detail[:80]})')
     print(f'зеркала ({name}): доступно {len(kept)} из {len(urls)}')
     if kept:
         region = config['mirror_config']['mirror_regions']
