@@ -122,6 +122,11 @@ def main() -> None:
         # keyd: конфиг раскладок и скрипт переключения (исходники в install/files/)
         deliver(FILES / "keyd.conf", "/etc/keyd/default.conf"),
         deliver(FILES / "toggle-layout.sh", "/usr/local/bin/keyd-toggle-layout", "755"),
+        # Serial-доступ к платам Arduino для залогиненного пользователя
+        # (uaccess вместо группы uucp; рецептура Arch wiki). arduino-ide-bin
+        # udev-правил не ставит — без них загрузка скетча падает по
+        # правам на /dev/ttyACM*/ttyUSB* (разведка 2026-10-14)
+        deliver(FILES / "serial-uaccess.rules", "/etc/udev/rules.d/01-wdistr-serial.rules"),
         # системный дефолт GTK3: тёмная тема и Papirus для всех, включая
         # root (решение 2026-09-30; см. чек-лист «Комфортный рабочий стол»)
         deliver(FILES / "gtk3-settings.ini", "/etc/gtk-3.0/settings.ini"),

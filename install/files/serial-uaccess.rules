@@ -1,0 +1,10 @@
+# Доступ к serial-устройствам (Arduino и подобные USB-UART) для
+# залогиненного пользователя без root и без общей группы uucp.
+# По рецептуре Arch wiki (Arduino → Accessing serial): uaccess
+# привязывает устройство к логин-сессии через systemd-logind —
+# работает и в живой среде, и в целевой системе.
+# arduino-ide-bin из AUR свои правила не ставит (PKGBUILD 2026-10-14:
+# только desktop, иконка и бинарник) — без этих строк загрузка скетча
+# падает с «Permission denied» на /dev/ttyACM*/ttyUSB*.
+ACTION!="remove", SUBSYSTEMS=="usb-serial", TAG+="uaccess"
+ACTION!="remove", SUBSYSTEMS=="tty", TAG+="uaccess"
