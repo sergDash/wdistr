@@ -9,5 +9,10 @@
 # http-варианты убраны 2026-10-14: все наши зеркала редиректят http на
 # https (замер 2026-10-13), pacman следует редиректу — на каждую
 # попытку уходят лишние секунды; остаёмся только на https.
+# mirror.nw-sys.ru убран 2026-10-14: плохой сервер (решение пользователя).
+# Итоговый состав 2026-10-14 (замеры из рабочей сети, extra.db):
+# cdnmirror ~11 МБ/с, truenetwork ~4 МБ/с; порядок строк = приоритет.
+# far.fi (Финляндия) отвергнут: из нашей сети не отвечает ни по http,
+# ни по https (таймаут/404), хотя в официальном статусе числится лучшим.
+https://cdnmirror.com/archlinux/$repo/os/$arch
 https://mirror.truenetwork.ru/archlinux/$repo/os/$arch
-https://mirror.nw-sys.ru/archlinux/$repo/os/$arch
