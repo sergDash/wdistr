@@ -10,7 +10,11 @@ Type=oneshot
 Environment="INTERFACE=enp6s0"
 Environment="GW=192.168.0.1"
 ExecStartPre=/bin/bash -c 'ip rule show | grep -w port | while read prio from all rest; do ip rule del $rest; done; true'
-ExecStartPre=/bin/bash -c 'grep -q "port" /etc/iproute2/rt_tables || echo "100 port" >> /etc/iproute2/rt_tables'
+# Имя таблицы "port" резолвится только через /etc/iproute2/rt_tables.
+# Опыт 2026-10-14: на Arch (iproute2 7.2) каталога /etc/iproute2 нет —
+# grep падал «файл не найден», а >> писал в несуществующий путь, юнит
+# умирал с exit 1. Ставим каталог и файл перед записью.
+ExecStartPre=/bin/bash -c 'mkdir -p /etc/iproute2; touch /etc/iproute2/rt_tables; grep -q "^100 port" /etc/iproute2/rt_tables || echo "100 port" >> /etc/iproute2/rt_tables'
 ExecStartPre=/bin/bash -c 'while ! ip addr show dev ${INTERFACE} | grep -q "inet "; do sleep 1; done; sleep 1'
 
 ExecStart=/sbin/ip route replace default via ${GW} dev ${INTERFACE} table port
