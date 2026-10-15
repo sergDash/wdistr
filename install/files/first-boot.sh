@@ -121,6 +121,7 @@ pragtical-bin
 android-studio
 librepcb
 jan
+emote
 beekeeper-studio
 "
 for pkg in $AUR_PACKAGES; do

@@ -206,6 +206,22 @@ if sys_ok and force_ok:
 else:
     fail(f'съёмные носители: системный дефолт = {sys_ok}, форс первого входа = {force_ok}')
 
+# 12. AUR-список first-boot: свежие добавления на месте (emote — 2026-10-15,
+# beekeeper-studio — 2026-10-15); список уходит в образ base64-командой
+fb = [c for c in cmds if '/usr/local/bin/wdistr-first-boot' in c]
+fb_payload = ''
+if fb:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d", fb[0])
+    if m:
+        fb_payload = base64.b64decode(m.group(1)).decode('utf-8', 'replace')
+m = re.search(r'AUR_PACKAGES="\n(.*?)\n"', fb_payload, re.S)
+aur_list = m.group(1).split() if m else []
+missing = [p for p in ('emote', 'beekeeper-studio') if p not in aur_list]
+if not missing and len(aur_list) >= 15:
+    ok(f'first-boot: AUR-список — {len(aur_list)} пакетов, emote и beekeeper-studio входят')
+else:
+    fail(f'first-boot: AUR-список пакетов {len(aur_list)}, не хватает: {missing or "—"}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
