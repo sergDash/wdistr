@@ -37,4 +37,15 @@ gsettings set org.gnome.desktop.interface monospace-font-name 'Ubuntu Mono 12'
 gsettings set org.cinnamon.desktop.wm.preferences titlebar-font 'Ubuntu Bold 11'
 gsettings set org.nemo.desktop font 'Ubuntu 10'
 
+# Заставка, монитор и кнопка питания (решение 2026-10-15): значения
+# сняты с рабочей машины. Системный dconf-дефолт (10-wdistr-desktop)
+# держит их для свежих пользователей, здесь — тот же паттерн, что
+# у тем и шрифтов: при первом входе Cinnamon пишет собственные
+# значения в пользовательский dconf, перекрывая системный (опыт
+# 2026-10-09), поэтому принудительно один раз. Повторных запусков
+# маркер не даёт — настройки, изменённые пользователем, не трогаются.
+gsettings set org.cinnamon.desktop.session idle-delay 0
+gsettings set org.cinnamon.settings-daemon.plugins.power sleep-display-ac 3600
+gsettings set org.cinnamon.settings-daemon.plugins.power button-power 'shutdown'
+
 touch "$MARKER"

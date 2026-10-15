@@ -116,12 +116,15 @@ def main() -> None:
         "[ -n \"$H\" ] && mkdir -p \"$H/install-log\" && "
         "cp /usr/local/share/wdistr/AGENTS.md \"$H/install-log/AGENTS.md\" && "
         "chown \"$U\" \"$H/install-log/AGENTS.md\"",
-        # Тёмная тема для всех пользователей: система-дефолты dconf — их
-        # читают libadwaita-приложения (GTK4, Аутентификатор), а обычные
-        # GTK3 берут тему из /etc/gtk-3.0/settings.ini; dconf update
+        # Системные дефолты dconf для всех пользователей: тема (её же
+        # читают libadwaita-приложения — GTK4, Аутентификатор; GTK3
+        # берут из /etc/gtk-3.0/settings.ini), цветовая схема для
+        # портала xapp (Electron) и поведение рабочего стола (заставка,
+        # монитор, кнопка питания — решение 2026-10-15). dconf update
         # собирает базу /etc/dconf/db/local из доставленных фрагментов
         deliver(FILES / "dconf-profile-user", "/etc/dconf/profile/user"),
         deliver(FILES / "dconf-local-theme", "/etc/dconf/db/local.d/00-wdistr-theme"),
+        deliver(FILES / "dconf-local-desktop", "/etc/dconf/db/local.d/10-wdistr-desktop"),
         "dconf update",
         # Тёмная тема для Mozilla-приложений (Firefox, Thunderbird): у них
         # своя система тем, GTK/dconf они не читают — «системная» тема

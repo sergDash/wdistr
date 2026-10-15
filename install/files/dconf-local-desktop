@@ -1,0 +1,16 @@
+# Поведение рабочего стола wdistr (решение 2026-10-15).
+# Значения сняты с рабочей машины, где настроены руками, и продублированы
+# в cinnamon-defaults.sh (маркер: только при первом входе) — паттерн
+# одинаков для тем, шрифтов и этих настроек.
+#
+# Заставка не запускается никогда (idle-delay=0 = «Never» в списке
+# «Delay before starting the screensaver» модуля cs_screensaver):
+# блокировка по простоям не нужна. Монитор гаснет через час простоя
+# (не 30 минут дефолта — вкус пользователя). Кнопка питания — сразу
+# выключение, а не засыпка (дефолт схемы 'suspend').
+[org/cinnamon/desktop/session]
+idle-delay=uint32 0
+
+[org/cinnamon/settings-daemon/plugins.power]
+sleep-display-ac=3600
+button-power='shutdown'
