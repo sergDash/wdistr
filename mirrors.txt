@@ -3,7 +3,9 @@
 # официальный статус, меряет скорость и отказы из нашей сети, хранит
 # историю в mirrors.db. Отбор: ноль отказов в базе, сортировка по
 # средней скорости, одна позиция на страну (географическое
-# разнообразие вместо нескольких зеркал одного оператора).
+# разнообразие); не более трёх позиций одного оператора — фаланга
+# cicku.me (9 стран) при полном включении завязала бы список на одну
+# сеть.
 # Решение 2026-10-15: прежние баны отменены (yandex 2026-10-13,
 # powernet/cachy-arch/nw-sys 2026-10-14, truenetwork 2026-10-15) —
 # причина прыганий была не в зеркалах, а в приоритете IPv6 над IPv4
@@ -14,7 +16,17 @@
 # секунды на каждую попытку (замер 2026-10-13).
 # far.fi из нашей сети не отвечает (замер 2026-10-14) — это факт
 # измерения, не запрет: при изменении сети проверяется заново.
-# Состав ниже — по замеру 2026-10-15 (rate-mirrors.py, прогон после gai):
+# Состав ниже — по замеру 2026-10-15 (rate-mirrors.py, прогон после gai,
+# 12 стран; порядок строк = приоритет по средней скорости):
 https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch
 https://mirror.wuki.li/archlinux/$repo/os/$arch
 https://mirror.clientvps.com/archlinux/$repo/os/$arch
+https://at.mirrors.cicku.me/archlinux/$repo/os/$arch
+https://fr.mirrors.cicku.me/archlinux/$repo/os/$arch
+https://gb.mirrors.cicku.me/archlinux/$repo/os/$arch
+https://mirror.osbeck.com/archlinux/$repo/os/$arch
+https://mirrors.logal.dev/archlinux/$repo/os/$arch
+https://archlinux.lysakermoen.com/archlinux/$repo/os/$arch
+https://mirrors.pablonara.com/archlinux/$repo/os/$arch
+https://mirror.ourhost.az/archlinux/$repo/os/$arch
+https://mirrors.xtom.nl/archlinux/$repo/os/$arch
