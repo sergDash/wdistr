@@ -78,6 +78,7 @@ python3 - "$1" "$2" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
 import json
 import pathlib
 import sys
+import time
 import urllib.request
 
 name, password, creds_path, config_path = sys.argv[1:5]
@@ -99,31 +100,58 @@ config['disk_config'] = {
     'mountpoint': '/mnt',
 }
 
-# Зеркала: проверить доступность и отсеять недоступные/зависшие.
-# Опыт 2026-10-08: archlinux.gay отдавал <1 байт/с и срывал pacstrap —
-# список зеркал не повод ему доверять. Проверка: HTTP-запрос 0-1 байта
-# за 4 сек; если недоступно всё — оставляем список как есть (сеть легла,
-# архinstall сам разберётся). Поимённый вывод результатов (запрос
-# 2026-10-14): видно, какое зеркало отвалилось и почему — по нему
-# анализируют стабильность и чистят mirrors.txt.
-for name, urls in config.get('mirror_config', {}).get('mirror_regions', {}).items():
-    kept = []
-    for url in urls:
-        probe = url.replace('$repo', 'core').replace('$arch', 'x86_64')
-        try:
-            req = urllib.request.Request(
-                probe, headers={'Range': 'bytes=0-0', 'User-Agent': 'wdistr-setup'})
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                resp.read(1)
-            kept.append(url)
-            print(f'  [доступно]   {url}')
-        except Exception as exc:
-            detail = f'{type(exc).__name__}: {exc}'
-            print(f'  [НЕ доступно] {url}  ({detail[:80]})')
-    print(f'зеркала ({name}): доступно {len(kept)} из {len(urls)}')
-    if kept:
-        region = config['mirror_config']['mirror_regions']
-        region[name] = kept
+# Зеркала: проба каждого, остановка установки — только когда не ответило
+# НИ ОДНО. Почему стоп: archinstall запускается с --offline, сеть он сам
+# не проверяет — без остановки pacstrap полез бы в мёртвые зеркала и завис
+# на таймаутах, сбой случился бы посреди закачки.
+# Почему полный список, а не отсеивание мёртвых: archinstall в --offline
+# собирает Server-строки из локального /etc/pacman.d/mirrorlist по имени
+# региона, а URL-ы из конфига не читает (archinstall 4.5, regions_config) —
+# отсеивание в конфиг ни на что не влияло, его результат был мёртвым кодом
+# (разбор 2026-10-15). Полный список к тому же самовосстанавливается:
+# ожившее посреди установки зеркало pacman берёт на следующем файле.
+# Круги проб: однократная давала ложное «всё мертво» на кратковременной
+# просадке (опыт 2026-10-15: при сборке ISO cdnmirror ~10 с отдавал
+# <1 байт/с, truenetwork не резолвился; минуту спустя оба были живы).
+# Поимённый вывод результатов (запрос 2026-10-14) остаётся: по нему
+# видно, какое зеркало отвалилось и почему.
+regions = config.get('mirror_config', {}).get('mirror_regions', {})
+PROBE_ROUNDS = 3
+PROBE_PAUSE = 3  # секунд между кругами
+
+alive = 0
+for round_nr in range(1, PROBE_ROUNDS + 1):
+    if round_nr > 1:
+        print(f'  ни одно зеркало не ответило, повтор {round_nr}/{PROBE_ROUNDS} через {PROBE_PAUSE} с')
+        time.sleep(PROBE_PAUSE)
+    alive = 0
+    for region_name, urls in regions.items():
+        ok = 0
+        for url in urls:
+            probe = url.replace('$repo', 'core').replace('$arch', 'x86_64')
+            try:
+                req = urllib.request.Request(
+                    probe, headers={'Range': 'bytes=0-0', 'User-Agent': 'wdistr-setup'})
+                with urllib.request.urlopen(req, timeout=4) as resp:
+                    resp.read(1)
+                print(f'  [доступно]   {url}')
+                ok += 1
+                alive += 1
+            except Exception as exc:
+                detail = f'{type(exc).__name__}: {exc}'
+                print(f'  [НЕ доступно] {url}  ({detail[:80]})')
+        print(f'зеркала ({region_name}): доступно {ok} из {len(urls)}')
+    if alive:
+        break
+
+# Отказ чистый: остановка до записи конфига archinstall, монтирования
+# разделов и закачки — повтор после восстановления сети обычная команда.
+if regions and not alive:
+    print(f'ОШИБКА: ни одно из зеркал не ответило за {PROBE_ROUNDS} круга проб —'
+          ' установка остановлена.', file=sys.stderr)
+    print('Проверьте сеть и повторите команду: диск НЕ переразмечается,'
+          ' остановка сделана до закачки пакетов.', file=sys.stderr)
+    sys.exit(1)
 
 pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
 PYEOF
