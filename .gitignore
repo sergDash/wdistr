@@ -33,3 +33,6 @@ install/files/winfonts/
 
 # Лог сборки ISO (создаётся mkarchiso-запуском в корне репозитория)
 build.log
+
+# База рейтинга зеркал (создаётся rate-mirrors.py, локальная история)
+mirrors.db

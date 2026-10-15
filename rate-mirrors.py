@@ -1,70 +1,110 @@
 #!/usr/bin/env python3
-# Рейтинг зеркал Arch для выбора в mirrors.txt.
+# Рейтинг зеркал Arch с историей в sqlite: обход официального списка,
+# накопление статистики и отбор «по одной позиции на страну».
 #
 #     python3 rate-mirrors.py [ограничение числа кандидатов]
 #
-# Откуда кандидаты: официальный статус archlinux.org/mirrors/status/json —
-# все зеркала с полями score/country/completion. Фильтр по нашей политике:
-# только https (http убран 2026-10-14: редиректы отнимают время),
-# активные, базы свежие (completion 1.0).
+# База — mirrors.db рядом со скриптом (в git не версионируется).
+# Таблица mirrors хранит по зеркалу: url, страну, официальный score,
+# флаг exist, среднюю скорость по ВСЕМ замерам, последний замер,
+# число замеров (для скользящего среднего), отклик и число отказов.
 #
-# Три прогона, потому что опыт отбора показал две ошибки:
-#   1. разовый замер скорости не ловит «прыгающих» (cdnmirror/truenetwork
-#      выбирались по красивому замеру и начали отбивать соединения);
-#   2. официальный рейтинг не учитывает наш путь (far.fi — лучший в
-#      статусе, из нашей сети не отвечает вообще).
-# Поэтому: скрининг доступности с нашей сети → замер скорости на куске
-# core.db → у топ-20 ещё два повтора: зеркало, пропустившее хоть один
-# раунд, в «лучшие» не идёт.
+# Синхронизация при каждом запуске (список зеркал закрыт только в
+# mirrors.txt, здесь база следует за официальным статусом):
+#   1. всем строкам exist = 0;
+#   2. тянем статус archlinux.org — каждое зеркало помечается exist = 1
+#      (новые вставляются);
+#   3. строки с exist = 0 (ушли из статуса) вычищаются из базы.
 #
-# Скрипт только меряет и печатает: в mirrors.txt добавление — вручную
-# и по явному решению (список зеркал закрыт, AGENTS.md).
+# Замер (три фазы — опыт отбора 2026-10-15):
+#   скрининг доступности из нашей сети → замер скорости куска extra.db →
+#   у топ-20 два повтора с паузой. Успех обновляет среднюю/последний
+#   замер и отклик, каждая неудачная проба добавляет +1 к отказам.
+#   Скорость считается ПОСЛЕ первого байта: иначе замер упирается в
+#   коннект/DNS, а не в передачу (маленький core.db, опыт 2026-10-15).
+#
+# Отбор для mirrors.txt (печатается отдельным списком):
+#   сортировка по средней скорости, только полные нули в отказах,
+#   из каждой страны берётся первая позиция — географическое
+#   разнообразие вместо девяти зеркал одного оператора. Страна '?' не
+#   фильтруется — под ней официальный CDN Arch (fastly).
+#
+# Скрипт только меряет: в mirrors.txt добавление — вручную по явному
+# решению (список зеркал закрыт, AGENTS.md).
 import json
+import os
+import sqlite3
 import statistics
 import sys
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mirrors.db')
 STATUS_URL = 'https://archlinux.org/mirrors/status/json/'
 UA = 'wdistr-rate-mirrors'
 # extra.db (~9 МиБ) как объект замера: core.db крошечный (~130 КиБ) и
-# отдаётся целиком быстрее, чем открывается соединение — замер упирается
-# в коннект/DNS, все зеркала показывают ~0,0 (опыт 2026-10-15)
+# отдаётся целиком быстрее, чем открывается соединение
 PROBE_PATH = 'extra/os/x86_64/extra.db'
 CHUNK = 2 * 1024 * 1024                # кусок extra.db для замера скорости
 TIMEOUT_SCREEN = 5                     # сек: скрининг доступности
 TIMEOUT_FETCH = 30                     # сек: скачивание куска
-WORKERS = 12                           # параллелизм: 378 кандидатов иначе час
+WORKERS = 12                           # параллелизм: ~380 кандидатов иначе час
 TOP_STABLE = 20                        # сколько топовых гоняем на стабильность
 STABILITY_ROUNDS = 3                   # раундов на зеркало (первый общий)
 ROUNDS_PAUSE = 2                       # сек между раундами стабильности
 
 
-def fetch_candidates(limit):
-    """Официальный статус → кандидаты https/completion 1.0 с метаданными."""
+def db_open():
+    db = sqlite3.connect(DB_PATH)
+    db.execute('''CREATE TABLE IF NOT EXISTS mirrors (
+        url TEXT PRIMARY KEY,       -- шаблон вида https://host/path/
+        country TEXT,
+        score REAL,                 -- официальный архlinux.org (меньше — лучше)
+        exist INTEGER NOT NULL DEFAULT 0,
+        speed_avg REAL,             -- скользящее среднее всех удачных замеров
+        speed_last REAL,            -- последний удачный замер, МБ/с
+        n INTEGER NOT NULL DEFAULT 0, -- сколько замеров вошло в среднее
+        response_ms REAL,           -- отклик последнего скрининга
+        failures INTEGER NOT NULL DEFAULT 0 -- суммарно неудачных проб
+    )''')
+    return db
+
+
+def sync_candidates(db):
+    """exist=0 по всем → вливание статуса → чистка ушедших из статуса."""
+    db.execute('UPDATE mirrors SET exist = 0')
+    prev_total = db.execute('SELECT COUNT(*) FROM mirrors').fetchone()[0]
+
     req = urllib.request.Request(STATUS_URL, headers={'User-Agent': UA})
     data = json.load(urllib.request.urlopen(req, timeout=20))
-    out = []
+    candidates = []
     for m in data['urls']:
+        # Политика: только https (http убран 2026-10-14 — редиректы),
+        # активные, свежие базы (completion 1.0)
         if m.get('protocol') != 'https':
             continue
         if not m.get('active') or m.get('completion_pct') != 1.0:
             continue
-        out.append({
-            'url': m['url'].rstrip('/') + '/',   # шаблон: <url>$repo/os/$arch
-            'country': m.get('country') or '?',
-            'score': m.get('score'),             # официальный, меньше — лучше
-        })
-    # Порядок статуса близок к official score — limit полезен для прогона
-    # на части списка при отладке
-    if limit:
-        out = out[:limit]
-    return out
+        url = m['url'].rstrip('/') + '/'
+        country = m.get('country') or '?'
+        score = m.get('score')
+        candidates.append({'url': url, 'country': country, 'score': score})
+        db.execute(
+            'INSERT INTO mirrors (url, country, score, exist) VALUES (?, ?, ?, 1) '
+            'ON CONFLICT(url) DO UPDATE SET exist = 1, '
+            'country = excluded.country, score = excluded.score',
+            (url, country, score))
+
+    added = db.execute('SELECT COUNT(*) FROM mirrors').fetchone()[0] - prev_total
+    stale = db.execute('SELECT COUNT(*) FROM mirrors WHERE exist = 0').fetchone()[0]
+    db.execute('DELETE FROM mirrors WHERE exist = 0')
+    db.commit()
+    return candidates, added, stale
 
 
 def screen(mirror):
-    """Скрининг: отвечает ли зеркало с нашей сети (1 байт core.db)."""
+    """Скрининг: отвечает ли зеркало с нашей сети (1 байт extra.db)."""
     t0 = time.time()
     url = mirror['url'] + PROBE_PATH
     try:
@@ -81,16 +121,14 @@ def measure(mirror):
     """Замер: кусок extra.db → (МБ/с передачи, ошибка).
 
     Скорость считается ПОСЛЕ первого байта, иначе в неё упирается
-    коннект/DNS: на маленьком файле соединение дороже самой передачи
-    (опыт 2026-10-15, см. PROBE_PATH). Коннект/DNS виден в колонке
-    «отклик» из скрининга.
+    коннект/DNS (опыт 2026-10-15, см. PROBE_PATH). Коннект/DNS виден
+    в отклике из скрининга.
     """
     url = mirror['url'] + PROBE_PATH
     try:
         req = urllib.request.Request(
             url,
             headers={'Range': f'bytes=0-{CHUNK - 1}', 'User-Agent': UA})
-        t0 = time.time()
         with urllib.request.urlopen(req, timeout=TIMEOUT_FETCH) as resp:
             first = resp.read(1)
             t_first = time.time()
@@ -105,25 +143,58 @@ def measure(mirror):
         return None, f'{type(exc).__name__}: {exc}'
 
 
+def record_screen(db, mirror, ttfb, err):
+    if err:
+        db.execute('UPDATE mirrors SET failures = failures + 1 WHERE url = ?',
+                   (mirror['url'],))
+    else:
+        db.execute('UPDATE mirrors SET response_ms = ? WHERE url = ?',
+                   (round(ttfb * 1000), mirror['url']))
+
+
+def record_speed(db, mirror, speed, err):
+    if err:
+        db.execute('UPDATE mirrors SET failures = failures + 1 WHERE url = ?',
+                   (mirror['url'],))
+        return
+    # Скользящее среднее: avg += (x - avg) / n после инкремента счётчика
+    avg, n = db.execute(
+        'SELECT speed_avg, n FROM mirrors WHERE url = ?',
+        (mirror['url'],)).fetchone()
+    n += 1
+    avg = speed if avg is None else avg + (speed - avg) / n
+    db.execute('UPDATE mirrors SET speed_avg = ?, speed_last = ?, n = ? '
+               'WHERE url = ?',
+               (round(avg, 2), round(speed, 2), n, mirror['url']))
+
+
 def main():
     limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
-    print('Загрузка официального статуса зеркал...')
-    candidates = fetch_candidates(limit)
-    print(f'Кандидатов (https, свежие базы): {len(candidates)}')
+    db = db_open()
+    print(f'База: {DB_PATH}')
+    print('Синхронизация с официальным статусом (exist → заливка → чистка)...')
+    candidates, added, stale = sync_candidates(db)
+    total = db.execute('SELECT COUNT(*) FROM mirrors').fetchone()[0]
+    print(f'Кандидатов в статусе: {len(candidates)}; база: {total} строк, '
+          f'добавлено {added}, вычищено ушедших {stale}')
+    if limit:
+        candidates = candidates[:limit]
 
-    # Фаза 1: скрининг доступности — здесь отсеиваются зеркала,
-    # недоступные именно из нашей сети (случай far.fi)
+    # Фаза 1: скрининг — здесь отсеиваются зеркала, недоступные именно
+    # из нашей сети (случай far.fi: официально лучший, у нас мёртвый)
     print(f'Скрининг доступности ({WORKERS} потоков, таймаут {TIMEOUT_SCREEN} с)...')
     dead = []
     survivors = []
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         for mirror, (ttfb, err) in zip(candidates, pool.map(screen, candidates)):
+            record_screen(db, mirror, ttfb, err)
             if err:
                 dead.append((mirror, err))
             else:
                 mirror['ttfb'] = ttfb
                 survivors.append(mirror)
+    db.commit()
     print(f'Ответили: {len(survivors)}, не ответили: {len(dead)}')
 
     # Фаза 2: один замер скорости для всех живых
@@ -131,48 +202,84 @@ def main():
     measured = []
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         for mirror, (speed, err) in zip(survivors, pool.map(measure, survivors)):
+            record_speed(db, mirror, speed, err)
             if err:
                 dead.append((mirror, err))
             else:
                 mirror['rounds'] = [speed]
                 measured.append(mirror)
+    db.commit()
     measured.sort(key=lambda m: -m['rounds'][0])
 
     # Фаза 3: стабильность топ-N — ещё раунды с паузой; промах раунда =
-    # зеркало «прыгает», в лучшие не попадает
+    # зеркало «прыгает», в отбор оно с отказами уже не попадёт
     top = measured[:TOP_STABLE]
-    print(f'Стабильность: топ-{len(top)}, раунды {STABILITY_ROUNDS}'
-          f' с паузой {ROUNDS_PAUSE} с...')
+    print(f'Стабильность: топ-{len(top)}, раунды {STABILITY_ROUNDS} '
+          f'с паузой {ROUNDS_PAUSE} с...')
     for rnd in range(2, STABILITY_ROUNDS + 1):
         time.sleep(ROUNDS_PAUSE)
         with ThreadPoolExecutor(max_workers=WORKERS) as pool:
             results = pool.map(measure, top)
         for mirror, (speed, err) in zip(top, results):
+            record_speed(db, mirror, speed, err)
             mirror['rounds'].append(speed if not err else None)
+    db.commit()
+
+    # Данные для отчёта: свежие средние/отказы из базы
+    rows = {r[0]: r for r in db.execute(
+        'SELECT url, speed_avg, speed_last, response_ms, failures, country '
+        'FROM mirrors')}
 
     stable = [m for m in top if all(r is not None for r in m['rounds'])]
     flaky = [m for m in top if any(r is None for r in m['rounds'])]
     stable.sort(key=lambda m: -statistics.median(m['rounds']))
 
     print()
-    print(f'ЛУЧШИЕ (стабильные, медиана {STABILITY_ROUNDS} раундов):')
-    print(f'{"#":>3} {"МБ/с":>6}  раунды              {"отклик,мс":>10} {"score":>6}  страна            зеркало')
+    print(f'ТОП ПО СКОРОСТИ ЭТОГО ПРОГОНА (стабильные {STABILITY_ROUNDS} раунда):')
+    print(f'{"#":>3} {"МБ/с":>6} {"средн":>6} {"отк":>4} {"отклик":>7}  '
+          f'{"раунды":<19} {"страна":<17} зеркало')
     for n, m in enumerate(stable, 1):
+        _, avg, _, resp, fails, _ = rows.get(m['url'], (None,) * 6)
         rounds = ' | '.join(f'{r:.1f}' for r in m['rounds'])
-        score = f'{m["score"]:.2f}' if m['score'] is not None else '?'
-        print(f'{n:3} {statistics.median(m["rounds"]):6.1f}  {rounds:<19} '
-              f'{m["ttfb"] * 1000:10.0f} {score:>6}  {m["country"]:<17} {m["url"]}')
+        avg_s = f'{avg:.1f}' if avg is not None else '—'
+        resp_s = f'{resp:.0f}' if resp is not None else '—'
+        print(f'{n:3} {statistics.median(m["rounds"]):6.1f} {avg_s:>6} {fails:4} '
+              f'{resp_s:>7}  {rounds:<19} {m["country"]:<17} {m["url"]}')
 
     if flaky:
         print()
-        print('ПРЫГАЮТ (пропустили раунд — не рекомендуются):')
+        print('ПРЫГАЮТ (пропустили раунд — в отбор с ними не пойдём):')
         for m in flaky:
+            _, _, _, _, fails, _ = rows.get(m['url'], (None,) * 6)
             rounds = ' | '.join(f'{r:.1f}' if r else 'ОТКАЗ' for r in m['rounds'])
-            print(f'  {rounds}  {m["url"]}')
+            print(f'  {rounds}  отказов всего: {fails}  {m["url"]}')
+
+    # Отбор для mirrors.txt: полный ноль в отказах за всю историю,
+    # сортировка по средней скорости, по одной позиции на страну
+    picks = []
+    seen_countries = set()
+    for row in db.execute(
+            'SELECT url, country, speed_avg, speed_last, response_ms, failures '
+            'FROM mirrors WHERE failures = 0 AND speed_avg IS NOT NULL '
+            'ORDER BY speed_avg DESC'):
+        url, country, avg, last, resp, fails = row
+        if country in seen_countries:
+            continue
+        seen_countries.add(country)
+        picks.append(row)
+
+    print()
+    print('ОТБОР ДЛЯ mirrors.txt (отказов = 0, по средней скорости, '
+          'по одной позиции на страну):')
+    print(f'{"средн":>6} {"посл":>6} {"отклик":>7}  {"страна":<17} зеркало')
+    for url, country, avg, last, resp, fails in picks:
+        resp_s = f'{resp:.0f}' if resp is not None else '—'
+        print(f'{avg:6.1f} {last:6.1f} {resp_s:>7}  {country:<17} {url}')
 
     if dead:
         print()
-        print(f'НЕ ОТВЕТИЛИ ИЗ НАШЕЙ СЕТИ: {len(dead)}')
+        print(f'НЕ ОТВЕТИЛИ ИЗ НАШЕЙ СЕТИ: {len(dead)} '
+              '(каждому +1 к отказам в базе)')
         reasons = {}
         for _, err in dead:
             key = err.split(':')[0]
@@ -180,9 +287,9 @@ def main():
         print('  причины:', ', '.join(f'{k} ×{v}' for k, v in sorted(reasons.items())))
 
     print()
-    print('Напоминание: добавление в mirrors.txt — вручную по явному решению;')
-    print('официальный score справочный (меньше — лучше), решающим считаем')
-    print('наши раунды: они меряют путь именно из этой сети.')
+    print('Напоминание: в mirrors.txt добавление — вручную по явному решению;')
+    print('score в таблице справочный и чужой (обновляется из статуса),')
+    print('решающим считаем наши замеры: они меряют путь из этой сети.')
 
 
 if __name__ == '__main__':
