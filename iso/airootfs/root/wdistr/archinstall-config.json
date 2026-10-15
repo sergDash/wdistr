@@ -291,6 +291,7 @@
         "bc",
         "bind",
         "httrack",
+        "pv",
         "time"
     ],
     "pacman_config": {

@@ -222,6 +222,15 @@ if not missing and len(aur_list) >= 15:
 else:
     fail(f'first-boot: AUR-список пакетов {len(aur_list)}, не хватает: {missing or "—"}')
 
+# 13. Консольные утилиты второй волны (решение 2026-10-15): pv
+# добавлен следом за bc/httrack/time/bind
+utils = cfg.get('packages', [])
+missing = [p for p in ('bc', 'bind', 'httrack', 'time', 'pv') if p not in utils]
+if not missing:
+    ok(f'состав: консольные утилиты bc/bind/httrack/time/pv (всего {len(utils)} пакетов)')
+else:
+    fail(f'состав: в packages[] {len(utils)}, не хватает: {missing}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
