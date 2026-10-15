@@ -270,7 +270,11 @@
         "baobab",
         "android-tools",
         "zig",
-        "terminus-font"
+        "terminus-font",
+        "noto-fonts",
+        "noto-fonts-cjk",
+        "noto-fonts-emoji",
+        "noto-fonts-extra"
     ],
     "pacman_config": {
         "color": true,
