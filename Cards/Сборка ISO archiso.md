@@ -93,9 +93,28 @@ ISO появляется в `iso/out/` (путь задан флагом `-o`), 
 
 ## Проверка содержимого ISO без загрузки
 
+Основной путь — чек-лист скриптом (создан 2026-10-15):
+
 ```bash
-7z x -o/tmp/x <iso> arch/x86_64/airootfs.sfs
-unsquashfs -d /tmp/x/ex /tmp/x/arch/x86_64/airootfs.sfs etc/hostname root/wdistr
+iso/check-iso.sh                 # свежий iso/out/wdistr-*.iso
+iso/check-iso.sh путь/к/файлу.iso
+```
+
+Скрипт извлекает squashfs из ISO (xorriso, без монтирования и root),
+распаковывает только нужные файлы во временный каталог и снимает его
+через `trap` — хвостов в /tmp не остаётся (ручные распаковки раньше
+застревали: unsquashfs копирует права каталогов из архива, `r-x`
+не разбирался `rm`, опыт 2026-10-15). Чек-лист: остановка зеркал в
+setup-continue, регион `## wdistr` и два зеркала, dispatcher с
+chmod 755, минус на ExecStop, noto-fonts-cjk, timezone, opencode
+(симлинк → бинарник 755), 143 winfonts. Код выхода 1 при любом
+провале. Новая существенная правка образа — новая проверка в скрипте.
+
+Вручную (как скрипт внутри, для разбора конкретного файла):
+
+```bash
+xorriso -indev <iso> -osirrox on -extract /arch/x86_64/airootfs.sfs /tmp/x.sfs
+unsquashfs -d /tmp/x/ex /tmp/x.sfs root/wdistr etc/hostname
 ```
 
 ## Тест
