@@ -1,4 +1,6 @@
 # Наш статический список хороших серверов: состав закрыт,
 # правится только файлом mirrors.txt в репозитории.
 ## wdistr
-Server = https://cdnmirror.com/archlinux/$repo/os/$arch
+Server = https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch
+Server = https://mirror.wuki.li/archlinux/$repo/os/$arch
+Server = https://mirror.clientvps.com/archlinux/$repo/os/$arch
