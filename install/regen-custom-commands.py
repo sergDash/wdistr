@@ -224,9 +224,14 @@ def main() -> None:
         # Сетевые правила пользователя (enp6s0, шлюз 192.168.0.1 —
         # железо хоста разработки): юниты системные, включение после
         # доставки; на машине с другим интерфейсом юнит упадёт по
-        # таймауту ожидания сети — безвредно, включается только здесь
+        # таймауту ожидания сети — безвредно, включается только здесь.
+        # Dispatcher-скрипт NetworkManager перезапускает ip-routing при
+        # событиях сети (моргание кабеля, up/down amn0 у Amnezia):
+        # маршруты через интерфейс ядро сбрасывает сам, сервис ставит
+        # их заново. Без +x NM скрипт в dispatcher.d не запускает.
         deliver(FILES / "port-routing.service", "/etc/systemd/system/port-routing.service"),
         deliver(FILES / "ip-routing.service", "/etc/systemd/system/ip-routing.service"),
+        deliver(FILES / "90-ip-routing-restart", "/etc/NetworkManager/dispatcher.d/90-ip-routing-restart", "755"),
         "systemctl enable port-routing.service ip-routing.service",
         # opencode собственной сборки: скрипт и патчи — в ~/bin первого
         # пользователя (паттерн с хоста разработки). Сборка на первом

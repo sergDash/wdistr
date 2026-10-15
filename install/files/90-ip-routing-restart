@@ -1,0 +1,36 @@
+#!/bin/bash
+# Dispatcher NetworkManager: перезапуск ip-routing.service при событиях сети.
+# Аргументы от NM: $1 — имя интерфейса, $2 — действие (up, down, ...).
+#
+# Логика событий:
+#   enp6s0 up    — после магания кабеля ядро вычистило маршруты через интерфейс,
+#                  адрес снова получен, сервис должен проставить их заново.
+#                  На down не реагируем: маршрутов уже нет, а ExecStartPre
+#                  ждал бы появления адреса и блокировал NM.
+#   amn0 up/down — Amnezia при деактивации удаляет свои exclusion-маршруты,
+#                  при активации добавляет заново. Сервис возвращает оба
+#                  хост-маршрута в любом случае.
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+INTERFACE="$1"
+ACTION="$2"
+TAG="ip-routing-dispatcher"
+
+case "$INTERFACE" in
+    enp6s0)
+        if [ "$ACTION" = "up" ]; then
+            logger -t "$TAG" "enp6s0 up: перезапуск ip-routing.service"
+            systemctl --no-block restart ip-routing.service
+        fi
+        ;;
+    amn0)
+        if [ "$ACTION" = "up" ] || [ "$ACTION" = "down" ]; then
+            logger -t "$TAG" "amn0 $ACTION: перезапуск ip-routing.service"
+            systemctl --no-block restart ip-routing.service
+        fi
+        ;;
+esac
+
+exit 0

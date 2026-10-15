@@ -2,8 +2,9 @@
 Description=Apply ip routing rules
 After=network-online.target
 Wants=network-online.target
-#BindsTo=sys-subsystem-net-devices-enp6s0.device
-#After=sys-subsystem-net-devices-enp6s0.device
+# Маршруты могут сбрасываться от различных событий, моргание кабеля например,
+# поэтому есть скрипт перезапуска
+# /etc/NetworkManager/dispatcher.d/90-ip-routing-restart
 
 # Шаблон: маршруты закомментированы, адреса — демонстрационные
 # (123.123.123.123). Чтобы включить: заменить INTERFACE/GW под свою
@@ -18,7 +19,11 @@ Environment="GW=192.168.0.1"
 
 # Маршруты (демо-адрес → свой): пары ExecStart/ExecStop на каждый хост
 #ExecStart=/sbin/ip route replace 123.123.123.123 via ${GW} dev ${INTERFACE}
-#ExecStop=/sbin/ip route del 123.123.123.123 via ${GW} dev ${INTERFACE}
+# Минус перед удалением: маршрут мог уже убрать другое событие (ядро при
+# обрыве связи, Amnezia при down туннеля) — тогда ip route del возвращает
+# RTNETLINK «No such process». Без минуса юнит уходит в failed, с минусом
+# ошибка остаётся в журнале, а юнит успешен (опыт 2026-10-15).
+#ExecStop=-/sbin/ip route del 123.123.123.123 via ${GW} dev ${INTERFACE}
 
 # Пустой успешный запуск, пока маршруты закомментированы —
 # юнит стартует и завершается без ошибок
