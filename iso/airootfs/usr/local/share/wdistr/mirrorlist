@@ -2,4 +2,3 @@
 # правится только файлом mirrors.txt в репозитории.
 ## wdistr
 Server = https://cdnmirror.com/archlinux/$repo/os/$arch
-Server = https://mirror.truenetwork.ru/archlinux/$repo/os/$arch
