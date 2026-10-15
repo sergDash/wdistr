@@ -48,4 +48,13 @@ gsettings set org.cinnamon.desktop.session idle-delay 0
 gsettings set org.cinnamon.settings-daemon.plugins.power sleep-display-ac 3600
 gsettings set org.cinnamon.settings-daemon.plugins.power button-power 'shutdown'
 
+# Съёмные носители: переключатель «Спрашивать или запускать программы
+# при подключении носителя» — выключен (autorun-never=true; виджет
+# инвертирует ключ, дефолт схемы false). Диалог выбора приложения при
+# вставке носителя не показывается. На тестовой 2026-10-15 ключ оказался
+# записан в пользовательский dconf отдельно от дефолта — системную
+# запись (10-wdistr-desktop) дублируем здесь по паттерну тем/шрифтов;
+# отработала или нет — проверить при следующей установке.
+gsettings set org.cinnamon.desktop.media-handling autorun-never true
+
 touch "$MARKER"

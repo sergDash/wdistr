@@ -170,6 +170,42 @@ if len(winfonts) == 143:
 else:
     fail(f'winfonts: в листинге {len(winfonts)}, ожидалось 143')
 
+# 10. Папки открывает Nemo: системный mimeapps.list доставлен и
+# назначает inode/directory (иначе mimeinfo.cache отдаёт codium —
+# опыт 2026-10-15, диск открывался в редакторе)
+mm = [c for c in cmds if '/etc/xdg/mimeapps.list' in c]
+payload = ''
+if mm:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d", mm[0])
+    if m:
+        payload = base64.b64decode(m.group(1)).decode('utf-8', 'replace')
+if len(mm) == 1 and 'inode/directory=nemo.desktop' in payload:
+    ok('mimeapps.list: inode/directory → nemo.desktop')
+else:
+    fail(f'mimeapps.list: команд доставки {len(mm)}, назначение в файле = {"inode/directory=nemo.desktop" in payload}')
+
+# 11. Съёмные носители: «Спрашивать или запускать» — выключен
+# (autorun-never=true) в системном dconf-дефолте и в форсе первого
+# входа; оба места обязательны по паттерну тем/шрифтов
+dc = [c for c in cmds if '10-wdistr-desktop' in c]
+dc_payload = ''
+if dc:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d", dc[0])
+    if m:
+        dc_payload = base64.b64decode(m.group(1)).decode('utf-8', 'replace')
+cd = [c for c in cmds if '/usr/local/bin/wdistr-cinnamon-defaults' in c]
+cd_payload = ''
+if cd:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d", cd[0])
+    if m:
+        cd_payload = base64.b64decode(m.group(1)).decode('utf-8', 'replace')
+sys_ok = 'autorun-never=true' in dc_payload
+force_ok = 'autorun-never true' in cd_payload
+if sys_ok and force_ok:
+    ok('съёмные носители: autorun-never=true в системном дефолте и в форсе первого входа')
+else:
+    fail(f'съёмные носители: системный дефолт = {sys_ok}, форс первого входа = {force_ok}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

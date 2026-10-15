@@ -14,3 +14,11 @@ idle-delay=uint32 0
 [org/cinnamon/settings-daemon/plugins.power]
 sleep-display-ac=3600
 button-power='shutdown'
+
+# Съёмные носители: переключатель «Спрашивать или запускать программы
+# при подключении носителя» — выключен. Виджет инвертирует ключ
+# (InvertedSwitch в cs_default.py): выключен = autorun-never=true,
+# дефолт схемы false. При подключении носителя не выскакивает диалог
+# с выбором приложения (решение 2026-10-15, значение с рабочей машины).
+[org/cinnamon/desktop/media-handling]
+autorun-never=true

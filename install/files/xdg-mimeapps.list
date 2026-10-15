@@ -1,0 +1,12 @@
+# Системные ассоциации файлов по умолчанию (wdistr).
+#
+# Папки открывает Nemo (файловый менеджер Cinnamon), а не VSCodium:
+# codium.desktop объявляет MimeType=inode/directory и в mimeinfo.cache
+# стоит первым по алфавиту среди держателей каталога (codium;
+# dev.pragtical.Pragtical; nemo; org.gnome.baobab) — без этой записи
+# подбор отдавал его (опыт 2026-10-15: при подключении диска
+# открывался редактор, а не файловый менеджер).
+# Файл действует на всех пользователей; выбор пользователя в
+# ~/.config/mimeapps.list его перекрывает — это ожидаемо.
+[Default Applications]
+inode/directory=nemo.desktop

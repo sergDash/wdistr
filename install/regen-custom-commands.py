@@ -126,6 +126,12 @@ def main() -> None:
         deliver(FILES / "dconf-local-theme", "/etc/dconf/db/local.d/00-wdistr-theme"),
         deliver(FILES / "dconf-local-desktop", "/etc/dconf/db/local.d/10-wdistr-desktop"),
         "dconf update",
+        # Ассоциация папок: Nemo, а не VSCodium. codium.desktop держит
+        # inode/directory и в mimeinfo.cache стоит первым по алфавиту —
+        # без системного mimeapps.list диск открывался в редакторе
+        # (опыт 2026-10-15). /etc/xdg/mimeapps.list приоритетнее
+        # mimeinfo.cache; выбор пользователя в ~/.config его перекрывает
+        deliver(FILES / "xdg-mimeapps.list", "/etc/xdg/mimeapps.list"),
         # Тёмная тема для Mozilla-приложений (Firefox, Thunderbird): у них
         # своя система тем, GTK/dconf они не читают — «системная» тема
         # следует за pref'ом ui.systemUsesDarkTheme. Дефолтный pref в
