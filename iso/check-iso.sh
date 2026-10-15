@@ -88,11 +88,23 @@ expected = [l.strip() for l in open(mirrors_path, encoding='utf-8')
 # 2. Локальный mirrorlist: регион по имени (по нему archinstall ищет
 # зеркала при --offline) и состав ровно как в mirrors.txt
 mirrorlist = open(mirror_path, encoding='utf-8').read()
-servers = [m[len('Server = '):] for m in re.findall(r'^Server = (.+)$', mirrorlist, re.M)]
+# findall возвращает группу — уже сам URL без префикса "Server = ";
+# срез по длине префикса вырезал бы из URL первые 9 символов
+# (бага чек-листа 2026-10-15, внесена в aae8fe6: список в образе
+# совпадал, а сравнение билось об усечённые строки)
+servers = re.findall(r'^Server = (.+)$', mirrorlist, re.M)
 if '## wdistr' in mirrorlist and servers == expected:
     ok(f'mirrorlist: регион ## wdistr, {len(servers)} зеркал — совпадает с mirrors.txt')
 else:
-    fail(f'mirrorlist: регион = {"## wdistr" in mirrorlist}, зеркал в образе {len(servers)}, в mirrors.txt {len(expected)}')
+    # при равных длинах показать первое расхождение — иначе провал
+    # «12 против 12» не объясняет, чем именно списки различаются
+    detail = ''
+    if len(servers) == len(expected):
+        for i, (got, want) in enumerate(zip(servers, expected)):
+            if got != want:
+                detail = f'; первое расхождение №{i}: в образе {got!r}, в mirrors.txt {want!r}'
+                break
+    fail(f'mirrorlist: регион = {"## wdistr" in mirrorlist}, зеркал в образе {len(servers)}, в mirrors.txt {len(expected)}{detail}')
 
 cfg = json.load(open(cfg_path, encoding='utf-8'))
 cmds = cfg.get('custom_commands', [])
