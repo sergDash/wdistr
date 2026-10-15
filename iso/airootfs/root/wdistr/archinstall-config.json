@@ -274,7 +274,10 @@
         "noto-fonts",
         "noto-fonts-cjk",
         "noto-fonts-emoji",
-        "noto-fonts-extra"
+        "noto-fonts-extra",
+        "bc",
+        "httrack",
+        "time"
     ],
     "pacman_config": {
         "color": true,
