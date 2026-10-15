@@ -36,3 +36,6 @@ build.log
 
 # База рейтинга зеркал (создаётся rate-mirrors.py, локальная история)
 mirrors.db
+
+# Кэш python (py_compile при проверках скриптов)
+__pycache__/
