@@ -121,6 +121,7 @@ pragtical-bin
 android-studio
 librepcb
 jan
+beekeeper-studio
 "
 for pkg in $AUR_PACKAGES; do
     run sudo -u "$USER_NAME" env HOME="$USER_HOME" \
