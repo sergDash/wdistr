@@ -67,8 +67,9 @@ wdistr — свой дистрибутив на базе Arch Linux: переу�
    (sys/aur/flatpak) заведены и активны.
 4. `pacman -Q fish cinnamon android-tools zig terminus-font` —
    базовый состав стоит; `ls /usr/local/bin/opencode` — бинарник.
-5. `grep -c Server /etc/pacman.d/mirrorlist` и его содержимое —
-   только наши зеркала (список закрыт).
+5. `grep -c Server /etc/pacman.d/mirrorlist` — наш список из
+   mirrors.txt доставлен при установке (состав — по статистике
+   `rate-mirrors.py` в репозитории; пользователь вправе менять).
 6. `ls /etc/udev/rules.d/01-wdistr-serial.rules` — serial-доступ
    к платам (Arduino) на месте.
 7. `df -h /` — свободного места достаточно (кэши должны были
@@ -76,8 +77,6 @@ wdistr — свой дистрибутив на базе Arch Linux: переу�
 
 ## Чего не делать
 
-- Не менять `/etc/pacman.d/mirrorlist` и не добавлять зеркала —
-  список закрыт проектом, правится только в mirrors.txt в репозитории.
 - Не чистить кэши pacman/yay, пока first-boot не завершился — таймер
   повтора добирает упавшие пакеты как раз из кэша.
 - Не пересобирать системные пакеты «для улучшений» — значительная

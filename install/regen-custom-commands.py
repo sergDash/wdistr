@@ -23,9 +23,12 @@ CONFIG = INSTALL / "archinstall-config.json"
 FILES = INSTALL / "files"
 PROFILE_COPY = INSTALL.parent / "iso/airootfs/root/wdistr/archinstall-config.json"
 
-# Единый список зеркал дистрибутива (решение 2026-10-08): и живая среда,
-# и устанавливаемая работают только с ним. Отсюда он раздаётся в профиль
-# ISO (живая среда) и в custom_commands (целевая система).
+# Единый список зеркал дистрибутива (решение 2026-10-08; цель —
+# одноразовая доставка с 2026-10-15): живая среда работает со списком
+# через хук, устанавливаемая получает его при установке один раз и
+# дальше живёт своими правками (mirrorlist — backup-файл pacman).
+# Отсюда список раздаётся в профиль ISO (живая среда) и в
+# custom_commands (целевая система).
 MIRRORS = INSTALL.parent / "mirrors.txt"
 MIRROR_HOOK = FILES / "wdistr-mirrors.hook"
 PROFILE_MIRRORLIST = INSTALL.parent / "iso/airootfs/usr/local/share/wdistr/mirrorlist"
@@ -84,12 +87,14 @@ def main() -> None:
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
         "sed -i '/#\\[multilib\\]/,/^#Include/ s/^#//' /etc/pacman.conf",
-        # Зеркала wdistr (mirrors.txt → mirrorlist): хук + источник, затем
-        # прямая запись mirrorlist — archinstall пишет свой список до
-        # pacstrap, а пакет pacman-mirrorlist при установке затирает его
-        # стоковым; хук в дальнейшем восстанавливает список при обновлениях
-        deliver(MIRROR_HOOK, "/etc/pacman.d/hooks/wdistr-mirrors.hook"),
-        deliver(PROFILE_MIRRORLIST, "/usr/local/share/wdistr/mirrorlist"),
+        # Зеркала wdistr (mirrors.txt → mirrorlist): в цель —
+        # одноразовая доставка списка, наш дефолт «поставил и работает».
+        # Хук с источником в цель НЕ идёт (решение 2026-10-15): у
+        # pacman-mirrorlist mirrorlist — backup-файл, правки пользователя
+        # переживают обновления пакета сами (новый сток уходит в
+        # .pacnew), а хук только перебивал бы их. Хук с источником
+        # остаётся в живой среде: там при сборке pacman-mirrorlist
+        # свежеустанавливается и затирает список
         deliver(PROFILE_MIRRORLIST, "/etc/pacman.d/mirrorlist"),
         # gai.conf: приоритет IPv4 (precedence ::ffff:0:0/96 100). Без
         # него glibc выбирает IPv6 первым и на виснущем IPv6 соединения
