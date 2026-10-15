@@ -74,14 +74,16 @@ fi
 CREDS=/var/tmp/wdistr-creds.json
 CONFIG=/var/tmp/wdistr-config.json
 
-python3 - "$1" "$2" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
+# Диск ($3) тоже уходит в python — сообщение об остановке печатает
+# готовую команду продолжения с аргументами пользователя
+python3 - "$1" "$2" "$3" "$CREDS" "$CONFIG" <<'PYEOF' || exit 1
 import json
 import pathlib
 import sys
 import time
 import urllib.request
 
-name, password, creds_path, config_path = sys.argv[1:5]
+name, password, disk, creds_path, config_path = sys.argv[1:6]
 
 # Учётные данные: один пароль для пользователя и root
 pathlib.Path(creds_path).write_text(json.dumps({
@@ -145,12 +147,20 @@ for round_nr in range(1, PROBE_ROUNDS + 1):
         break
 
 # Отказ чистый: остановка до записи конфига archinstall, монтирования
-# разделов и закачки — повтор после восстановления сети обычная команда.
+# разделов и закачки. Сообщение печатает ГОТОВУЮ команду продолжения
+# с аргументами: «повторите команду» сбивало — повтор setup переразмечал
+# диск, а продолжение это фаза 2 (опыт 2026-10-15: кабель отключён,
+# установка встала, непонятно что именно повторять).
 if regions and not alive:
+    # flush: stdout в пирпе буферизуется целиком, без сброса печать
+    # ошибки из stderr опережает строки проб в логе
+    sys.stdout.flush()
     print(f'ОШИБКА: ни одно из зеркал не ответило за {PROBE_ROUNDS} круга проб —'
           ' установка остановлена.', file=sys.stderr)
-    print('Проверьте сеть и повторите команду: диск НЕ переразмечается,'
-          ' остановка сделана до закачки пакетов.', file=sys.stderr)
+    print('Проверьте сеть и продолжите установку командой (разметка фазы 1'
+          ' цела, диск НЕ переразмечается — возобновится только закачка):',
+          file=sys.stderr)
+    print(f'    setup-continue {name} {password} {disk}', file=sys.stderr)
     sys.exit(1)
 
 pathlib.Path(config_path).write_text(json.dumps(config, indent=4))
