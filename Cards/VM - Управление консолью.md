@@ -64,3 +64,33 @@ VBoxManage controlvm wdistr-test screenshotpng /tmp/opencode/shot.png
 - Ввод идёт в активную виртуальную консоль гостя (tty): команда попадёт
   туда, куда смотрит экран VM, — не запускать, если в консоли открыт
   диалог или меню.
+
+## Инциденты
+
+- **2026-10-15: окно VM упало, машина в состоянии aborted.**
+  Симптом: `VBoxManage showvminfo` показывает `VMState="aborted"`,
+  лог обрывается без штатного завершения. Причина — сегфолт самого
+  процесса `VirtualBoxVM` на хосте, не сбой гостя:
+
+  ```
+  kernel: VirtualBoxVM[...]: segfault ... in libQt6Widgets.so.6.12.0
+  systemd-coredump: Process (VirtualBoxVM) terminated abnormally with signal 11/SEGV
+  ```
+
+  Триггер: секундами ранее на хосте шла буря событий смены геометрии
+  экранов (`Host-screen geometry changed`, `Screen count changed`,
+  ресайзы рабочих областей до `0x0`) — подключение/переключение
+  мониторов; ломается Qt-часть VirtualBox 7.2.20 на этой
+  переконфигурации.
+
+  Гость и его диск при этом НЕ пострадали (погиб только процесс
+  отрисовки с гостевой памятью). Восстановление — просто запустить
+  заново: `VBoxManage startvm wdistr-test`.
+
+  Диагностика: `journalctl -b | grep -iE "virtualbox|segfault"` и
+  `VBoxManage showvminfo <vm> | grep VMState`.
+
+  **Лог самого сеанса VM лежит рядом с файлом `.vbox` на том диске,
+  где живёт машина** (`/run/media/serg/EVO1TB/VirtualBox VMs/<vm>/Logs/VBox.log`),
+  а не в `~/.config/VirtualBox/Logs` — там такого каталога может не
+  быть.
