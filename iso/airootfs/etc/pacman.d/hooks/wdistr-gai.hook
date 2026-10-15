@@ -1,0 +1,24 @@
+# Добавляет строку приоритета IPv4 в /etc/gai.conf, если её нет.
+# Зачем: по умолчанию glibc предпочитает IPv6 (precedence 40 против 10
+# у адреса IPv4-mapped) — на сети с мёртвым или виснущим IPv6 адрес
+# IPv6 выбирается первым и соединение ждёт таймаута. Опыт 2026-10-15:
+# резолвер на рабочей машине зависал на 10-14 с, сборки падали по DNS,
+# зеркала «отказывали» по IPv6-пути; строка precedence вылечила мгновенно.
+# glibc поставляет /etc/gai.conf сам, поэтому хук добивает строку ПОСЛЕ
+# установки/обновления glibc: при сборке ISO (живая среда) и в
+# установленной системе при будущих обновлениях glibc. Повторное
+# добавление исключено — перед echo стоит проверка grep.
+# ВНИМАНИЕ: служебный маркер сборочного хука в этот файл не вставлять —
+# иначе хук удалят из живой среды при сборке (см. zzzz99 в этой папке).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = glibc
+
+[Action]
+Description = Applying wdistr gai.conf (IPv4 precedence)...
+When = PostTransaction
+Depends = sh
+Depends = grep
+Exec = /bin/sh -c "grep -q 'precedence ::ffff:0:0/96' /etc/gai.conf || echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf"

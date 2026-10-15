@@ -30,6 +30,9 @@ MIRRORS = INSTALL.parent / "mirrors.txt"
 MIRROR_HOOK = FILES / "wdistr-mirrors.hook"
 PROFILE_MIRRORLIST = INSTALL.parent / "iso/airootfs/usr/local/share/wdistr/mirrorlist"
 PROFILE_MIRROR_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-mirrors.hook"
+# gai.conf: приоритет IPv4 перед IPv6 (хук на glibc — опыт 2026-10-15)
+GAI_HOOK = FILES / "wdistr-gai.hook"
+PROFILE_GAI_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-gai.hook"
 
 
 def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: bool = False) -> str:
@@ -88,6 +91,15 @@ def main() -> None:
         deliver(MIRROR_HOOK, "/etc/pacman.d/hooks/wdistr-mirrors.hook"),
         deliver(PROFILE_MIRRORLIST, "/usr/local/share/wdistr/mirrorlist"),
         deliver(PROFILE_MIRRORLIST, "/etc/pacman.d/mirrorlist"),
+        # gai.conf: приоритет IPv4 (precedence ::ffff:0:0/96 100). Без
+        # него glibc выбирает IPv6 первым и на виснущем IPv6 соединения
+        # ждут таймаута (опыт 2026-10-15: DNS висел 10-14 с, сборки
+        # падали). Хук ставится и в цель — для будущих обновлений glibc;
+        # строка добавляется сразу, хук — страховка (glibc может
+        # перестроить файл при обновлении)
+        deliver(GAI_HOOK, "/etc/pacman.d/hooks/wdistr-gai.hook"),
+        "grep -q 'precedence ::ffff:0:0/96' /etc/gai.conf "
+        "|| echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf",
         # AGENTS.md установленной системы — инструкция для агента в
         # целевой: логика двухфазной установки, логи, самопроверка
         # (идея 2026-09-26, реализация 2026-10-14). Системная копия —
@@ -269,6 +281,9 @@ def main() -> None:
     # Хук зеркал в профиль ISO (в airootfs до сборки — чтобы в живой среде
     # был хук, восстанавливающий список при обновлении pacman-mirrorlist)
     shutil.copyfile(MIRROR_HOOK, PROFILE_MIRROR_HOOK)
+    # Хук gai.conf в профиль: срабатывает при установке glibc во время
+    # сборки — строка приоритета IPv4 попадает в живую среду
+    shutil.copyfile(GAI_HOOK, PROFILE_GAI_HOOK)
     print(f"custom_commands: {len(config['custom_commands'])} команд(ы)")
     print(f"конфиг синхронизирован с профилем: {PROFILE_COPY}")
     print(f"mirrorlist из {MIRRORS.name} ({len(urls)} зеркал): {PROFILE_MIRRORLIST}")
