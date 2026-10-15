@@ -179,6 +179,10 @@ def main() -> None:
         # курсоров это было непропорционально. Мелкие конфиги ниже
         # остаются base64.
         deliver(FILES / "cursor-default-index.theme", "/usr/share/icons/default/index.theme"),
+        # xfce-xsettings.xml — глобальный дефолт темы XFCE. Cinnamon его
+        # не читает, файл держим на случай установки xfce4 пользователем
+        # (тема уже докинута; тогда же нужны xfce4 и xfce4-pulseaudio-plugin);
+        # в карточке «Базовый набор программ» этот хвост не описываем
         deliver(
             FILES / "xfce-xsettings.xml",
             "/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml",
