@@ -307,7 +307,8 @@
         "keyd",
         "sshd",
         "docker",
-        "bluetooth"
+        "bluetooth",
+        "smartd"
     ],
     "swap": {
         "algorithm": "zstd",

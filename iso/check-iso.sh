@@ -231,13 +231,15 @@ if not missing:
 else:
     fail(f'состав: в packages[] {len(utils)}, не хватает: {missing}')
 
-# 14. Сервис Bluetooth: bluetooth.service в services[] (иначе GUI blueman
-# есть, а демон disabled — опыт 2026-10-15 на рабочей машине)
+# 14. Сервисы в services[]: bluetooth (иначе GUI blueman есть, а демон
+# disabled — опыт 2026-10-15 на рабочей машине) и smartd (мониторинг
+# SMART дисков — пакет ставится, сервис без включения молчит)
 services = cfg.get('services', [])
-if 'bluetooth' in services:
-    ok(f'сервисы: bluetooth включён ({", ".join(services)})')
+svc_missing = [s for s in ('bluetooth', 'smartd') if s not in services]
+if not svc_missing:
+    ok(f'сервисы: bluetooth и smartd включены ({", ".join(services)})')
 else:
-    fail(f'сервисы: bluetooth нет, services[] = {services}')
+    fail(f'сервисы: нет {svc_missing}, services[] = {services}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
