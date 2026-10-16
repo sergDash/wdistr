@@ -69,10 +69,32 @@ panel-zone-symbolic-icon-sizes=[{'panelId': 1, 'left': 28, 'center': 28, 'right'
 | `gtk-theme` (cinnamon + gnome) | `Mint-Y-Dark-Aqua-10` |
 | `color-scheme` (gnome) | `prefer-dark` |
 | `font-name` | `Ubuntu 11` |
-| `text-scaling-factor` (gnome) | `1.5` — Ubuntu 11 рендерится ~16.5 px; TODO: проверка высоты экрана >1500 |
+| `text-scaling-factor` (gnome + cinnamon) | `1.5` — Ubuntu 11 рендерится ~16.5 px; **два ключа**: cinnamon читает свой (`org.cinnamon.desktop.interface`), gnome-ключ ему не подчиняется (опыт 2026-10-16); TODO: проверка высоты экрана >1500 |
 | `monospace-font-name` | `Ubuntu Mono 12` |
 | `titlebar-font` | `Ubuntu Bold 11` |
 | `nemo font` | `Ubuntu 10` |
+
+## Меню «Пуск»
+
+Настройки applet'ов Cinnamon живут **не в dconf**, а в JSON-файлах
+`~/.config/cinnamon/spices/<applet-id>/<instance-id>.json`. Файл
+создаёт Cinnamon при загрузке applet'а; gsettings сюда не дотягивается —
+патчить нужно python'ом, меняя только `value`-поля (схему
+type/default/description не трогать).
+
+Ключи меню (`menu@cinnamon.org/0.json`):
+
+| Ключ | Значение | Смысл |
+|---|---|---|
+| `menu-custom` | `true` | «Использовать свою иконку и подпись» — галка, без неё размер/иконка/текст не применяются |
+| `menu-icon` | `cinnamon-symbolic` | иконка меню |
+| `menu-icon-size` | `50` | размер иконки в px (дефолт 32) |
+| `menu-label` | `""` | пустая строка — текста на панели нет |
+
+Патч в `cinnamon-defaults.sh` — python-блок после ожидания файла
+(до 5 с: autostart и загрузка applet'а идут параллельно). Cinnamon
+подхватывает JSON только при (пере)загрузке applet'а — на первом
+входе это происходит естественно.
 
 ## Поведение рабочего стола
 

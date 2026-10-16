@@ -68,8 +68,36 @@ gsettings set org.cinnamon panel-zone-icon-sizes '[{"panelId": 1, "left": 0, "ce
 gsettings set org.cinnamon panel-zone-symbolic-icon-sizes '[{"panelId": 1, "left": 28, "center": 28, "right": 26}]'
 
 # Масштаб текста 1.5 (решение 2026-10-16): Ubuntu 11 рендерится ~16.5 px,
-# иконки панели масштабируются вместе с ним. TODO: обернуть в проверку
-# высоты экрана >1500 — на маленьких дисках 1.5 мешает работать.
+# иконки панели масштабируются вместе с ним. Два ключа: cinnamon читает
+# СВОЙ text-scaling-factor (org.cinnamon.desktop.interface), gnome-ключ
+# ему не подчиняется (опыт 2026-10-16: gnome=1.5, cinnamon остался 1.0,
+# текст не вырос). TODO: обернуть в проверку высоты экрана >1500 —
+# на маленьких дисках 1.5 мешает работать.
 gsettings set org.gnome.desktop.interface text-scaling-factor 1.5
+gsettings set org.cinnamon.desktop.interface text-scaling-factor 1.5
+
+# Меню «Пуск»: своя иконка 50 px без текста (решение 2026-10-16).
+# Настройки applet'ов Cinnamon живут НЕ в dconf, а в JSON-файлах
+# ~/.config/cinnamon/spices/<applet>/<id>.json — gsettings сюда не
+# дотягивается. Файл создаёт Cinnamon при загрузке applet'а, к моменту
+# autostart он уже есть; подождём до 5 с на всякий случай. Патчим
+# только value-поля, схему (type/default/description) не трогаем.
+MENU_JSON="$HOME/.config/cinnamon/spices/menu@cinnamon.org/0.json"
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ -f "$MENU_JSON" ] && break
+    sleep 1
+done
+if [ -f "$MENU_JSON" ]; then
+    python3 -c "
+import json, pathlib
+p = pathlib.Path('$MENU_JSON')
+d = json.loads(p.read_text())
+d['menu-custom']['value'] = True
+d['menu-icon']['value'] = 'cinnamon-symbolic'
+d['menu-icon-size']['value'] = 50
+d['menu-label']['value'] = ''
+p.write_text(json.dumps(d, indent=4))
+"
+fi
 
 touch "$MARKER"
