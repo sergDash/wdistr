@@ -67,4 +67,9 @@ gsettings set org.cinnamon panels-height "['1:60']"
 gsettings set org.cinnamon panel-zone-icon-sizes '[{"panelId": 1, "left": 0, "center": 0, "right": 32}]'
 gsettings set org.cinnamon panel-zone-symbolic-icon-sizes '[{"panelId": 1, "left": 28, "center": 28, "right": 26}]'
 
+# Масштаб текста 1.5 (решение 2026-10-16): Ubuntu 11 рендерится ~16.5 px,
+# иконки панели масштабируются вместе с ним. TODO: обернуть в проверку
+# высоты экрана >1500 — на маленьких дисках 1.5 мешает работать.
+gsettings set org.gnome.desktop.interface text-scaling-factor 1.5
+
 touch "$MARKER"

@@ -69,6 +69,7 @@ panel-zone-symbolic-icon-sizes=[{'panelId': 1, 'left': 28, 'center': 28, 'right'
 | `gtk-theme` (cinnamon + gnome) | `Mint-Y-Dark-Aqua-10` |
 | `color-scheme` (gnome) | `prefer-dark` |
 | `font-name` | `Ubuntu 11` |
+| `text-scaling-factor` (gnome) | `1.5` — Ubuntu 11 рендерится ~16.5 px; TODO: проверка высоты экрана >1500 |
 | `monospace-font-name` | `Ubuntu Mono 12` |
 | `titlebar-font` | `Ubuntu Bold 11` |
 | `nemo font` | `Ubuntu 10` |
