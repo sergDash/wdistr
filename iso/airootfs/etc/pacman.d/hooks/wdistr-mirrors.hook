@@ -22,4 +22,9 @@ Description = Applying wdistr mirrorlist (mirrors.txt)...
 When = PostTransaction
 Depends = pacman-mirrorlist
 Depends = coreutils
-Exec = /usr/bin/cp -f /usr/local/share/wdistr/mirrorlist /etc/pacman.d/mirrorlist
+# pacman при установке в цель (--root /mnt) читает хуки живой среды
+# (опыт 2026-10-16: сработал при pacstrap, cp упал — источника в цели
+# нет). Проверка -f делает хук безопасным в обе стороны: в живой
+# источник есть и список восстанавливается, в цели (и на чужих машинах)
+# просто выходим без ошибки — mirrorlist там свой, из custom_commands
+Exec = /bin/sh -c "test -f /usr/local/share/wdistr/mirrorlist || exit 0; cp -f /usr/local/share/wdistr/mirrorlist /etc/pacman.d/mirrorlist"

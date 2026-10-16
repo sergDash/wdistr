@@ -21,4 +21,8 @@ Description = Applying wdistr gai.conf (IPv4 precedence)...
 When = PostTransaction
 Depends = sh
 Depends = grep
-Exec = /bin/sh -c "grep -q 'precedence ::ffff:0:0/96' /etc/gai.conf || echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf"
+# grep ищет НЕЗАКОММЕНТИРОВАННУЮ строку (^[^#]): стоковый gai.conf
+# содержит закомментированный пример '#precedence ::ffff:0:0/96  10',
+# и наивный grep -q матчит его, пропуская echo — опыт чистой
+# установки 2026-10-16: строка не добавилась, хук отработал «вхолостую»
+Exec = /bin/sh -c "grep -qE '^[^#]*precedence ::ffff:0:0/96' /etc/gai.conf || echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf"

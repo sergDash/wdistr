@@ -43,6 +43,8 @@ unsquashfs -d "$TMP/x" -f "$SFS" \
     root/wdistr/archinstall-config.json \
     usr/local/bin/setup-continue \
     usr/local/share/wdistr/mirrorlist \
+    etc/pacman.d/hooks/wdistr-gai.hook \
+    etc/pacman.d/hooks/wdistr-mirrors.hook \
     usr/local/bin/opencode >/dev/null
 
 # Листинг всех файлов образа: права и состав без распаковки
@@ -53,14 +55,17 @@ python3 - "$TMP/x/root/wdistr/archinstall-config.json" \
          "$TMP/x/usr/local/share/wdistr/mirrorlist" \
          "$TMP/x/usr/local/bin/opencode" \
          "$TMP/list.txt" \
-         "$REPO_DIR/mirrors.txt" <<'PYEOF'
+         "$REPO_DIR/mirrors.txt" \
+         "$TMP/x/etc/pacman.d/hooks/wdistr-gai.hook" \
+         "$TMP/x/etc/pacman.d/hooks/wdistr-mirrors.hook" <<'PYEOF'
 import base64
 import json
 import os
 import re
 import sys
 
-cfg_path, setup_path, mirror_path, symlink_path, list_path, mirrors_path = sys.argv[1:7]
+(cfg_path, setup_path, mirror_path, symlink_path, list_path,
+ mirrors_path, gai_hook_path, mirrors_hook_path) = sys.argv[1:9]
 
 fails = 0
 
@@ -248,6 +253,28 @@ if any('stub-resolv.conf' in c for c in cmds):
     ok('resolved: симлинк resolv.conf → stub-resolv.conf доставлен')
 else:
     fail('resolved: в custom_commands нет симлинка resolv.conf → stub-resolv.conf')
+
+# 16. gai.conf: хук ищет НЕЗАКОММЕНТИРОВАННУЮ строку (^[^#]) — наивный
+# grep -q матчит закомментированный пример стокового файла и пропускает
+# echo (опыт чистой установки 2026-10-16: precedence не добавился)
+gai_hook = open(gai_hook_path).read()
+if re.search(r"\[\^#\]\*precedence", gai_hook):
+    ok('gai: хук ищет precedence с ^[^#] (не матчит комментарий)')
+else:
+    fail('gai: хук без ^[^#] — на чистой системе precedence не добавится')
+if any("^[^#]*precedence" in c for c in cmds):
+    ok('gai: custom_commands с ^[^#]-проверкой')
+else:
+    fail('gai: в custom_commands grep без ^[^#] — строка не добавится')
+
+# 17. Хук зеркал: безопасен при установке в цель — pacman с --root читает
+# хуки живой, но источника /usr/local/share/wdistr/mirrorlist в цели нет
+# (cp падал с cannot stat, опыт 2026-10-16); test -f || exit 0
+mirrors_hook = open(mirrors_hook_path).read()
+if 'test -f' in mirrors_hook and 'exit 0' in mirrors_hook:
+    ok('зеркала: хук с test -f || exit 0 (безопасен в цели)')
+else:
+    fail('зеркала: хук без test -f — при установке cp упадёт с cannot stat')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
