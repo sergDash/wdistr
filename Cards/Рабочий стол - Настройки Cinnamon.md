@@ -113,6 +113,27 @@ enabled-applets).
 | `custom-format` | `%a, %e %b, %H:%M` | на панели: «ср, 15 окт, 14:30» |
 | `custom-tooltip-format` | `%A, %e %B, %H:%M` | во всплывающей подсказке: «среда, 15 октября, 14:30» |
 
+## Программы по умолчанию (mimeapps.list)
+
+Системный файл `install/files/xdg-mimeapps.list` → `/etc/xdg/mimeapps.list`
+(доставка custom_commands). Действует на всех пользователей; выбор
+пользователя в `~/.config/mimeapps.list` его перекрывает — это
+ожидаемо. Ассоциации сняты с рабочей машины (решение 2026-10-16).
+
+| Категория Cinnamon | Программа | Ключевые MIME-типы |
+|---|---|---|
+| Интернет.Сеть | Firefox | `x-scheme-handler/http(s)` — дефолт, не прописан |
+| Интернет.Почта | Thunderbird (`org.mozilla.Thunderbird.desktop`) | `mailto`, `message/rfc822`, `text/calendar` |
+| Мультимедия.Фото | Viewnior | `image/*` (bmp, gif, jpeg, png, svg, tiff и др.) |
+| Офис.Текст | WordCraft (`ai.storyteller.wordcraft.desktop`) | `application/msword`, `.docx`, `.odt`, `.rtf` |
+| Офис.Таблица | GridCraft (`ai.storyteller.gridcraft.desktop`) | `.xlsx`, `.ods`, `text/csv` |
+| Офис.PDF | Okular (`okularApplication_pdf.desktop`) | `application/pdf` |
+| Папки | Nemo | `inode/directory` |
+
+Имена .desktop-файлов: Thunderbird в Arch — `org.mozilla.Thunderbird.desktop`
+(не `thunderbird.desktop`); Okular PDF — `okularApplication_pdf.desktop`
+(отдельный PDF-хендлер); Craft-пакеты — `ai.storyteller.*.desktop`.
+
 ## Поведение рабочего стола
 
 | Ключ | Значение | Смысл |

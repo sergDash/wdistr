@@ -175,19 +175,29 @@ if len(winfonts) == 143:
 else:
     fail(f'winfonts: в листинге {len(winfonts)}, ожидалось 143')
 
-# 10. Папки открывает Nemo: системный mimeapps.list доставлен и
-# назначает inode/directory (иначе mimeinfo.cache отдаёт codium —
-# опыт 2026-10-15, диск открывался в редакторе)
+# 10. Системный mimeapps.list: папки → Nemo, почта → Thunderbird,
+# картинки → Viewnior, документы → WordCraft, таблицы → GridCraft,
+# PDF → Okular (решение 2026-10-16); без inode/directory codium
+# открывал диск в редакторе (опыт 2026-10-15)
 mm = [c for c in cmds if '/etc/xdg/mimeapps.list' in c]
 payload = ''
 if mm:
     m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d", mm[0])
     if m:
         payload = base64.b64decode(m.group(1)).decode('utf-8', 'replace')
-if len(mm) == 1 and 'inode/directory=nemo.desktop' in payload:
-    ok('mimeapps.list: inode/directory → nemo.desktop')
+checks = {
+    'inode/directory=nemo.desktop': 'Nemo',
+    'x-scheme-handler/mailto=org.mozilla.Thunderbird.desktop': 'Thunderbird',
+    'image/png=viewnior.desktop': 'Viewnior',
+    'application/msword=ai.storyteller.wordcraft.desktop': 'WordCraft',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=ai.storyteller.gridcraft.desktop': 'GridCraft',
+    'application/pdf=okularApplication_pdf.desktop': 'Okular',
+}
+missing = [name for key, name in checks.items() if key not in payload]
+if len(mm) == 1 and not missing:
+    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular')
 else:
-    fail(f'mimeapps.list: команд доставки {len(mm)}, назначение в файле = {"inode/directory=nemo.desktop" in payload}')
+    fail(f'mimeapps.list: команд {len(mm)}, отсутствует: {missing or "—"}')
 
 # 11. Съёмные носители: «Спрашивать или запускать» — выключен
 # (autorun-never=true) в системном dconf-дефолте и в форсе первого

@@ -8,5 +8,64 @@
 # открывался редактор, а не файловый менеджер).
 # Файл действует на всех пользователей; выбор пользователя в
 # ~/.config/mimeapps.list его перекрывает — это ожидаемо.
+#
+# Ассоциации по умолчанию (решение 2026-10-16): значения с рабочей
+# машины. Категории Cinnamon «Программы по умолчанию» отображаются
+# на MIME-типы; здесь — системные дефолты, пользователь может
+# переключить в настройках.
 [Default Applications]
 inode/directory=nemo.desktop
+
+# Интернет.Почта: Thunderbird (вместо DeltaChat)
+x-scheme-handler/mailto=org.mozilla.Thunderbird.desktop
+message/rfc822=org.mozilla.Thunderbird.desktop
+x-scheme-handler/mid=org.mozilla.Thunderbird.desktop
+text/calendar=org.mozilla.Thunderbird.desktop
+x-scheme-handler/webcal=org.mozilla.Thunderbird.desktop
+x-scheme-handler/webcals=org.mozilla.Thunderbird.desktop
+
+# Мультимедия.Фото: Viewnior (вместо Firefox)
+image/bmp=viewnior.desktop
+image/gif=viewnior.desktop
+image/jpeg=viewnior.desktop
+image/jpg=viewnior.desktop
+image/pjpeg=viewnior.desktop
+image/png=viewnior.desktop
+image/svg+xml=viewnior.desktop
+image/svg+xml-compressed=viewnior.desktop
+image/tiff=viewnior.desktop
+image/vnd.wap.wbmp=viewnior.desktop
+image/x-bmp=viewnior.desktop
+image/x-gray=viewnior.desktop
+image/x-icb=viewnior.desktop
+image/x-ico=viewnior.desktop
+image/x-pcx=viewnior.desktop
+image/x-png=viewnior.desktop
+image/x-portable-anymap=viewnior.desktop
+image/x-portable-bitmap=viewnior.desktop
+image/x-portable-graymap=viewnior.desktop
+image/x-portable-pixmap=viewnior.desktop
+image/x-xbitmap=viewnior.desktop
+image/x-xpixmap=viewnior.desktop
+
+# Офис.Текст: WordCraft (вместо LibreOffice Writer)
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.storyteller.wordcraft.desktop
+application/vnd.ms-word.document.macroEnabled.12=ai.storyteller.wordcraft.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.template=ai.storyteller.wordcraft.desktop
+application/vnd.ms-word.template.macroEnabled.12=ai.storyteller.wordcraft.desktop
+application/msword=ai.storyteller.wordcraft.desktop
+application/msword-template=ai.storyteller.wordcraft.desktop
+application/vnd.oasis.opendocument.text=ai.storyteller.wordcraft.desktop
+application/rtf=ai.storyteller.wordcraft.desktop
+text/rtf=ai.storyteller.wordcraft.desktop
+
+# Офис.Таблица: GridCraft (вместо LibreOffice Calc)
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=ai.storyteller.gridcraft.desktop
+application/vnd.ms-excel.sheet.macroEnabled.12=ai.storyteller.gridcraft.desktop
+application/vnd.ms-excel.sheet.binary.macroEnabled.12=ai.storyteller.gridcraft.desktop
+application/vnd.oasis.opendocument.spreadsheet=ai.storyteller.gridcraft.desktop
+text/csv=ai.storyteller.gridcraft.desktop
+text/tab-separated-values=ai.storyteller.gridcraft.desktop
+
+# Офис.PDF: Okular (вместо Firefox)
+application/pdf=okularApplication_pdf.desktop
