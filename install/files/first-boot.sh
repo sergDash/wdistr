@@ -122,6 +122,10 @@ android-studio
 librepcb
 jan
 emote
+photocraft
+vectorcraft
+wordcraft
+gridcraft
 beekeeper-studio
 "
 for pkg in $AUR_PACKAGES; do
