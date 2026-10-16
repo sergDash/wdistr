@@ -57,4 +57,14 @@ gsettings set org.cinnamon.settings-daemon.plugins.power button-power 'shutdown'
 # отработала или нет — проверить при следующей установке.
 gsettings set org.cinnamon.desktop.media-handling autorun-never true
 
+# Панель задач (решение 2026-10-16): меню и список окон в центральной
+# зоне без разделителя, высота 60, иконки 32/26 — значения с рабочей
+# машины. Дубль в dconf-дефолте (10-wdistr-desktop): при первом входе
+# Cinnamon перебивает системный дефолт своим дефолтом панели —
+# принудительно ставим здесь, маркер не даёт трогать дальше.
+gsettings set org.cinnamon enabled-applets "['panel1:center:0:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
+gsettings set org.cinnamon panels-height "['1:60']"
+gsettings set org.cinnamon panel-zone-icon-sizes '[{"panelId": 1, "left": 0, "center": 0, "right": 32}]'
+gsettings set org.cinnamon panel-zone-symbolic-icon-sizes '[{"panelId": 1, "left": 28, "center": 28, "right": 26}]'
+
 touch "$MARKER"
