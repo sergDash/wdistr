@@ -100,4 +100,24 @@ p.write_text(json.dumps(d, indent=4))
 "
 fi
 
+# Календарь: кастомные форматы даты (решение 2026-10-16, значения
+# с рабочей машины). Тот же паттерн JSON-патча, что у меню.
+# Идентификатор экземпляра 13 фиксирован нашим enabled-applets.
+CAL_JSON="$HOME/.config/cinnamon/spices/calendar@cinnamon.org/13.json"
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ -f "$CAL_JSON" ] && break
+    sleep 1
+done
+if [ -f "$CAL_JSON" ]; then
+    python3 -c "
+import json, pathlib
+p = pathlib.Path('$CAL_JSON')
+d = json.loads(p.read_text())
+d['use-custom-format']['value'] = True
+d['custom-format']['value'] = '%a, %e %b, %H:%M'
+d['custom-tooltip-format']['value'] = '%A, %e %B, %H:%M'
+p.write_text(json.dumps(d, indent=4))
+"
+fi
+
 touch "$MARKER"
