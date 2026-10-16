@@ -1,15 +1,15 @@
 # Наш статический список хороших серверов: состав закрыт,
 # правится только файлом mirrors.txt в репозитории.
 ## wdistr
-Server = https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch
-Server = https://mirror.wuki.li/archlinux/$repo/os/$arch
-Server = https://mirror.clientvps.com/archlinux/$repo/os/$arch
-Server = https://at.mirrors.cicku.me/archlinux/$repo/os/$arch
-Server = https://fr.mirrors.cicku.me/archlinux/$repo/os/$arch
-Server = https://gb.mirrors.cicku.me/archlinux/$repo/os/$arch
-Server = https://mirror.osbeck.com/archlinux/$repo/os/$arch
-Server = https://mirrors.logal.dev/archlinux/$repo/os/$arch
-Server = https://archlinux.lysakermoen.com/archlinux/$repo/os/$arch
-Server = https://mirrors.pablonara.com/archlinux/$repo/os/$arch
+Server = https://ru.mirrors.cicku.me/archlinux/$repo/os/$arch
+Server = https://archlinux.koyanet.lv/archlinux/$repo/os/$arch
+Server = https://theswissbay.ch/archlinux/$repo/os/$arch
+Server = https://mirror.bouwhuis.network/archlinux/$repo/os/$arch
+Server = https://mirrors.purring.online/arch/$repo/os/$arch
+Server = https://mirror.peeres-telecom.fr/archlinux/$repo/os/$arch
+Server = https://mirrors.xtom.ee/archlinux/$repo/os/$arch
+Server = https://mirror.server.net/archlinux/$repo/os/$arch
 Server = https://mirror.ourhost.az/archlinux/$repo/os/$arch
-Server = https://mirrors.xtom.nl/archlinux/$repo/os/$arch
+Server = https://mirror.nl2.cdn-perfprod.com/archlinux/$repo/os/$arch
+Server = https://ftp.energotel.sk/pub/linux/arch/$repo/os/$arch
+Server = https://www.sooftware.com/mirrors/Arch-Linux/$repo/os/$arch

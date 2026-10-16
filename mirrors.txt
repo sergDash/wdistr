@@ -14,17 +14,16 @@
 # секунды на каждую попытку (замер 2026-10-13).
 # far.fi из нашей сети не отвечает (замер 2026-10-14) — это факт
 # измерения, не запрет: при изменении сети проверяется заново.
-# Состав ниже — по замеру 2026-10-15 (rate-mirrors.py, прогон после gai,
 # 12 стран; порядок строк = приоритет по средней скорости):
-https://mirror.cachy-arch.ru/archlinux/$repo/os/$arch
-https://mirror.wuki.li/archlinux/$repo/os/$arch
-https://mirror.clientvps.com/archlinux/$repo/os/$arch
-https://at.mirrors.cicku.me/archlinux/$repo/os/$arch
-https://fr.mirrors.cicku.me/archlinux/$repo/os/$arch
-https://gb.mirrors.cicku.me/archlinux/$repo/os/$arch
-https://mirror.osbeck.com/archlinux/$repo/os/$arch
-https://mirrors.logal.dev/archlinux/$repo/os/$arch
-https://archlinux.lysakermoen.com/archlinux/$repo/os/$arch
-https://mirrors.pablonara.com/archlinux/$repo/os/$arch
+https://ru.mirrors.cicku.me/archlinux/$repo/os/$arch
+https://archlinux.koyanet.lv/archlinux/$repo/os/$arch
+https://theswissbay.ch/archlinux/$repo/os/$arch
+https://mirror.bouwhuis.network/archlinux/$repo/os/$arch
+https://mirrors.purring.online/arch/$repo/os/$arch
+https://mirror.peeres-telecom.fr/archlinux/$repo/os/$arch
+https://mirrors.xtom.ee/archlinux/$repo/os/$arch
+https://mirror.server.net/archlinux/$repo/os/$arch
 https://mirror.ourhost.az/archlinux/$repo/os/$arch
-https://mirrors.xtom.nl/archlinux/$repo/os/$arch
+https://mirror.nl2.cdn-perfprod.com/archlinux/$repo/os/$arch
+https://ftp.energotel.sk/pub/linux/arch/$repo/os/$arch
+https://www.sooftware.com/mirrors/Arch-Linux/$repo/os/$arch
