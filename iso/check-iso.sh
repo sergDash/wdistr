@@ -232,14 +232,22 @@ else:
     fail(f'состав: в packages[] {len(utils)}, не хватает: {missing}')
 
 # 14. Сервисы в services[]: bluetooth (иначе GUI blueman есть, а демон
-# disabled — опыт 2026-10-15 на рабочей машине) и smartd (мониторинг
-# SMART дисков — пакет ставится, сервис без включения молчит)
+# disabled — опыт 2026-10-15 на рабочей машине), smartd (мониторинг
+# SMART дисков — пакет ставится, сервис без включения молчит) и
+# systemd-resolved (локальный кэширующий резолвер — опыт 2026-10-16)
 services = cfg.get('services', [])
-svc_missing = [s for s in ('bluetooth', 'smartd') if s not in services]
+svc_missing = [s for s in ('bluetooth', 'smartd', 'systemd-resolved') if s not in services]
 if not svc_missing:
-    ok(f'сервисы: bluetooth и smartd включены ({", ".join(services)})')
+    ok(f'сервисы: bluetooth, smartd, systemd-resolved включены ({", ".join(services)})')
 else:
     fail(f'сервисы: нет {svc_missing}, services[] = {services}')
+
+# 15. Симлинк resolv.conf на stub-конфиг resolved — штатный путь для
+# программ, читающих файл напрямую (без него они минуют кэш)
+if any('stub-resolv.conf' in c for c in cmds):
+    ok('resolved: симлинк resolv.conf → stub-resolv.conf доставлен')
+else:
+    fail('resolved: в custom_commands нет симлинка resolv.conf → stub-resolv.conf')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

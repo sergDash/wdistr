@@ -105,6 +105,15 @@ def main() -> None:
         deliver(GAI_HOOK, "/etc/pacman.d/hooks/wdistr-gai.hook"),
         "grep -q 'precedence ::ffff:0:0/96' /etc/gai.conf "
         "|| echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf",
+        # systemd-resolved — локальный кэширующий резолвер (опыт
+        # 2026-10-16 на рабочей машине: кэш убирает зависимость от
+        # нестабильного туннеля, повторные имена из памяти за 3 мс).
+        # Сам сервис включается через services[]; симлинк — штатный
+        # путь для программ, читающих /etc/resolv.conf напрямую, мимо
+        # NSS. NetworkManager 1.58+ сам передаёт DNS в resolved (проверено:
+        # серверы видны под интерфейсом в resolvectl status) — правка
+        # NetworkManager.conf не нужна.
+        "ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf",
         # AGENTS.md установленной системы — инструкция для агента в
         # целевой: логика двухфазной установки, логи, самопроверка
         # (идея 2026-09-26, реализация 2026-10-14). Системная копия —
