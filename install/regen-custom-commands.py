@@ -113,6 +113,15 @@ def main() -> None:
         # NSS. NetworkManager 1.58+ сам передаёт DNS в resolved (проверено:
         # серверы видны под интерфейсом в resolvectl status) — правка
         # NetworkManager.conf не нужна.
+        # ЛОВУШКА СИМЛИНКА: цель /run/systemd/resolve/stub-resolv.conf
+        # появляется только при работающем resolved, то есть после
+        # первой загрузки — до неё симлинк битый (указывает в пустой
+        # /run chroot'а). Проверено 2026-10-16: все custom_commands
+        # ПОСЛЕ этой строки локальные (доставка файлов, mkdir, enable
+        # юнитов, usermod) — сеть им не нужна. Если появится новая
+        # сетевая команда (curl, pacman, git), ставить её ДО симлинка
+        # или в first-boot: после — она упадёт с «Temporary failure
+        # in name resolution».
         "ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf",
         # AGENTS.md установленной системы — инструкция для агента в
         # целевой: логика двухфазной установки, логи, самопроверка
