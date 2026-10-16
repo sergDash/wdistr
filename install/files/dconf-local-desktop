@@ -24,23 +24,11 @@ button-power='shutdown'
 autorun-never=true
 
 # Панель задач (решение 2026-10-16): меню и список окон в центральной
-# зоне без разделителя, высота 60, иконки 32/26 — значения с рабочей
-# машины. Дубль в cinnamon-defaults.sh (Cinnamon при первом входе
-# перебивает пользовательский dconf своим дефолтом панели).
+# зоне без разделителя — раскладка, применяется всегда. Дубль в
+# cinnamon-defaults.sh (Cinnamon при первом входе перебивает
+# пользовательский dconf своим дефолтом панели).
+# РАЗМЕРЫ (panels-height, icon-sizes, text-scaling) здесь НЕТ — они
+# ставятся только при высоте экрана >1500 px, условие в cinnamon-
+# defaults.sh; dconf-дефолт условий не умеет.
 [org/cinnamon]
 enabled-applets=['panel1:center:0:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']
-panels-height=['1:60']
-panel-zone-icon-sizes=[{'panelId': 1, 'left': 0, 'center': 0, 'right': 32}]
-panel-zone-symbolic-icon-sizes=[{'panelId': 1, 'left': 28, 'center': 28, 'right': 26}]
-
-# Масштаб текста (решение 2026-10-16): 1.5 — шрифт Ubuntu 11 рендерится
-# как ~16.5 px, иконки панели масштабируются вместе с ним. Два ключа:
-# cinnamon читает СВОЙ (org.cinnamon.desktop.interface), gnome-ключ
-# ему не подчиняется (опыт 2026-10-16). TODO: обернуть в проверку
-# высоты экрана >1500 — на маленьких дисках 1.5 сделает интерфейс
-# непригодным.
-[org/gnome/desktop/interface]
-text-scaling-factor=1.5
-
-[org/cinnamon/desktop/interface]
-text-scaling-factor=1.5

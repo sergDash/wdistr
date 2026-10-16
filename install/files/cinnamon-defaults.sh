@@ -57,47 +57,57 @@ gsettings set org.cinnamon.settings-daemon.plugins.power button-power 'shutdown'
 # отработала или нет — проверить при следующей установке.
 gsettings set org.cinnamon.desktop.media-handling autorun-never true
 
-# Панель задач (решение 2026-10-16): меню и список окон в центральной
-# зоне без разделителя, высота 60, иконки 32/26 — значения с рабочей
-# машины. Дубль в dconf-дефолте (10-wdistr-desktop): при первом входе
-# Cinnamon перебивает системный дефолт своим дефолтом панели —
-# принудительно ставим здесь, маркер не даёт трогать дальше.
+# Высота основного монитора (решение 2026-10-16): >1500 px — 4K и
+# выше. На таких экранах увеличиваем панель, масштаб текста и иконку
+# меню; на меньших (1080, 1200, 1440) размеры не трогаем — дефолты
+# Cinnamon подходят. Порог простой, без диапазонов.
+SCREEN_HEIGHT=$(xrandr 2>/dev/null | grep " primary" | sed -n 's/.* connected primary [0-9]*x\([0-9]*\)+.*/\1/p')
+
+# Панель задач: меню и список окон в центральной зоне без разделителя
+# (решение 2026-10-16) — это раскладка, применяется ВСЕГДА, независимо
+# от высоты. Дубль в dconf-дефолте (10-wdistr-desktop).
 gsettings set org.cinnamon enabled-applets "['panel1:center:0:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
-gsettings set org.cinnamon panels-height "['1:60']"
-gsettings set org.cinnamon panel-zone-icon-sizes '[{"panelId": 1, "left": 0, "center": 0, "right": 32}]'
-gsettings set org.cinnamon panel-zone-symbolic-icon-sizes '[{"panelId": 1, "left": 28, "center": 28, "right": 26}]'
 
-# Масштаб текста 1.5 (решение 2026-10-16): Ubuntu 11 рендерится ~16.5 px,
-# иконки панели масштабируются вместе с ним. Два ключа: cinnamon читает
-# СВОЙ text-scaling-factor (org.cinnamon.desktop.interface), gnome-ключ
-# ему не подчиняется (опыт 2026-10-16: gnome=1.5, cinnamon остался 1.0,
-# текст не вырос). TODO: обернуть в проверку высоты экрана >1500 —
-# на маленьких дисках 1.5 мешает работать.
-gsettings set org.gnome.desktop.interface text-scaling-factor 1.5
-gsettings set org.cinnamon.desktop.interface text-scaling-factor 1.5
-
-# Меню «Пуск»: своя иконка 50 px без текста (решение 2026-10-16).
-# Настройки applet'ов Cinnamon живут НЕ в dconf, а в JSON-файлах
-# ~/.config/cinnamon/spices/<applet>/<id>.json — gsettings сюда не
-# дотягивается. Файл создаёт Cinnamon при загрузке applet'а, к моменту
-# autostart он уже есть; подождём до 5 с на всякий случай. Патчим
-# только value-поля, схему (type/default/description) не трогаем.
+# Меню «Пуск»: своя иконка без текста — всегда; размер — только на
+# больших экранах (см. SCREEN_HEIGHT). Настройки applet'ов Cinnamon
+# живут НЕ в dconf, а в JSON-файлах ~/.config/cinnamon/spices/<applet>/<id>.json —
+# gsettings сюда не дотягивается. Файл создаёт Cinnamon при загрузке
+# applet'а, к моменту autostart он уже есть; подождём до 5 с.
+# Патчим только value-поля, схему (type/default/description) не трогаем.
 MENU_JSON="$HOME/.config/cinnamon/spices/menu@cinnamon.org/0.json"
 for _ in 1 2 3 4 5 6 7 8 9 10; do
     [ -f "$MENU_JSON" ] && break
     sleep 1
 done
 if [ -f "$MENU_JSON" ]; then
+    MENU_SIZE=32
+    if [ -n "$SCREEN_HEIGHT" ] && [ "$SCREEN_HEIGHT" -gt 1500 ]; then
+        MENU_SIZE=50
+    fi
     python3 -c "
 import json, pathlib
 p = pathlib.Path('$MENU_JSON')
 d = json.loads(p.read_text())
 d['menu-custom']['value'] = True
 d['menu-icon']['value'] = 'cinnamon-symbolic'
-d['menu-icon-size']['value'] = 50
+d['menu-icon-size']['value'] = $MENU_SIZE
 d['menu-label']['value'] = ''
 p.write_text(json.dumps(d, indent=4))
 "
+fi
+
+# Размеры панели и масштаб текста — ТОЛЬКО на экранах выше 1500 px
+# (решение 2026-10-16). На дефолтных 1080/1200/1440 эти значения
+# мешают работать — Cinnamon оставляет свои дефолты (панель 40,
+# масштаб 1.0). Два ключа масштаба: cinnamon читает СВОЙ
+# (org.cinnamon.desktop.interface), gnome-ключ ему не подчиняется
+# (опыт 2026-10-16: gnome=1.5, cinnamon остался 1.0, текст не вырос).
+if [ -n "$SCREEN_HEIGHT" ] && [ "$SCREEN_HEIGHT" -gt 1500 ]; then
+    gsettings set org.cinnamon panels-height "['1:60']"
+    gsettings set org.cinnamon panel-zone-icon-sizes '[{"panelId": 1, "left": 0, "center": 0, "right": 32}]'
+    gsettings set org.cinnamon panel-zone-symbolic-icon-sizes '[{"panelId": 1, "left": 28, "center": 28, "right": 26}]'
+    gsettings set org.gnome.desktop.interface text-scaling-factor 1.5
+    gsettings set org.cinnamon.desktop.interface text-scaling-factor 1.5
 fi
 
 # Календарь: кастомные форматы даты (решение 2026-10-16, значения

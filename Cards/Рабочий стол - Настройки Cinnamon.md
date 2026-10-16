@@ -41,12 +41,22 @@ cinnamon`) — не слушается, сессия может зависнут
 панели, без разделителя между ними. На рабочей машине панель была
 настроена так руками; в дистрибутив перенесена как дефолт.
 
-| Ключ | Значение | Смысл |
+**Раскладка vs размеры.** Раскладка (`enabled-applets`) применяется
+всегда. Размеры (высота панели, размеры иконок, масштаб текста,
+размер иконки меню) — только при высоте основного монитора **более
+1500 px** (решение 2026-10-16). Порог отсеивает 4K-диски (2160) от
+стандартных (1080, 1200, 1440); на стандартных дефолты Cinnamon
+подходят, увеличение мешает работать. Высота определяется по
+основному монитору из `xrandr`; проверка — в `cinnamon-defaults.sh`.
+dconf-дефолт условий не умеет — размеры в нём НЕТ, только раскладка.
+
+| Ключ | Значение | Когда |
 |---|---|---|
-| `enabled-applets` | menu + grouped-window-list в `center`, остальные в `right` | левая зона пуста, разделитель убран |
-| `panels-height` | `['1:60']` | высота панели 60 px (дефолт Cinnamon — 40) |
-| `panel-zone-icon-sizes` | right: 32 | размер цветных иконок в правой зоне |
-| `panel-zone-symbolic-icon-sizes` | left: 28, center: 28, right: 26 | размер символических иконок |
+| `enabled-applets` | menu + grouped-window-list в `center`, остальные в `right` | всегда (раскладка) |
+| `panels-height` | `['1:60']` | высота > 1500 |
+| `panel-zone-icon-sizes` | right: 32 | высота > 1500 |
+| `panel-zone-symbolic-icon-sizes` | left: 28, center: 28, right: 26 | высота > 1500 |
+| `text-scaling-factor` (gnome + cinnamon) | `1.5` | высота > 1500 |
 
 Формат `enabled-applets` — массив строк вида
 `panel<номер>:<зона>:<порядок>:<applet-id>:<id>`. Зона — `left`,
@@ -73,7 +83,7 @@ panel-zone-symbolic-icon-sizes=[{'panelId': 1, 'left': 28, 'center': 28, 'right'
 | `gtk-theme` (cinnamon + gnome) | `Mint-Y-Dark-Aqua-10` |
 | `color-scheme` (gnome) | `prefer-dark` |
 | `font-name` | `Ubuntu 11` |
-| `text-scaling-factor` (gnome + cinnamon) | `1.5` — Ubuntu 11 рендерится ~16.5 px; **два ключа**: cinnamon читает свой (`org.cinnamon.desktop.interface`), gnome-ключ ему не подчиняется (опыт 2026-10-16); TODO: проверка высоты экрана >1500 |
+| `text-scaling-factor` (gnome + cinnamon) | `1.5` | Ubuntu 11 рендерится ~16.5 px; только при высоте > 1500 (см. «Панель задач») |
 | `monospace-font-name` | `Ubuntu Mono 12` |
 | `titlebar-font` | `Ubuntu Bold 11` |
 | `nemo font` | `Ubuntu 10` |
@@ -90,10 +100,10 @@ type/default/description не трогать).
 
 | Ключ | Значение | Смысл |
 |---|---|---|
-| `menu-custom` | `true` | «Использовать свою иконку и подпись» — галка, без неё размер/иконка/текст не применяются |
-| `menu-icon` | `cinnamon-symbolic` | иконка меню |
-| `menu-icon-size` | `50` | размер иконки в px (дефолт 32) |
-| `menu-label` | `""` | пустая строка — текста на панели нет |
+| `menu-custom` | `true` | «Использовать свою иконку и подпись» — галка, без неё размер/иконка/текст не применяются; всегда |
+| `menu-icon` | `cinnamon-symbolic` | иконка меню; всегда |
+| `menu-icon-size` | `50` (> 1500 px) или `32` (дефолт) | размер иконки в px |
+| `menu-label` | `""` | пустая строка — текста на панели нет; всегда |
 
 Патч в `cinnamon-defaults.sh` — python-блок после ожидания файла
 (до 5 с: autostart и загрузка applet'а идут параллельно). Cinnamon
