@@ -270,7 +270,6 @@
         "qt6-multimedia-ffmpeg",
         "copyq",
         "qbittorrent",
-        "pasystray",
         "archiso",
         "qemu-img",
         "linux-headers",
