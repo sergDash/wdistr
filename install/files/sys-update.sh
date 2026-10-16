@@ -11,5 +11,9 @@ LOG="$LOGDIR/sys-update.log"
 mkdir -p "$LOGDIR"
 echo "== обновление системы: $(date -Is) ==" >>"$LOG"
 pacman -Syu --noconfirm >>"$LOG" 2>&1
-echo "  rc=$?" >>"$LOG"
+RC=$?
+echo "  rc=$RC" >>"$LOG"
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
+# Код сбоя наружу — по нему сервис включает повтор через 4 часа
+# (OnFailure, шаблон wdistr-update-retry@; без exit код гасил chown)
+exit "$RC"

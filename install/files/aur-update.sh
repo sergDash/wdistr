@@ -14,6 +14,9 @@ echo "== AUR-обновление: $(date -Is) ==" >>"$LOG"
 
 sudo -u "$USER_NAME" env HOME="$USER_HOME" \
     yay -Sua --noconfirm >>"$LOG" 2>&1
-echo "  rc=$?" >>"$LOG"
+RC=$?
+echo "  rc=$RC" >>"$LOG"
 
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
+# Код сбоя наружу — по нему сервис включает повтор через 4 часа
+exit "$RC"

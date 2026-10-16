@@ -5,6 +5,8 @@ Description=wdistr: автообновление AUR-пакетов (yay -Sua)
 # (оба таймера срабатывают в одну секунду); реальный мьютекс — flock.
 After=network-online.target wdistr-sys-update.service
 Wants=network-online.target
+# Сбой (обычно — сеть) не ждёт недельного окна: повтор через 4 часа
+OnFailure=wdistr-update-retry@wdistr-aur-update.service
 
 [Service]
 Type=oneshot

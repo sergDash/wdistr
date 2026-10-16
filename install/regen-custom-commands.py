@@ -234,6 +234,12 @@ def main() -> None:
         deliver(FILES / "flatpak-update.service", "/etc/systemd/system/wdistr-flatpak-update.service"),
         deliver(FILES / "flatpak-update.timer", "/etc/systemd/system/wdistr-flatpak-update.timer"),
         "systemctl enable wdistr-flatpak-update.timer",
+        # Повтор после сбоя: если обновление упало (обычно — сеть),
+        # OnFailure в сервисе активирует шаблон, он спит 4 часа и
+        # запускает упавшее обновление заново — не ждём недельного окна
+        # (решение 2026-10-16). enable не нужен: шаблон стартует
+        # инстансом по OnFailure, а не по таймеру
+        deliver(FILES / "update-retry@.service", "/etc/systemd/system/wdistr-update-retry@.service"),
         # Проверка расписания Timeshift тем же замком (решение 2026-10-11):
         # ежечасный --check идёт в общей flock-очереди с автообновлениями,
         # снапшот не попадает в середину распаковки. cronie остаётся

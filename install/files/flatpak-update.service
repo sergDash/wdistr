@@ -4,6 +4,8 @@ Description=wdistr: автообновление flatpak-программ
 # система → AUR → flatpak (фактическая блокировка — flock в ExecStart).
 After=network-online.target wdistr-sys-update.service wdistr-aur-update.service
 Wants=network-online.target
+# Сбой (обычно — сеть) не ждёт недельного окна: повтор через 4 часа
+OnFailure=wdistr-update-retry@wdistr-flatpak-update.service
 
 [Service]
 Type=oneshot

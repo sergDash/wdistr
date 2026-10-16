@@ -2,6 +2,9 @@
 Description=wdistr: автообновление системы (pacman -Syu)
 After=network-online.target
 Wants=network-online.target
+# Сбой (обычно — сеть) не ждёт недельного окна: повтор через 4 часа
+# (шаблон wdistr-update-retry@, опыт 2026-10-16)
+OnFailure=wdistr-update-retry@wdistr-sys-update.service
 
 [Service]
 Type=oneshot
