@@ -134,6 +134,21 @@ enabled-applets).
 (не `thunderbird.desktop`); Okular PDF — `okularApplication_pdf.desktop`
 (отдельный PDF-хендлер); Craft-пакеты — `ai.storyteller.*.desktop`.
 
+## Автозапуск
+
+Системный автозапуск — `/etc/xdg/autostart/*.desktop`. Свои файлы
+доставляются из `install/files/autostart/` через custom_commands
+(решение 2026-10-16, паттерн `files/desktop/`): новый файл просто
+кладётся в папку, правка regen-скрипта не нужна.
+
+| Программа | Источник автозапуска |
+|---|---|
+| AmneziaVPN | наш файл `files/autostart/AmneziaVPN.desktop` (пакет не ставит) |
+| CopyQ | наш файл `files/autostart/copyq.desktop` (пакет не ставит; задержка 3 с — воркрайд для трея) |
+| Emote | пакет AUR ставит сам (`/etc/xdg/autostart/emote.desktop`) |
+| Sticky | пакет extra ставит сам (`sticky.desktop` с `--autostart`) |
+| Solaar | на рабочей машине в пользовательском автозапуске — в дистрибутив НЕ добавлен (пока не решено) |
+
 ## Поведение рабочего стола
 
 | Ключ | Значение | Смысл |

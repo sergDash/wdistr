@@ -1,0 +1,16 @@
+# Автозапуск CopyQ (решение 2026-10-16, с рабочей машины).
+# Пакет copyq автозапуск не ставит — файл наш.
+# Задержка 3 с — воркрайд для GNOME issue #1526 (иконка в трее
+# не появлялась без паузы после старта панели; взято с рабочей машины).
+# Доставляется в /etc/xdg/autostart/ через custom_commands.
+[Desktop Entry]
+Type=Application
+Name=CopyQ
+GenericName=Clipboard Manager
+Comment=A cut & paste history utility
+Exec=/usr/bin/copyq
+Icon=copyq
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-Delay=3
+X-GNOME-Autostart-enabled=true

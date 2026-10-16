@@ -313,6 +313,16 @@ def main() -> None:
             deliver(desktop, f"/usr/share/applications/{desktop.name}")
         )
 
+    # Автозапуск: всё из files/autostart/ доставляется в
+    # /etc/xdg/autostart/ (решение 2026-10-16). Нужно для программ,
+    # чьи пакеты НЕ ставят свой autostart-файл (amneziavpn-bin, copyq);
+    # emote и sticky автозапуск ставят сами — свои файлы для них не
+    # нужны. Паттерн тот же, что у desktop/.
+    for desktop in sorted((FILES / "autostart").glob("*.desktop")):
+        config["custom_commands"].append(
+            deliver(desktop, f"/etc/xdg/autostart/{desktop.name}")
+        )
+
     CONFIG.write_text(
         json.dumps(config, indent=4, sort_keys=True, ensure_ascii=False) + "\n"
     )

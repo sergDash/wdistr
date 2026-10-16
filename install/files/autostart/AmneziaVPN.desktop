@@ -1,0 +1,12 @@
+# Автозапуск AmneziaVPN (решение 2026-10-16, с рабочей машины).
+# Пакет amneziavpn-bin автозапуск не ставит — файл наш.
+# Доставляется в /etc/xdg/autostart/ через custom_commands.
+[Desktop Entry]
+Type=Application
+Name=AmneziaVPN
+Comment=Client of your self-hosted VPN
+Exec=AmneziaVPN
+Icon=AmneziaVPN
+Terminal=false
+StartupWMClass=AmneziaVPN
+X-GNOME-Autostart-enabled=true

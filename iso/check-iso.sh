@@ -298,6 +298,19 @@ if 'test -f' in mirrors_hook and 'exit 0' in mirrors_hook:
 else:
     fail('зеркала: хук без test -f — при установке cp упадёт с cannot stat')
 
+# 18. Автозапуск: AmneziaVPN и CopyQ доставлены в /etc/xdg/autostart/
+# (решение 2026-10-16); emote и sticky ставят свои файлы пакеты
+autostart = [c for c in cmds if '/etc/xdg/autostart/' in c]
+names = set()
+for c in autostart:
+    m = re.search(r"/etc/xdg/autostart/([A-Za-z0-9._-]+\.desktop)", c)
+    if m:
+        names.add(m.group(1))
+if 'AmneziaVPN.desktop' in names and 'copyq.desktop' in names:
+    ok(f'автозапуск: AmneziaVPN и copyq в /etc/xdg/autostart (всего {len(names)} файлов)')
+else:
+    fail(f'автозапуск: найдено {sorted(names)}, нужны AmneziaVPN.desktop и copyq.desktop')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
