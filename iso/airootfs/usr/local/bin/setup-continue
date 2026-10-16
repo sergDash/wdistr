@@ -290,8 +290,21 @@ if ! cp -a /usr/local/share/keyd/us.txt /usr/local/share/keyd/ru.txt /mnt/usr/lo
     FAIL=$((FAIL + 1))
 fi
 
+# Симлинк resolv.conf → stub resolved. Ставим ЗДЕСЬ, а не в
+# custom_commands: те идут через arch-chroot, который bind-монтирует
+# /etc/resolv.conf хоста поверх /mnt/etc/resolv.conf на время команды —
+# «ln -sf» пытается заменить точку монтирования и падает с «Device or
+# resource busy» (опыт установки 2026-10-16). Здесь мы пишем в /mnt
+# напрямую, монтирования нет. Цель /run/systemd/resolve/stub-resolv.conf
+# появится после первой загрузки с работающим resolved — до этого симлинк
+# битый, но в /run свежей системы это безвредно.
+if ! ln -sf /run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf; then
+    echo "ОШИБКА доставки: симлинк /etc/resolv.conf -> stub resolved" >&2
+    FAIL=$((FAIL + 1))
+fi
+
 if [ "$FAIL" -eq 0 ]; then
-    echo "Доставка из живой среды готова: opencode, шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n)."
+    echo "Доставка из живой среды готова: opencode, шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n), resolv.conf."
 else
     echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
 fi

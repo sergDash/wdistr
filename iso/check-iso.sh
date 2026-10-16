@@ -248,11 +248,19 @@ else:
     fail(f'сервисы: нет {svc_missing}, services[] = {services}')
 
 # 15. Симлинк resolv.conf на stub-конфиг resolved — штатный путь для
-# программ, читающих файл напрямую (без него они минуют кэш)
-if any('stub-resolv.conf' in c for c in cmds):
-    ok('resolved: симлинк resolv.conf → stub-resolv.conf доставлен')
+# программ, читающих файл напрямую (без него они минуют кэш).
+# Симлинк ставит setup-continue копированием в /mnt напрямую, а НЕ
+# custom_commands: те идут через arch-chroot, который bind-монтирует
+# /etc/resolv.conf хоста поверх /mnt — «ln» падает с «Device or resource
+# busy» (опыт установки 2026-10-16). Проверяем обе стороны.
+if 'stub-resolv.conf' in setup and '/mnt/etc/resolv.conf' in setup:
+    ok('resolved: симлинк ставит setup-continue (в /mnt напрямую)')
 else:
-    fail('resolved: в custom_commands нет симлинка resolv.conf → stub-resolv.conf')
+    fail('resolved: setup-continue не ставит симлинк resolv.conf -> stub')
+if any('stub-resolv.conf' in c or 'resolv.conf' in c for c in cmds):
+    fail('resolved: симлинк resolv.conf в custom_commands — там arch-chroot его уронит')
+else:
+    ok('resolved: симлинка resolv.conf в custom_commands нет (правильно)')
 
 # 16. gai.conf: хук ищет НЕЗАКОММЕНТИРОВАННУЮ строку (^[^#]) — наивный
 # grep -q матчит закомментированный пример стокового файла и пропускает
