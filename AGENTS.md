@@ -34,7 +34,12 @@
 - **VirtualBox 7.2.20** — тестовый стенд собранного ISO
   (`vm/create-test-vm.sh`). Модуль ядра `vboxdrv` собирается из
   `virtualbox-host-dkms` и требует заголовков ядра; доустановка и
-  проверка — `Cards/Сборочная реальная машина.md`.
+  проверка — `Cards/Сборочная реальная машина.md`. Известный баг:
+  при пробуждении/гашении экрана хоста процесс VirtualBoxVM падает
+  по сегфолту (апстрим issue #397); обход — переменная
+  `VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=Disabled` в окружении
+  VBoxSVC, детали и способ применения — `Cards/VM - Управление
+  консолью.md`, раздел «Инциденты».
 - **Пакеты для сборки**: `archiso` (с зависимостями — `squashfs-tools`,
   `dosfstools`, `mtools`, `libisoburn`, `erofs-utils`), `qemu-img`
   (разбор дисков VM), `linux-headers` (для модуля VirtualBox) — входят
