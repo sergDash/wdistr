@@ -1,0 +1,26 @@
+# Приводит .desktop Ghostty к --gtk-single-instance=false (wdistr).
+# Зачем: в настройках Cinnamon «Приложения по умолчанию → Терминал»
+# список терминалов строится из строк Exec .desktop-файлов, а выбранное
+# значение сверяется со строкой exec в dconf (cs_default.py,
+# DefaultTerminalButton). Штатный .desktop пакета содержит
+# --gtk-single-instance=true — строка exec дистрибутива
+# ('/usr/bin/ghostty --gtk-single-instance=false') с ней не совпадает,
+# и в выпадающем списке терминал не отмечен, хотя работает
+# (опыт 2026-10-17). Патч Exec чинит и отображение, и сам сценарий
+# single-instance: Nemo «Открыть в терминале» уходил через D-Bus
+# работающему процессу и брал каталог последнего окна вместо папки.
+# Sed идемпотентен: после первой правки совпадений нет, повтор —
+# пустая замена. Пакет при обновлении кладёт .desktop заново —
+# хук на Upgrade правит снова.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = ghostty
+
+[Action]
+Description = Ghostty: --gtk-single-instance=false в .desktop (wdistr)...
+When = PostTransaction
+Depends = sh
+Depends = sed
+Exec = /bin/sh -c "sed -i 's/--gtk-single-instance=true/--gtk-single-instance=false/' /usr/share/applications/com.mitchellh.ghostty.desktop"

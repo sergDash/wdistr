@@ -1,0 +1,35 @@
+# Ghostty: настройки дистрибутива wdistr (значения с рабочей машины,
+# решение 2026-10-17). Системный дефолт: лежит в /etc/xdg/ghostty/config,
+# каждый пользователь может перекрыть своё ~/.config/ghostty/config.
+#
+# window-decoration = server — рамка окна родная (рисует менеджер окон),
+# не рисует её сам Ghostty.
+window-decoration = server
+window-width = 250
+window-height = 80
+
+# Скроллбэк большой — 200 МБ в байтах (удобно читать длинные логи)
+scrollback-limit = 200_000_000
+
+# Шрифт: Ubuntu Mono из базового набора; CJK-фоллбек для иероглифов
+# (Ubuntu Mono их не содержит)
+font-size = 12
+font-family = Ubuntu Mono
+font-family = Noto Sans Mono CJK SC
+
+# Цветовые схемы по порядку: берётся первая доступная (ghostty
+# +list-themes — полный список)
+theme = Andromeda
+theme = Adwaita Dark
+
+# Комбинации кнопок (как на рабочей машине): Ctrl+C — копирование
+# только при выделении (performable), Ctrl+V — вставка, Ctrl+Shift+Е/Ц —
+# новая вкладка и закрытие (кириллические клавиши — раскладка RU;
+# в US это T и H)
+keybind = performable:ctrl+c=copy_to_clipboard
+keybind = ctrl+v=paste_from_clipboard
+keybind = ctrl+shift+е=new_tab
+keybind = ctrl+shift+ц=close_tab:this
+
+# Колесо прокручивает по 3 строки за щелчок
+mouse-scroll-multiplier = 3

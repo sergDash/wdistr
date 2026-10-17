@@ -39,6 +39,12 @@ GAI_HOOK = FILES / "wdistr-gai.hook"
 PROFILE_GAI_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-gai.hook"
 # emote: отключение автозапуска (хук на пакет emote — решение 2026-10-17)
 EMOTE_HOOK = FILES / "wdistr-emote.hook"
+# ghostty: --gtk-single-instance=false в .desktop (хук на пакет ghostty,
+# решение 2026-10-17) — чинит отображение терминала в настройках
+# Cinnamon: список терминалов сверяет dconf-ключ exec со строкой Exec
+# .desktop, а штатный файл пакета несёт =true
+GHOSTTY_HOOK = FILES / "wdistr-ghostty.hook"
+PROFILE_GHOSTTY_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-ghostty.hook"
 
 
 def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: bool = False) -> str:
@@ -128,6 +134,39 @@ def main() -> None:
         # (подтверждение пользователя 2026-10-17). Хук идёт в цель:
         # emote ставится в first-boot через yay, хук должен уже стоять
         deliver(EMOTE_HOOK, "/etc/pacman.d/hooks/wdistr-emote.hook"),
+        # ghostty: --gtk-single-instance=false в .desktop пакета. Штатный
+        # файл несёт =true, из-за чего в настройках Cinnamon «Терминал»
+        # ghostty не отмечен: список сверяет dconf-ключ exec со строкой
+        # Exec .desktop (cs_default.py), а значения не совпадают (опыт
+        # 2026-10-17). Хук идёт в цель — для будущих обновлений ghostty;
+        # sed выполняется сразу, потому что сам пакет уже установлен
+        # archinstall'ом до custom_commands (паттерн gai: хук +
+        # немедленное действие)
+        deliver(GHOSTTY_HOOK, "/etc/pacman.d/hooks/wdistr-ghostty.hook"),
+        "sed -i 's/--gtk-single-instance=true/--gtk-single-instance=false/' "
+        "/usr/share/applications/com.mitchellh.ghostty.desktop",
+        # Системный дефолт Ghostty (решение 2026-10-17): рамка окна
+        # родная (server), цветовые схемы, хоткеи и шрифты — как на
+        # рабочей машине. Пользовательский ~/.config/ghostty/config
+        # перекрывает
+        deliver(FILES / "ghostty/config", "/etc/xdg/ghostty/config"),
+        # Системная рамка окна у craft-приложений (решение 2026-10-17):
+        # photocraft/vectorcraft по умолчанию рисуют свою (CSD), опция
+        # systemTitleBar переключает на системную. Настройка живёт в
+        # пользовательском конфиге; минимальный файл приложение само
+        # дополняет дефолтами при первом запуске (проверено 2026-10-17).
+        # Пишется ДО установки пакетов (она — в first-boot), guard
+        # защищает от затирания при повторе setup-continue. Скрипт
+        # обёрнут в {...} группы: без них цепочка || при пустом $U
+        # создала бы файл в /home/.config (опасный путь)
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft && "
+        "{ test -f /home/$U/.config/photocraft/preferences.json || "
+        "echo '{\"interface\":{\"systemTitleBar\":true}}' > /home/$U/.config/photocraft/preferences.json; } && "
+        "{ test -f /home/$U/.config/vectorcraft/ui.json || "
+        "echo '{\"engine_prefs\":{\"systemTitleBar\":true}}' > /home/$U/.config/vectorcraft/ui.json; } && "
+        "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft",
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).
@@ -382,6 +421,10 @@ def main() -> None:
     # Хук gai.conf в профиль: срабатывает при установке glibc во время
     # сборки — строка приоритета IPv4 попадает в живую среду
     shutil.copyfile(GAI_HOOK, PROFILE_GAI_HOOK)
+    # Хук ghostty в профиль: при сборке пакет ghostty ставится в живую
+    # среду — хук правит его .desktop сразу (в цель .desktop правится
+    # немедленным sed в custom_commands)
+    shutil.copyfile(GHOSTTY_HOOK, PROFILE_GHOSTTY_HOOK)
     print(f"custom_commands: {len(config['custom_commands'])} команд(ы)")
     print(f"конфиг синхронизирован с профилем: {PROFILE_COPY}")
     print(f"mirrorlist из {MIRRORS.name} ({len(urls)} зеркал): {PROFILE_MIRRORLIST}")
