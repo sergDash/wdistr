@@ -30,6 +30,6 @@ file_permissions=(
   # приходит в живую среду без +x (опыт 2026-10-12: opencode отдавал
   # «permission denied»). Версия в имени файла — при смене версии
   # обновлять наравне с симлинком opencode.
-  ["/usr/local/bin/opencode-1.19.0+"]="0:0:755"
+  ["/usr/local/bin/opencode-1.19.3"]="0:0:755"
   ["/usr/local/bin/keyd-toggle-layout"]="0:0:755"
 )

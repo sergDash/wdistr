@@ -25,12 +25,18 @@ end
 
 cd ~/src/opencode/; or fail
 
+# git fetch --tags упал бы на конфликте тега vscode-v1.0.0 (локальный ≠ апстрим);
+# нам нужен только тег версии — забираем точечно (опыт 2026-10-17)
 git fetch origin; or fail
-git fetch --tags; or fail
+git fetch origin tag v$VER; or fail
 git switch -f dev; or fail
 git reset --hard origin/dev; or fail
 
 git switch --detach v$VER; or fail
+# untracked-файлы прошлой сборки (патчи создавали тесты) мешают git apply —
+# чистим перед патчами (опыт 2026-10-17: scroll-window-eviction.test.tsx
+# остался с v1.19.0, git apply упал «уже содержится в рабочем каталоге»)
+git clean -fd; or fail
 # pkg.pr.new мёртв (NXDOMAIN) — заменяем URL @solidjs/start на npm-версию,
 # иначе bun install падает; зависимость нужна packages/enterprise (веб),
 # CLI от неё не зависит, нам важно лишь пройти установку (опыт 2026-10-10)
