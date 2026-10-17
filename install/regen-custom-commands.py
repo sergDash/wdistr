@@ -93,6 +93,14 @@ def main() -> None:
     )
     config["mirror_config"]["mirror_regions"] = {"wdistr": urls}
 
+    # Payload для доставки в домашнюю папку первого пользователя
+    # (конфиг Ghostty и посев JSON applet'а панели) — считается
+    # заранее, код команд ниже вставляет его в echo
+    gh_cfg_b64 = base64.b64encode(
+        (FILES / "ghostty/config").read_bytes()).decode()
+    gwl_b64 = base64.b64encode(
+        (FILES / "cinnamon/grouped-window-list-2.json").read_bytes()).decode()
+
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
         "sed -i '/#\\[multilib\\]/,/^#Include/ s/^#//' /etc/pacman.conf",
@@ -145,28 +153,38 @@ def main() -> None:
         deliver(GHOSTTY_HOOK, "/etc/pacman.d/hooks/wdistr-ghostty.hook"),
         "sed -i 's/--gtk-single-instance=true/--gtk-single-instance=false/' "
         "/usr/share/applications/com.mitchellh.ghostty.desktop",
-        # Системный дефолт Ghostty (решение 2026-10-17): рамка окна
-        # родная (server), цветовые схемы, хоткеи и шрифты — как на
-        # рабочей машине. Пользовательский ~/.config/ghostty/config
-        # перекрывает
-        deliver(FILES / "ghostty/config", "/etc/xdg/ghostty/config"),
         # Системная рамка окна у craft-приложений (решение 2026-10-17):
         # photocraft/vectorcraft по умолчанию рисуют свою (CSD), опция
         # systemTitleBar переключает на системную. Настройка живёт в
         # пользовательском конфиге; минимальный файл приложение само
         # дополняет дефолтами при первом запуске (проверено 2026-10-17).
-        # Пишется ДО установки пакетов (она — в first-boot), guard
-        # защищает от затирания при повторе setup-continue. Скрипт
-        # обёрнут в {...} группы: без них цепочка || при пустом $U
-        # создала бы файл в /home/.config (опасный путь)
+        # Конфиг Ghostty — та же схема «пользовательский файл первого
+        # пользователя»: ghostty читает ТОЛЬКО ~/.config/ghostty/config,
+        # XDG_CONFIG_DIRS (/etc/xdg) игнорирует (опыт 2026-10-17:
+        # системный файл доехал в цель, но +show-config его не видел).
+        # Посев 2.json grouped-window-list: applet не перечитывает JSON
+        # на лету — cinnamon-defaults.sh дописывает файл уже ПОСЛЕ первой
+        # загрузки applet'а, и первая сессия оставалась сгруппированной
+        # (опыт 2026-10-17). Заложенный заранее файл applet читает с
+        # самого начала. Guard test -f защищает всё от затирания при
+        # повторе setup-continue. Скрипт обёрнут в {...} группы: без
+        # них цепочка || при пустом $U создала бы файл в /home/.config
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
-        "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft && "
+        "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
+        "/home/$U/.config/ghostty "
+        "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org && "
         "{ test -f /home/$U/.config/photocraft/preferences.json || "
         "echo '{\"interface\":{\"systemTitleBar\":true}}' > /home/$U/.config/photocraft/preferences.json; } && "
         "{ test -f /home/$U/.config/vectorcraft/ui.json || "
         "echo '{\"engine_prefs\":{\"systemTitleBar\":true}}' > /home/$U/.config/vectorcraft/ui.json; } && "
-        "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft",
+        "{ test -f /home/$U/.config/ghostty/config || "
+        f"echo '{gh_cfg_b64}' | base64 -d > /home/$U/.config/ghostty/config; }} && "
+        "{ test -f /home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json || "
+        f"echo '{gwl_b64}' | base64 -d "
+        "> /home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json; } && "
+        "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
+        "/home/$U/.config/ghostty /home/$U/.config/cinnamon",
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).

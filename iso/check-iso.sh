@@ -405,19 +405,21 @@ if any("com.mitchellh.ghostty.desktop" in c and '--gtk-single-instance=false' in
 else:
     fail('ghostty: нет немедленного sed .desktop в custom_commands')
 
-# 25. Системный дефолт Ghostty /etc/xdg/ghostty/config (решение
-# 2026-10-17): рамка окна родная (window-decoration=server), темы,
-# хоткеи; пользовательский ~/.config перекрывает
-gh_cfg = [c for c in cmds if '/etc/xdg/ghostty/config' in c]
+# 25. Конфиг Ghostty в домашней папке первого пользователя (решение
+# 2026-10-17): ghostty читает ТОЛЬКО ~/.config/ghostty/config —
+# XDG_CONFIG_DIRS (/etc/xdg) он игнорирует (опыт 2026-10-17:
+# системный файл доехал в цель, но +show-config его не видел,
+# конфиг оставался пустым). Рамка server, темы, хоткеи
+gh_cfg = [c for c in cmds if '/home/$U/.config/ghostty/config' in c]
 gh_payload = ''
 if gh_cfg:
     m = re.search(r"echo '([A-Za-z0-9+/=]+)'", gh_cfg[0])
     if m:
         gh_payload = base64.b64decode(m.group(1)).decode()
 if 'window-decoration = server' in gh_payload and 'theme = Andromeda' in gh_payload:
-    ok('ghostty: системный дефолт /etc/xdg/ghostty/config доставлен')
+    ok('ghostty: конфиг в ~/.config/ghostty/config первого пользователя')
 else:
-    fail('ghostty: системный дефолт отсутствует или неполон')
+    fail('ghostty: конфиг не доставлен в домашнюю папку или неполон')
 
 # 26. Системная рамка окна у craft-приложений (решение 2026-10-17):
 # photocraft/vectorcraft по умолчанию рисуют свою (CSD) — минимальные
@@ -431,11 +433,25 @@ else:
     fail('craft: нет минимальных конфигов systemTitleBar=true')
 
 # 27. Группировка окон на панели отменена (решение 2026-10-17): ключ
-# group-apps=false в JSON-патче applet'а (cinnamon-defaults)
+# group-apps=false в JSON-патче applet'а (cinnamon-defaults) И посев
+# готового 2.json при установке — applet не перечитывает JSON на лету,
+# и без посева первая сессия после установки оставалась сгруппированной
+# (опыт 2026-10-17)
 if "d['group-apps']['value'] = False" in cd_payload:
     ok('панель: группировка окон отменена (group-apps=false) в форсе')
 else:
     fail('панель: нет group-apps=False в cinnamon-defaults')
+gwl_seed = [c for c in cmds
+            if 'grouped-window-list@cinnamon.org/2.json' in c]
+gwl_payload = ''
+if gwl_seed:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", gwl_seed[0])
+    if m:
+        gwl_payload = base64.b64decode(m.group(1)).decode()
+if '"group-apps"' in gwl_payload and '"value": false' in gwl_payload:
+    ok('панель: посев 2.json с group-apps=false в домашней папке')
+else:
+    fail('панель: посева 2.json с group-apps=false нет в custom_commands')
 
 # 28. Перетаскивание окон — Win, не Alt (решение 2026-10-17): ключ в
 # системном dconf-дефолте и в форсе первого входа (паттерн тем/шрифтов)

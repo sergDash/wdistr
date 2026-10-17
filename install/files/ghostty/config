@@ -1,6 +1,11 @@
 # Ghostty: настройки дистрибутива wdistr (значения с рабочей машины,
-# решение 2026-10-17). Системный дефолт: лежит в /etc/xdg/ghostty/config,
-# каждый пользователь может перекрыть своё ~/.config/ghostty/config.
+# решение 2026-10-17). Кладётся в ~/.config/ghostty/config первого
+# пользователя при установке (custom_commands).
+#
+# ВНИМАНИЕ: путь несистемный. Ghostty читает конфиг ТОЛЬКО из
+# XDG_CONFIG_HOME (~/.config/ghostty/config) — XDG_CONFIG_DIRS
+# (/etc/xdg/ghostty/config) он игнорирует (проверено 2026-10-17:
+# системный файл доехал в цель, но +show-config его не видел).
 #
 # window-decoration = server — рамка окна родная (рисует менеджер окон),
 # не рисует её сам Ghostty.
