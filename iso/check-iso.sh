@@ -265,12 +265,15 @@ else:
     fail(f'first-boot: AUR-список пакетов {len(aur_list)}, не хватает: {missing or "—"}')
 
 # 13. Консольные утилиты второй волны (решение 2026-10-15): pv
-# добавлен следом за bc/httrack/time/bind; sticky — заметки (2026-10-16)
+# добавлен следом за bc/httrack/time/bind; sticky — заметки (2026-10-16);
+# man-db + man-pages + man-pages-ru — man-страницы (2026-10-17: без
+# man-db в составе pacman спрашивал поставщика молча ставить всё)
 utils = cfg.get('packages', [])
-missing = [p for p in ('bc', 'bind', 'httrack', 'time', 'pv', 'sticky')
+missing = [p for p in ('bc', 'bind', 'httrack', 'time', 'pv', 'sticky',
+                       'man-db', 'man-pages', 'man-pages-ru')
            if p not in utils]
 if not missing:
-    ok(f'состав: утилиты bc/bind/httrack/time/pv и sticky (всего {len(utils)} пакетов)')
+    ok(f'состав: утилиты bc/bind/httrack/time/pv/sticky и man (всего {len(utils)} пакетов)')
 else:
     fail(f'состав: в packages[] {len(utils)}, не хватает: {missing}')
 
@@ -361,11 +364,16 @@ else:
 
 # 20. Своп в first-boot (решение 2026-10-17): Rust-сборки AUR упираются
 # в потолок памяти (OOM на librepcb с 8 ГБ, на vectorcraft с 16 ГБ) —
-# шаг создаёт /swapfile 8G→4G→пропуск, NOCOW для btrfs, fstab
-if 'chattr +C /swapfile' in fb_payload and '/swapfile none swap' in fb_payload:
-    ok('first-boot: своп-файл с фолбэком размера и NOCOW для btrfs')
+# шаг создаёт /swapfile 8G→4G→пропуск, NOCOW для btrfs, fstab.
+# На машинах с памятью больше 64 ГиБ своп пропускается (2026-10-17):
+# потолок не пробивается, файл 8 ГиБ не нужен
+swap_ok = ('chattr +C /swapfile' in fb_payload
+           and '/swapfile none swap' in fb_payload
+           and '67108864' in fb_payload)
+if swap_ok:
+    ok('first-boot: своп с фолбэком, NOCOW и пропуском при памяти >64 ГиБ')
 else:
-    fail('first-boot: нет шага свопа (chattr +C /swapfile или запись fstab)')
+    fail('first-boot: нет шага свопа или условия по памяти (>64 ГиБ)')
 
 # 21. VirtualBox: обход апстрим-бага #397 (сегфолт при пробуждении
 # экрана хоста) — переменная в /etc/environment через custom_commands
