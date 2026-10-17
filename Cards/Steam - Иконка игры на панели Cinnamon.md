@@ -178,7 +178,19 @@ Flatpak-Steam пишет ярлык внутрь своей песочницы
 - **Пакет `icoutils`** — добавить в `packages[]` конфига archinstall
   (для извлечения иконок из exe при изготовлении .desktop-файлов;
   строка в `Cards/Базовый набор программ.md` — extra, конфиг).
-- **Свой .desktop-файл** и иконку можно доставлять через
-  `install/files/desktop/` (паттерн custom_commands: всё содержимое
-  папки уезжает в `/usr/share/applications`). Иконку — отдельной
-  строкой доставки в `/usr/share/icons/hicolor/256x256/apps/`.
+- **Файлы складируются в `install/files/`** по структуре,
+  повторяющей целевую (`~/.local` пользователя):
+
+  | В проекте | Куда уезжает на целевой системе |
+  |---|---|
+  | `install/files/.local/share/applications/steam_app_<appid>.desktop` | `~/.local/share/applications/` (источник, зеркало домашней папки) |
+  | `install/files/.local/share/icons/hicolor/256x256/apps/steam_app_<appid>.png` | `~/.local/share/icons/hicolor/256x256/apps/` (источник, зеркало домашней папки) |
+  | `install/files/desktop/steam_app_<appid>.desktop` | `/usr/share/applications/` (доставка custom_commands, паттерн `files/desktop/`) |
+
+  `.desktop`-файл лежит в двух местах намеренно:
+  `.local/share/applications/` — исходное зеркало (откуда брали и куда
+  клали на рабочей машине), `desktop/` — через него файл реально
+  доставляется в систему (regen-custom-commands.py гоняет всё из
+  `files/desktop/` в `/usr/share/applications`). Доставка иконки в
+  системный hicolor настраивается отдельной строкой в
+  `regen-custom-commands.py` (паттерна для `files/.local/` там пока нет).
