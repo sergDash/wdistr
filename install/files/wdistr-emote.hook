@@ -1,0 +1,21 @@
+# Отключает автозапуск emote: пакет AUR при установке и обновлении кладёт
+# свой /etc/xdg/autostart/emote.desktop, и при каждом входе в систему
+# открывается окно выбора эмодзи (решение 2026-10-17: «лишнее это»).
+# Хоткей у emote остаётся — программа запускается по требованию,
+# в автозагрузке она не нужна.
+# Hidden=true — штатный механизм XDG autostart: файл с этой ключевой
+# строкой игнорируется. Файл перезаписывается целиком, а не
+# дописывается строка Hidden: дубли ключей в .desktop недопустимы,
+# а перезапись идемпотентна — хук срабатывает и при Install, и при
+# Upgrade.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = emote
+
+[Action]
+Description = Disabling emote autostart (wdistr)...
+When = PostTransaction
+Depends = sh
+Exec = /bin/sh -c "printf '[Desktop Entry]\nType=Application\nName=Emote\nHidden=true\n' > /etc/xdg/autostart/emote.desktop"

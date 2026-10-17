@@ -36,6 +36,8 @@ PROFILE_MIRROR_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-m
 # gai.conf: приоритет IPv4 перед IPv6 (хук на glibc — опыт 2026-10-15)
 GAI_HOOK = FILES / "wdistr-gai.hook"
 PROFILE_GAI_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-gai.hook"
+# emote: отключение автозапуска (хук на пакет emote — решение 2026-10-17)
+EMOTE_HOOK = FILES / "wdistr-emote.hook"
 
 
 def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: bool = False) -> str:
@@ -107,6 +109,12 @@ def main() -> None:
         deliver(GAI_HOOK, "/etc/pacman.d/hooks/wdistr-gai.hook"),
         "grep -qE '^[^#]*precedence ::ffff:0:0/96' /etc/gai.conf "
         "|| echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf",
+        # emote: автозапуск отключается хуком ПОСЛЕ установки пакета —
+        # сам пакет AUR при установке/обновлении кладёт свой
+        # /etc/xdg/autostart/emote.desktop, окно при входе лишнее
+        # (подтверждение пользователя 2026-10-17). Хук идёт в цель:
+        # emote ставится в first-boot через yay, хук должен уже стоять
+        deliver(EMOTE_HOOK, "/etc/pacman.d/hooks/wdistr-emote.hook"),
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).
@@ -316,8 +324,10 @@ def main() -> None:
     # Автозапуск: всё из files/autostart/ доставляется в
     # /etc/xdg/autostart/ (решение 2026-10-16). Нужно для программ,
     # чьи пакеты НЕ ставят свой autostart-файл (amneziavpn-bin, copyq);
-    # emote и sticky автозапуск ставят сами — свои файлы для них не
-    # нужны. Паттерн тот же, что у desktop/.
+    # sticky автозапуск ставит сам пакет — своего файла не нужно.
+    # emote: пакет тоже ставит свой файл, но автозапуск отключён хуком
+    # wdistr-emote.hook (Hidden=true, решение 2026-10-17).
+    # Паттерн тот же, что у desktop/.
     for desktop in sorted((FILES / "autostart").glob("*.desktop")):
         config["custom_commands"].append(
             deliver(desktop, f"/etc/xdg/autostart/{desktop.name}")

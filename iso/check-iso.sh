@@ -299,7 +299,8 @@ else:
     fail('зеркала: хук без test -f — при установке cp упадёт с cannot stat')
 
 # 18. Автозапуск: AmneziaVPN и CopyQ доставлены в /etc/xdg/autostart/
-# (решение 2026-10-16); emote и sticky ставят свои файлы пакеты
+# (решение 2026-10-16); sticky ставит свой файл пакет, emote отключён
+# хуком (проверка 19)
 autostart = [c for c in cmds if '/etc/xdg/autostart/' in c]
 names = set()
 for c in autostart:
@@ -310,6 +311,26 @@ if 'AmneziaVPN.desktop' in names and 'copyq.desktop' in names:
     ok(f'автозапуск: AmneziaVPN и copyq в /etc/xdg/autostart (всего {len(names)} файлов)')
 else:
     fail(f'автозапуск: найдено {sorted(names)}, нужны AmneziaVPN.desktop и copyq.desktop')
+
+# 19. emote: автозапуск отключён хуком (решение 2026-10-17: пакет AUR
+# при установке/обновлении кладёт свой autostart-файл, окно при входе
+# лишнее). Хук доставляется custom_commands в
+# /etc/pacman.d/hooks/wdistr-emote.hook; проверяем и саму доставку, и
+# содержимое (Hidden=true, Trigger на пакет emote) — payload base64
+hook_cmds = [c for c in cmds if 'wdistr-emote.hook' in c]
+if not hook_cmds:
+    fail('emote: хук wdistr-emote.hook не доставляется в цель')
+else:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", hook_cmds[0])
+    if not m:
+        fail('emote: команда доставки хука без base64-payload')
+    else:
+        import base64 as _b64
+        hook_text = _b64.b64decode(m.group(1)).decode()
+        if 'Hidden=true' in hook_text and 'Target = emote' in hook_text:
+            ok('emote: хук отключения автозапуска доставляется (Hidden=true)')
+        else:
+            fail('emote: хук без Hidden=true или без Target = emote')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
