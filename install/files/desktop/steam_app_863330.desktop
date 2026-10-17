@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=RPG in a Box Demo
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/863330
+Icon=steam_app_863330
+StartupWMClass=steam_app_863330
+Terminal=false
+Categories=Game;

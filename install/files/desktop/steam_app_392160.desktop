@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=X4: Foundations
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/392160
+Icon=steam_app_392160
+StartupWMClass=steam_app_392160
+Terminal=false
+Categories=Game;

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Space Engineers 2
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/1133870
+Icon=steam_app_1133870
+StartupWMClass=steam_app_1133870
+Terminal=false
+Categories=Game;

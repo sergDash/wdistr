@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Terraria
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/105600
+Icon=steam_app_105600
+StartupWMClass=steam_app_105600
+Terminal=false
+Categories=Game;

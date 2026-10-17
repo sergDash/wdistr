@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Out of the Ashes Demo
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/4602430
+Icon=steam_app_4602430
+StartupWMClass=steam_app_4602430
+Terminal=false
+Categories=Game;

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SPACERIFT: Arcanum System
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/1148480
+Icon=steam_app_1148480
+StartupWMClass=steam_app_1148480
+Terminal=false
+Categories=Game;

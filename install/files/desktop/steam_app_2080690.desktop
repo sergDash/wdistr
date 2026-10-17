@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Sunkenland
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/2080690
+Icon=steam_app_2080690
+StartupWMClass=steam_app_2080690
+Terminal=false
+Categories=Game;

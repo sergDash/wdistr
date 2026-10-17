@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Project Zomboid
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/108600
+Icon=steam_app_108600
+StartupWMClass=steam_app_108600
+Terminal=false
+Categories=Game;

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Microsoft Flight Simulator (2020)
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/1250410
+Icon=steam_app_1250410
+StartupWMClass=steam_app_1250410
+Terminal=false
+Categories=Game;

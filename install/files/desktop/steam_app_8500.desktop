@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=EVE Online
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/8500
+Icon=steam_app_8500
+StartupWMClass=steam_app_8500
+Terminal=false
+Categories=Game;

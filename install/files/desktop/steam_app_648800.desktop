@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Raft
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/648800
+Icon=steam_app_648800
+StartupWMClass=steam_app_648800
+Terminal=false
+Categories=Game;

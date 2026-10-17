@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Empyrion - Galactic Survival
+Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/383120
+Icon=steam_app_383120
+StartupWMClass=steam_app_383120
+Terminal=false
+Categories=Game;
