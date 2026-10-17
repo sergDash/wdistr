@@ -67,30 +67,53 @@ VBoxManage controlvm wdistr-test screenshotpng /tmp/opencode/shot.png
 
 ## Инциденты
 
-- **2026-10-15: окно VM упало, машина в состоянии aborted.**
-  Симптом: `VBoxManage showvminfo` показывает `VMState="aborted"`,
-  лог обрывается без штатного завершения. Причина — сегфолт самого
-  процесса `VirtualBoxVM` на хосте, не сбой гостя:
+### 2026-10-15 и 2026-10-17: сегфолт VirtualBoxVM при смене экрана хоста
 
-  ```
-  kernel: VirtualBoxVM[...]: segfault ... in libQt6Widgets.so.6.12.0
-  systemd-coredump: Process (VirtualBoxVM) terminated abnormally with signal 11/SEGV
-  ```
+Два подтверждённых случая с идентичной подписью (плюс третий случай
+13-го — сегфолт главного процесса `VirtualBox`, та же семья). Паттерн
+закреплён, повторно копать не нужно.
 
-  Триггер: секундами ранее на хосте шла буря событий смены геометрии
-  экранов (`Host-screen geometry changed`, `Screen count changed`,
-  ресайзы рабочих областей до `0x0`) — подключение/переключение
-  мониторов; ломается Qt-часть VirtualBox 7.2.20 на этой
-  переконфигурации.
+**Симптом:** окно VM исчезает, `VBoxManage showvminfo` показывает
+`VMState="aborted"`, лог сеанса обрывается без штатного завершения.
+Гость и его диск при этом НЕ пострадали — гибнет только процесс
+отрисовки `VirtualBoxVM` на хосте (с гостевой памятью). Восстановление —
+просто запустить заново: `VBoxManage startvm wdistr-test`.
 
-  Гость и его диск при этом НЕ пострадали (погиб только процесс
-  отрисовки с гостевой памятью). Восстановление — просто запустить
-  заново: `VBoxManage startvm wdistr-test`.
+**Причина:** сегфолт (signal 11/SEGV) Qt-части VirtualBox 7.2.20
+(Qt 6.12.0) на хосте, не сбой гостя. Точная точка падения — из стека
+coredump 2026-10-17:
 
-  Диагностика: `journalctl -b | grep -iE "virtualbox|segfault"` и
-  `VBoxManage showvminfo <vm> | grep VMState`.
+```
+#0 QAccessibleWidget::text            ← NULL-разыменование ("segfault at 8")
+#7 QWidget::showMaximized
+#8 UIDesktopWidgetWatchdog::sltHandleHostScreenResized  ← обработчик смены экрана хоста
+#11 QGuiApplicationPrivate::processScreenGeometryChange
+```
 
-  **Лог самого сеанса VM лежит рядом с файлом `.vbox` на том диске,
-  где живёт машина** (`/run/media/serg/EVO1TB/VirtualBox VMs/<vm>/Logs/VBox.log`),
-  а не в `~/.config/VirtualBox/Logs` — там такого каталога может не
-  быть.
+**Триггер:** буря событий смены геометрии экрана хоста. По логу
+сеанса 2026-10-17: экран хоста был 2560x1400, за секунду до смерти
+перестроился в 3840x1110 (смена монитора/разрешения, вероятно при
+гашении/пробуждении экрана) — пошли `Host-screen available-area changed`,
+`Guest-screen count changed`, волна `RRScreenChangeNotify` из гостя,
+ресайзы рабочей области до `0x0`; на последнем событии смены экрана
+`sltHandleHostScreenResized` вызвал `showMaximized` и упал. Лог сеанса
+обрывается на строке `Screen 0 is formally resized to: ...` — дальше
+процесса нет.
+
+**Практика:**
+- Не оставлять окно VM запущенным на длительное время, если хост
+  гасит экран или переключает мониторы (при установке/первой загрузке
+  это часы — либо не гасить хост, либо смириться с риском и просто
+  перезапускать VM при падении).
+- Непроверенная идея профилактики: в настройках VM (Display) есть
+  галка «Disable screen saver integration» — может снять реакцию
+  Qt на пробуждение хоста; не пробовали.
+- Диагностика повторного случая:
+  `coredumpctl list | grep -i virtualbox` (даты всех падений) и
+  `coredumpctl info <pid>` (стек с точкой падения).
+
+**Лог самого сеанса VM лежит рядом с файлом `.vbox` на том диске,
+где живёт машина** (`/run/media/serg/EVO1TB/VirtualBox VMs/<vm>/Logs/VBox.log`),
+а не в `~/.config/VirtualBox/Logs` — там такого каталога может не быть.
+Временные метки в логе — uptime процесса от старта сеанса (отсчёт от
+00:00:02), начало сеанса видно в шапке (`Log opened ...` в UTC).
