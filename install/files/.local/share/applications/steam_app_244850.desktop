@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Space Engineers
-Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/244850
-Icon=steam_app_244850
-StartupWMClass=steam_app_244850
-Terminal=false
-Categories=Game;
