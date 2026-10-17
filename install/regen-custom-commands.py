@@ -17,6 +17,7 @@ import gzip
 import json
 import pathlib
 import shutil
+import struct
 
 INSTALL = pathlib.Path(__file__).resolve().parent
 CONFIG = INSTALL / "archinstall-config.json"
@@ -331,6 +332,32 @@ def main() -> None:
     for desktop in sorted((FILES / "desktop").glob("*.desktop")):
         config["custom_commands"].append(
             deliver(desktop, f"/usr/share/applications/{desktop.name}")
+        )
+
+    # Иконки игр Steam (Steam - Иконка игры на панели Cinnamon.md):
+    # .desktop-файл ссылается Icon=steam_app_<appid>, но без файла иконки
+    # панель откатывается к иконке Steam. Кладём в hicolor-тему по
+    # РЕАЛЬНОМУ размеру PNG — GTK ищет по <размер>x<размер>/apps/, а
+    # размеры у иконок разные (256/128/32), под size=256 всё не
+    # подравнять. Размер читаем из заголовка IHDR структурно, без
+    # Pillow — зависимости скрипта должны оставаться только stdlib.
+    def png_size(path):
+        with open(path, "rb") as fh:
+            head = fh.read(24)
+        if head[:8] != b"\x89PNG\r\n\x1a\n":
+            return None
+        return struct.unpack(">II", head[16:24])  # (ширина, высота) из IHDR
+
+    for icon in sorted((FILES / "icons").glob("*.png")):
+        size = png_size(icon)
+        if size is None or size[0] != size[1]:
+            # Не PNG или не квадрат — hicolor-каталог требует квадратный
+            # размер; такое не поддаём, чтобы не класть битую иконку
+            print(f"WARNING: иконка {icon.name} не квадратный PNG ({size}) — пропущена")
+            continue
+        px = size[0]
+        config["custom_commands"].append(
+            deliver(icon, f"/usr/share/icons/hicolor/{px}x{px}/apps/{icon.name}")
         )
 
     # Автозапуск: всё из files/autostart/ доставляется в

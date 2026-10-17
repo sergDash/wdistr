@@ -348,6 +348,18 @@ if any('VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=' in c and '/etc/environment' in c
 else:
     fail('virtualbox: нет строки VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST в /etc/environment')
 
+# 22. Иконки игр Steam (Steam - Иконка игры на панели Cinnamon.md): у
+# каждого steam_app_<appid>.desktop в /usr/share/applications должна быть
+# парная иконка в hicolor — иначе панель откатывается к иконке Steam
+icon_cmds = [c for c in cmds if '/usr/share/icons/hicolor/' in c and 'steam_app' in c]
+icon_ids = set(re.findall(r'steam_app_(\d+)\.png', ' '.join(icon_cmds)))
+desk_ids = set(re.findall(r'steam_app_(\d+)\.desktop', ' '.join(cmds)))
+missing = desk_ids - icon_ids
+if desk_ids and not missing:
+    ok(f'игры Steam: {len(desk_ids)} .desktop, у всех есть иконка в hicolor')
+else:
+    fail(f'игры Steam: иконки не хватает для appid: {sorted(missing) or "нет desktop-файлов"}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
