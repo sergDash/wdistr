@@ -451,11 +451,18 @@ else:
     fail('панель: нет group-apps=False в cinnamon-defaults')
 gwl_seed = [c for c in cmds
             if 'grouped-window-list@cinnamon.org/2.json' in c]
+# В команде несколько echo-payload (ghostty + этот JSON) — ищем тот,
+# что декодируется в JSON с group-apps
 gwl_payload = ''
 if gwl_seed:
-    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", gwl_seed[0])
-    if m:
-        gwl_payload = base64.b64decode(m.group(1)).decode()
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", gwl_seed[0]):
+        try:
+            text = base64.b64decode(m.group(1)).decode()
+        except Exception:
+            continue
+        if '"group-apps"' in text:
+            gwl_payload = text
+            break
 if '"group-apps"' in gwl_payload and '"value": false' in gwl_payload:
     ok('панель: посев 2.json с group-apps=false в домашней папке')
 else:
