@@ -325,12 +325,19 @@ else:
     if not m:
         fail('emote: команда доставки хука без base64-payload')
     else:
-        import base64 as _b64
-        hook_text = _b64.b64decode(m.group(1)).decode()
+        hook_text = base64.b64decode(m.group(1)).decode()
         if 'Hidden=true' in hook_text and 'Target = emote' in hook_text:
             ok('emote: хук отключения автозапуска доставляется (Hidden=true)')
         else:
             fail('emote: хук без Hidden=true или без Target = emote')
+
+# 20. Своп в first-boot (решение 2026-10-17): Rust-сборки AUR упираются
+# в потолок памяти (OOM на librepcb с 8 ГБ, на vectorcraft с 16 ГБ) —
+# шаг создаёт /swapfile 8G→4G→пропуск, NOCOW для btrfs, fstab
+if 'chattr +C /swapfile' in fb_payload and '/swapfile none swap' in fb_payload:
+    ok('first-boot: своп-файл с фолбэком размера и NOCOW для btrfs')
+else:
+    fail('first-boot: нет шага свопа (chattr +C /swapfile или запись fstab)')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

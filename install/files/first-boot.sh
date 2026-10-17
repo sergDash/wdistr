@@ -34,6 +34,38 @@ run() {
 # 1. Базы всех репозиториев (multilib включён, но база не скачана) + актуальность
 run pacman -Syu --noconfirm
 
+# 1b. Своп перед тяжёлыми сборками AUR (решение 2026-10-17). Опыт:
+#    2026-10-09 первый запуск упал по OOM на librepcb с 8 ГБ RAM,
+#    2026-10-17 — на vectorcraft с 16 ГБ (пик rustc 8.4 ГБ, сервису
+#    14.1 ГБ из 15). Craft-пакеты — Rust-сборки, потолок пробивается
+#    регулярнее. Своп-файл, а не раздел: разметка setup остаётся
+#    нетронутой, файл живёт вечно через fstab. Размер с фолбэком 8G →
+#    4G → пропуск: своп нужен, но его отсутствие не должно валить
+#    первый запуск (на машинах с большой памятью он не критичен).
+#    chattr +C обязателен для btrfs: без NOCOW-флага swapon отказывается
+#    поднимать файл (опыт 2026-10-17: «swapon: Недопустимый аргумент»);
+#    на других ФС флаг не ставится — ошибка глушится.
+if ! swapon --show | grep -q .; then
+    for SIZE in 8G 4G; do
+        rm -f /swapfile
+        if touch /swapfile \
+            && chattr +C /swapfile 2>/dev/null \
+            && fallocate -l "$SIZE" /swapfile \
+            && chmod 600 /swapfile \
+            && mkswap /swapfile >/dev/null \
+            && swapon /swapfile; then
+            grep -q '^/swapfile ' /etc/fstab \
+                || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+            echo "+ своп: /swapfile $SIZE поднят" >>"$LOG"
+            break
+        fi
+    done
+    if ! swapon --show | grep -q .; then
+        # Не хватило места или ФС без поддержки — фиксируем, но не падаем
+        echo "+ своп: не удалось создать (место/ФС) — сборки могут упереться в память" >>"$LOG"
+    fi
+fi
+
 # 2. opencode собственной сборки — СРАЗУ И В ФОНЕ (решение 2026-10-09):
 #    зависимостей от yay нет (git/bun/node-gyp стоят pacstrap'ом), поэтому
 #    сборка идёт параллельно с flatpak и AUR — librepcb не задерживает
