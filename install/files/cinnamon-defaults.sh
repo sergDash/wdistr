@@ -67,6 +67,11 @@ gsettings set org.cinnamon.desktop.default-applications.terminal exec '/usr/bin/
 # отработала или нет — проверить при следующей установке.
 gsettings set org.cinnamon.desktop.media-handling autorun-never true
 
+# Перетаскивание окон — Win, не Alt (решение 2026-10-17, значение с
+# рабочей машины). Дубль системного dconf-дефолта: Cinnamon при первом
+# входе мог перебить значение своим дефолтом.
+gsettings set org.cinnamon.desktop.wm.preferences mouse-button-modifier '<Super>'
+
 # Высота основного монитора (решение 2026-10-16): >1500 px — 4K и
 # выше. На таких экранах увеличиваем панель, масштаб текста и иконку
 # меню; на меньших (1080, 1200, 1440) размеры не трогаем — дефолты
@@ -136,6 +141,25 @@ d = json.loads(p.read_text())
 d['use-custom-format']['value'] = True
 d['custom-format']['value'] = '%a, %e %b, %H:%M'
 d['custom-tooltip-format']['value'] = '%A, %e %B, %H:%M'
+p.write_text(json.dumps(d, indent=4))
+"
+fi
+
+# Группировка окон на панели отменена (решение 2026-10-17, значение с
+# рабочей машины): каждое окно — отдельной кнопкой, без группировки по
+# программе. Тот же JSON-паттерн, что у меню и календаря; идентификатор
+# экземпляра 2 задан нашим enabled-applets.
+GWL_JSON="$HOME/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json"
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ -f "$GWL_JSON" ] && break
+    sleep 1
+done
+if [ -f "$GWL_JSON" ]; then
+    python3 -c "
+import json, pathlib
+p = pathlib.Path('$GWL_JSON')
+d = json.loads(p.read_text())
+d['group-apps']['value'] = False
 p.write_text(json.dumps(d, indent=4))
 "
 fi

@@ -45,6 +45,7 @@ unsquashfs -d "$TMP/x" -f "$SFS" \
     usr/local/share/wdistr/mirrorlist \
     etc/pacman.d/hooks/wdistr-gai.hook \
     etc/pacman.d/hooks/wdistr-mirrors.hook \
+    etc/pacman.d/hooks/wdistr-ghostty.hook \
     usr/local/bin/opencode >/dev/null
 
 # Листинг всех файлов образа: права и состав без распаковки
@@ -57,7 +58,8 @@ python3 - "$TMP/x/root/wdistr/archinstall-config.json" \
          "$TMP/list.txt" \
          "$REPO_DIR/mirrors.txt" \
          "$TMP/x/etc/pacman.d/hooks/wdistr-gai.hook" \
-         "$TMP/x/etc/pacman.d/hooks/wdistr-mirrors.hook" <<'PYEOF'
+         "$TMP/x/etc/pacman.d/hooks/wdistr-mirrors.hook" \
+         "$TMP/x/etc/pacman.d/hooks/wdistr-ghostty.hook" <<'PYEOF'
 import base64
 import json
 import os
@@ -65,7 +67,8 @@ import re
 import sys
 
 (cfg_path, setup_path, mirror_path, symlink_path, list_path,
- mirrors_path, gai_hook_path, mirrors_hook_path) = sys.argv[1:9]
+ mirrors_path, gai_hook_path, mirrors_hook_path,
+ ghostty_hook_path) = sys.argv[1:10]
 
 fails = 0
 
@@ -380,6 +383,67 @@ if desk_ids and not missing:
     ok(f'игры Steam: {len(desk_ids)} .desktop, у всех есть иконка в hicolor')
 else:
     fail(f'игры Steam: иконки не хватает для appid: {sorted(missing) or "нет desktop-файлов"}')
+
+# 24. Ghostty: .desktop пакета приведён к --gtk-single-instance=false
+# (решение 2026-10-17). В настройках Cinnamon терминал сверяет dconf-ключ
+# exec со строкой Exec .desktop (cs_default.py) — штатный =true не давал
+# ghostty отмечаться в списке, хотя работал. Хук на пакет + немедленный
+# sed в custom_commands (пакет уже установлен archinstall'ом до
+# custom_commands). Проверяем обе стороны и содержимое хука
+ghostty_hook = open(ghostty_hook_path).read()
+if 'Target = ghostty' in ghostty_hook and '--gtk-single-instance=false' in ghostty_hook:
+    ok('ghostty: хук на пакет приводит .desktop к --gtk-single-instance=false')
+else:
+    fail('ghostty: хук без Target = ghostty или без замены флага')
+if any("com.mitchellh.ghostty.desktop" in c and '--gtk-single-instance=false' in c
+       for c in cmds):
+    ok('ghostty: немедленный sed .desktop в custom_commands')
+else:
+    fail('ghostty: нет немедленного sed .desktop в custom_commands')
+
+# 25. Системный дефолт Ghostty /etc/xdg/ghostty/config (решение
+# 2026-10-17): рамка окна родная (window-decoration=server), темы,
+# хоткеи; пользовательский ~/.config перекрывает
+gh_cfg = [c for c in cmds if '/etc/xdg/ghostty/config' in c]
+gh_payload = ''
+if gh_cfg:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", gh_cfg[0])
+    if m:
+        gh_payload = base64.b64decode(m.group(1)).decode()
+if 'window-decoration = server' in gh_payload and 'theme = Andromeda' in gh_payload:
+    ok('ghostty: системный дефолт /etc/xdg/ghostty/config доставлен')
+else:
+    fail('ghostty: системный дефолт отсутствует или неполон')
+
+# 26. Системная рамка окна у craft-приложений (решение 2026-10-17):
+# photocraft/vectorcraft по умолчанию рисуют свою (CSD) — минимальные
+# пользовательские конфиги с systemTitleBar=true пишутся до установки
+# пакетов (она в first-boot), guard от затирания при повторе
+craft_ok = ('"interface":{"systemTitleBar":true}' in ' '.join(cmds)
+            and '"engine_prefs":{"systemTitleBar":true}' in ' '.join(cmds))
+if craft_ok:
+    ok('craft: photocraft/vectorcraft — systemTitleBar=true в конфигах')
+else:
+    fail('craft: нет минимальных конфигов systemTitleBar=true')
+
+# 27. Группировка окон на панели отменена (решение 2026-10-17): ключ
+# group-apps=false в JSON-патче applet'а (cinnamon-defaults)
+if "d['group-apps']['value'] = False" in cd_payload:
+    ok('панель: группировка окон отменена (group-apps=false) в форсе')
+else:
+    fail('панель: нет group-apps=False в cinnamon-defaults')
+
+# 28. Перетаскивание окон — Win, не Alt (решение 2026-10-17): ключ в
+# системном dconf-дефолте и в форсе первого входа (паттерн тем/шрифтов)
+wm_sys = re.search(
+    r"^\s*mouse-button-modifier='<Super>'\s*$", dc_payload, re.M)
+wm_force = re.search(
+    r"^\s*gsettings set org\.cinnamon\.desktop\.wm\.preferences mouse-button-modifier '<Super>'\s*$",
+    cd_payload, re.M)
+if wm_sys and wm_force:
+    ok('окна: перетаскивание Win (<Super>) в системном дефолте и форсе')
+else:
+    fail(f'окна: системный дефолт = {bool(wm_sys)}, форс = {bool(wm_force)}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

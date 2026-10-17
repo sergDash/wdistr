@@ -41,6 +41,12 @@ exec='/usr/bin/ghostty --gtk-single-instance=false'
 [org/cinnamon/desktop/media-handling]
 autorun-never=true
 
+# Перетаскивание окон — Win, не Alt (решение 2026-10-17, значение с
+# рабочей машины). Дубль в cinnamon-defaults.sh (Cinnamon при первом
+# входе перебивает пользовательский dconf своим дефолтом).
+[org/cinnamon/desktop/wm/preferences]
+mouse-button-modifier='<Super>'
+
 # Панель задач (решение 2026-10-16): меню и список окон в центральной
 # зоне без разделителя — раскладка, применяется всегда. Дубль в
 # cinnamon-defaults.sh (Cinnamon при первом входе перебивает
