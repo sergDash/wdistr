@@ -38,7 +38,8 @@
   при пробуждении/гашении экрана хоста процесс VirtualBoxVM падает
   по сегфолту (апстрим issue #397); обход — переменная
   `VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=Disabled` в окружении
-  VBoxSVC, детали и способ применения — `Cards/VM - Управление
+  VBoxSVC, в дистрибутиве ставится в `/etc/environment` (custom_commands,
+  решение 2026-10-17); детали — `Cards/VM - Управление
   консолью.md`, раздел «Инциденты».
 - **Пакеты для сборки**: `archiso` (с зависимостями — `squashfs-tools`,
   `dosfstools`, `mtools`, `libisoburn`, `erofs-utils`), `qemu-img`

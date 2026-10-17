@@ -109,6 +109,18 @@ def main() -> None:
         deliver(GAI_HOOK, "/etc/pacman.d/hooks/wdistr-gai.hook"),
         "grep -qE '^[^#]*precedence ::ffff:0:0/96' /etc/gai.conf "
         "|| echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf",
+        # VirtualBox: обход апстрим-бага #397 (сегфолт VirtualBoxVM при
+        # пробуждении/гашении экрана хоста — use-after-free в
+        # UIDesktopWidgetWatchdog). Переменная должна быть в окружении
+        # VBoxSVC: он порождает VirtualBoxVM и наследует окружение
+        # первого приложения, дёргающего API (GUI из меню или VBoxManage
+        # из терминала). /etc/environment — потому что его читает pam_env
+        # при ЛЮБОМ входе (GUI-сессия, SSH, оболочки), в отличие от
+        # profile.d, который GUI-запуск не покрывает. Идемпотентно:
+        # grep перед append, чужое значение не перетирается. Детали и
+        # стек — Cards/VM - Управление консолью, раздел «Инциденты».
+        "grep -q '^VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=' /etc/environment "
+        "|| echo 'VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=Disabled' >> /etc/environment",
         # emote: автозапуск отключается хуком ПОСЛЕ установки пакета —
         # сам пакет AUR при установке/обновлении кладёт свой
         # /etc/xdg/autostart/emote.desktop, окно при входе лишнее

@@ -339,6 +339,15 @@ if 'chattr +C /swapfile' in fb_payload and '/swapfile none swap' in fb_payload:
 else:
     fail('first-boot: нет шага свопа (chattr +C /swapfile или запись fstab)')
 
+# 21. VirtualBox: обход апстрим-бага #397 (сегфолт при пробуждении
+# экрана хоста) — переменная в /etc/environment через custom_commands
+# (решение 2026-10-17)
+if any('VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=' in c and '/etc/environment' in c
+       for c in cmds):
+    ok('virtualbox: обход бага #397 — переменная доставляется в /etc/environment')
+else:
+    fail('virtualbox: нет строки VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST в /etc/environment')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

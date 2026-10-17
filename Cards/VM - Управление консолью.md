@@ -112,12 +112,16 @@ wildcard-disconnect(), снимающим внутренние destroyed()-св�
 
 **Применение:** переменная должна быть в окружении процесса
 `VirtualBoxVM`, а его порождает `VBoxSVC` — значит, и `VBoxSVC`
-должен стартовать уже с ней. Системно: `/etc/profile.d/` с
-`export VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=Disabled` + перелогин
-(сессия шины обновится) или `pkill VBoxSVC` и запуск нового `VBoxSVC`
-из оболочки с переменной (иначеDBus-активация поднимет его со старым
-окружением). Важно: смена окружения действует только на НОВЫЕ процессы —
-уже запущенная VM работает без защиты до перезапуска.
+должен стартовать уже с ней. Способ — `/etc/environment`
+(решение 2026-10-17, в дистрибутиве — строка custom_commands):
+файл читает pam_env при любом входе — GUI-сессия, SSH, оболочки —
+в отличие от `/etc/profile.d/`, который GUI-запуск VirtualBox
+из меню не покрывает. Идемпотентная строка:
+`grep -q '^VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=' /etc/environment || echo 'VBOX_DESKTOPWATCHDOGPOLICY_SYNTHTEST=Disabled' >> /etc/environment`
+Важно: смена окружения действует только на НОВЫЕ процессы —
+уже запущенная VM работает без защиты до перезапуска, и
+VBoxSVC нужно перезапустить (перелогин или `pkill VBoxSVC`,
+следующий вызов поднимет его с переменной).
 
 **Диагностика:** `coredumpctl list | grep -i virtualbox` (даты
 падений), `coredumpctl info <pid>` (стек). В логе сеанса VM последняя
