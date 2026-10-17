@@ -221,19 +221,24 @@ if sys_ok and force_ok:
 else:
     fail(f'съёмные носители: системный дефолт = {sys_ok}, форс первого входа = {force_ok}')
 
-# 23. Терминал по умолчанию — Ghostty БЕЗ single-instance (решение
-# 2026-10-17). С флагом --gtk-single-instance=true «Открыть в терминале»
-# из Nemo уходил через D-Bus работающему процессу и открывал домашнюю
-# директорию вместо папки. Обе точки (системный дефолт + форс первого
-# входа) обязаны держать '/usr/bin/ghostty' без single-instance.
-# Проверяем сами строки exec: значения должны быть ровно '/usr/bin/ghostty'
-# (без --gtk-single-instance); упоминание флага в комментариях допустимо.
-term_sys = re.search(r"^\s*exec='/usr/bin/ghostty'\s*$", dc_payload, re.M)
+# 23. Терминал по умолчанию — Ghostty с ЯВНЫМ --gtk-single-instance=false
+# (решение 2026-10-17). При single-instance «Открыть в терминале» из Nemo
+# уходил через D-Bus работающему процессу, окно рисовал первичный процесс
+# и брало каталог последнего окна вместо папки Nemo. Просто убрать =true
+# недостаточно: дефолт gtk-single-instance=detect при работающем основном
+# процессе всё равно делегирует ему. Обе точки (системный дефолт + форс
+# первого входа) обязаны держать --gtk-single-instance=false.
+# Проверяем сами строки exec: значения должны быть ровно
+# '/usr/bin/ghostty --gtk-single-instance=false'; упоминание флага в
+# комментариях допустимо.
+term_sys = re.search(
+    r"^\s*exec='/usr/bin/ghostty --gtk-single-instance=false'\s*$",
+    dc_payload, re.M)
 term_force = re.search(
-    r"^\s*gsettings set org\.cinnamon\.desktop\.default-applications\.terminal exec '/usr/bin/ghostty'\s*$",
+    r"^\s*gsettings set org\.cinnamon\.desktop\.default-applications\.terminal exec '/usr/bin/ghostty --gtk-single-instance=false'\s*$",
     cd_payload, re.M)
 if term_sys and term_force:
-    ok('терминал: Ghostty без single-instance в системном дефолте и форсе')
+    ok('терминал: Ghostty --gtk-single-instance=false в системном дефолте и форсе')
 else:
     fail(f'терминал: системный дефолт = {bool(term_sys)}, форс = {bool(term_force)}')
 

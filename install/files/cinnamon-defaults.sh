@@ -48,12 +48,15 @@ gsettings set org.cinnamon.desktop.session idle-delay 0
 gsettings set org.cinnamon.settings-daemon.plugins.power sleep-display-ac 3600
 gsettings set org.cinnamon.settings-daemon.plugins.power button-power 'shutdown'
 
-# Терминал по умолчанию — Ghostty БЕЗ single-instance (решение
-# 2026-10-17). При single-instance «Открыть в терминале» из Nemo уходил
-# через D-Bus работающему процессу и открывал домашнюю директорию
-# вместо папки. Дубль системного dconf-дефолта по паттерну тем/шрифтов:
-# cinnamon при первом входе мог перебить значение своим дефолтом.
-gsettings set org.cinnamon.desktop.default-applications.terminal exec '/usr/bin/ghostty'
+# Терминал по умолчанию — Ghostty с ЯВНЫМ --gtk-single-instance=false
+# (решение 2026-10-17). При single-instance «Открыть в терминале» из
+# Nemo уходил через D-Bus работающему процессу, окно рисовал первичный
+# процесс и брало каталог последнего окна вместо папки Nemo. Просто
+# убрать =true недостаточно: дефолт gtk-single-instance=detect при
+# работающем основном процессе всё равно делегирует ему. Дубль
+# системного dconf-дефолта по паттерну тем/шрифтов: cinnamon при
+# первом входе мог перебить значение своим дефолтом.
+gsettings set org.cinnamon.desktop.default-applications.terminal exec '/usr/bin/ghostty --gtk-single-instance=false'
 
 # Съёмные носители: переключатель «Спрашивать или запускать программы
 # при подключении носителя» — выключен (autorun-never=true; виджет
