@@ -322,23 +322,21 @@ if 'test -f' in mirrors_hook and 'exit 0' in mirrors_hook:
 else:
     fail('зеркала: хук без test -f — при установке cp упадёт с cannot stat')
 
-# 18. Автозапуск: AmneziaVPN, CopyQ, Flameshot и Sticky Notes доставлены
-# в /etc/xdg/autostart/ (решение 2026-10-16, 2026-10-17); sticky ставит
-# ТОЖЕ свой файл пакета, но с флагом --autostart: программа проверяет
-# ключ org.x.sticky autostart (дефолт false) и молча выходит — наш файл
-# wdistr-sticky.desktop с обычным Exec=sticky дублирует поведение
-# рабочей машины. emote отключён хуком (проверка 19)
+# 18. Автозапуск: AmneziaVPN, CopyQ и Flameshot доставлены в
+# /etc/xdg/autostart/ (решение 2026-10-16, 2026-10-17). Sticky Notes
+# включён иначе — ключом org.x.sticky autostart (проверка 30): пакет
+# ставит свой autostart-файл с флагом --autostart, файл оживляет
+# ключ. emote отключён хуком (проверка 19)
 autostart = [c for c in cmds if '/etc/xdg/autostart/' in c]
 names = set()
 for c in autostart:
     m = re.search(r"/etc/xdg/autostart/([A-Za-z0-9._-]+\.desktop)", c)
     if m:
         names.add(m.group(1))
-need_autostart = {'AmneziaVPN.desktop', 'copyq.desktop',
-                  'flameshot.desktop', 'wdistr-sticky.desktop'}
+need_autostart = {'AmneziaVPN.desktop', 'copyq.desktop', 'flameshot.desktop'}
 missing = need_autostart - names
 if not missing:
-    ok(f'автозапуск: AmneziaVPN/copyq/flameshot/wdistr-sticky в /etc/xdg/autostart (всего {len(names)} файлов)')
+    ok(f'автозапуск: AmneziaVPN/copyq/flameshot в /etc/xdg/autostart (всего {len(names)} файлов)')
 else:
     fail(f'автозапуск: не хватает {sorted(missing)}, найдено {sorted(names)}')
 
@@ -462,6 +460,21 @@ if icons_sys and icons_force:
     ok('окна: значки на кнопках выключены в системном дефолте и форсе')
 else:
     fail(f'окна: системный дефолт = {bool(icons_sys)}, форс = {bool(icons_force)}')
+
+# 30. Sticky Notes: автозапуск через ключ org.x.sticky autostart
+# (решение 2026-10-17). Пакет ставит свой autostart-файл с флагом
+# --autostart: программа при старте сверяет ключ и выходит, если
+# false (дефолт схемы) — ключ в системном dconf-дефолте оживляет
+# штатный файл. Дубль в форсе не нужен: схема приложенная, Cinnamon
+# её не перебивает
+sticky_key = re.search(
+    r"^\s*\[org/x/sticky\]\s*$", dc_payload, re.M)
+sticky_val = re.search(
+    r"^\s*autostart=true\s*$", dc_payload, re.M)
+if sticky_key and sticky_val:
+    ok('sticky: ключ org.x.sticky autostart=true в системном дефолте')
+else:
+    fail(f'sticky: ключ = {bool(sticky_key)}, autostart=true = {bool(sticky_val)}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

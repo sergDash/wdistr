@@ -54,6 +54,19 @@ mouse-button-modifier='<Super>'
 [org/cinnamon/settings-daemon/plugins/xsettings]
 buttons-have-icons=false
 
+# Sticky Notes: автозапуск (решение 2026-10-17). Пакет sticky ставит
+# свой /etc/xdg/autostart/sticky.desktop с флагом --autostart: программа
+# при старте проверяет этот ключ и молча выходит, если он false
+# (дефолт схемы) — поэтому без ключа пакетный автозапуск ничего не
+# делает. Ключ=true оживляет штатный файл: sticky стартует в трее при
+# входе. Выключение — переключатель «Start automatically» в настройках
+# самой sticky: он пишет тот же ключ, пакетный файл при следующем
+# входе увидит false и не запустится. Дубль в cinnamon-defaults.sh не
+# нужен: схема приложениеная (org.x.sticky), Cinnamon её дефолты при
+# первом входе не перебивает.
+[org/x/sticky]
+autostart=true
+
 # Панель задач (решение 2026-10-16): меню и список окон в центральной
 # зоне без разделителя — раскладка, применяется всегда. Дубль в
 # cinnamon-defaults.sh (Cinnamon при первом входе перебивает
