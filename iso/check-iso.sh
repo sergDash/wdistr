@@ -322,19 +322,25 @@ if 'test -f' in mirrors_hook and 'exit 0' in mirrors_hook:
 else:
     fail('зеркала: хук без test -f — при установке cp упадёт с cannot stat')
 
-# 18. Автозапуск: AmneziaVPN и CopyQ доставлены в /etc/xdg/autostart/
-# (решение 2026-10-16); sticky ставит свой файл пакет, emote отключён
-# хуком (проверка 19)
+# 18. Автозапуск: AmneziaVPN, CopyQ, Flameshot и Sticky Notes доставлены
+# в /etc/xdg/autostart/ (решение 2026-10-16, 2026-10-17); sticky ставит
+# ТОЖЕ свой файл пакета, но с флагом --autostart: программа проверяет
+# ключ org.x.sticky autostart (дефолт false) и молча выходит — наш файл
+# wdistr-sticky.desktop с обычным Exec=sticky дублирует поведение
+# рабочей машины. emote отключён хуком (проверка 19)
 autostart = [c for c in cmds if '/etc/xdg/autostart/' in c]
 names = set()
 for c in autostart:
     m = re.search(r"/etc/xdg/autostart/([A-Za-z0-9._-]+\.desktop)", c)
     if m:
         names.add(m.group(1))
-if 'AmneziaVPN.desktop' in names and 'copyq.desktop' in names:
-    ok(f'автозапуск: AmneziaVPN и copyq в /etc/xdg/autostart (всего {len(names)} файлов)')
+need_autostart = {'AmneziaVPN.desktop', 'copyq.desktop',
+                  'flameshot.desktop', 'wdistr-sticky.desktop'}
+missing = need_autostart - names
+if not missing:
+    ok(f'автозапуск: AmneziaVPN/copyq/flameshot/wdistr-sticky в /etc/xdg/autostart (всего {len(names)} файлов)')
 else:
-    fail(f'автозапуск: найдено {sorted(names)}, нужны AmneziaVPN.desktop и copyq.desktop')
+    fail(f'автозапуск: не хватает {sorted(missing)}, найдено {sorted(names)}')
 
 # 19. emote: автозапуск отключён хуком (решение 2026-10-17: пакет AUR
 # при установке/обновлении кладёт свой autostart-файл, окно при входе
@@ -444,6 +450,18 @@ if wm_sys and wm_force:
     ok('окна: перетаскивание Win (<Super>) в системном дефолте и форсе')
 else:
     fail(f'окна: системный дефолт = {bool(wm_sys)}, форс = {bool(wm_force)}')
+
+# 29. Значки на кнопках окон — выключены (решение 2026-10-17): ключ
+# xsettings-схемы в обоих местах (паттерн тем/шрифтов)
+icons_sys = re.search(
+    r"^\s*buttons-have-icons=false\s*$", dc_payload, re.M)
+icons_force = re.search(
+    r"^\s*gsettings set org\.cinnamon\.settings-daemon\.plugins\.xsettings buttons-have-icons false\s*$",
+    cd_payload, re.M)
+if icons_sys and icons_force:
+    ok('окна: значки на кнопках выключены в системном дефолте и форсе')
+else:
+    fail(f'окна: системный дефолт = {bool(icons_sys)}, форс = {bool(icons_force)}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

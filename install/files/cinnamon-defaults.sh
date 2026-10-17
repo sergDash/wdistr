@@ -72,6 +72,10 @@ gsettings set org.cinnamon.desktop.media-handling autorun-never true
 # входе мог перебить значение своим дефолтом.
 gsettings set org.cinnamon.desktop.wm.preferences mouse-button-modifier '<Super>'
 
+# Значки на кнопках окон — выключены (решение 2026-10-17). Ключ
+# xsettings-схемы (модуль «Темы»); дубль системного дефолта.
+gsettings set org.cinnamon.settings-daemon.plugins.xsettings buttons-have-icons false
+
 # Высота основного монитора (решение 2026-10-16): >1500 px — 4K и
 # выше. На таких экранах увеличиваем панель, масштаб текста и иконку
 # меню; на меньших (1080, 1200, 1440) размеры не трогаем — дефолты

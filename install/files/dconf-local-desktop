@@ -47,6 +47,13 @@ autorun-never=true
 [org/cinnamon/desktop/wm/preferences]
 mouse-button-modifier='<Super>'
 
+# Значки на кнопках окон — выключены (решение 2026-10-17, значение с
+# рабочей машины): кнопки свернуть/развернуть/закрыть без пиктограмм.
+# Ключ живёт в xsettings-схеме (модуль «Темы» настроек Cinnamon).
+# Дубль в cinnamon-defaults.sh.
+[org/cinnamon/settings-daemon/plugins/xsettings]
+buttons-have-icons=false
+
 # Панель задач (решение 2026-10-16): меню и список окон в центральной
 # зоне без разделителя — раскладка, применяется всегда. Дубль в
 # cinnamon-defaults.sh (Cinnamon при первом входе перебивает
