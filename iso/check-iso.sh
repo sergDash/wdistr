@@ -221,6 +221,22 @@ if sys_ok and force_ok:
 else:
     fail(f'съёмные носители: системный дефолт = {sys_ok}, форс первого входа = {force_ok}')
 
+# 23. Терминал по умолчанию — Ghostty БЕЗ single-instance (решение
+# 2026-10-17). С флагом --gtk-single-instance=true «Открыть в терминале»
+# из Nemo уходил через D-Bus работающему процессу и открывал домашнюю
+# директорию вместо папки. Обе точки (системный дефолт + форс первого
+# входа) обязаны держать '/usr/bin/ghostty' без single-instance.
+# Проверяем сами строки exec: значения должны быть ровно '/usr/bin/ghostty'
+# (без --gtk-single-instance); упоминание флага в комментариях допустимо.
+term_sys = re.search(r"^\s*exec='/usr/bin/ghostty'\s*$", dc_payload, re.M)
+term_force = re.search(
+    r"^\s*gsettings set org\.cinnamon\.desktop\.default-applications\.terminal exec '/usr/bin/ghostty'\s*$",
+    cd_payload, re.M)
+if term_sys and term_force:
+    ok('терминал: Ghostty без single-instance в системном дефолте и форсе')
+else:
+    fail(f'терминал: системный дефолт = {bool(term_sys)}, форс = {bool(term_force)}')
+
 # 12. AUR-список first-boot: свежие добавления на месте (emote — 2026-10-15,
 # beekeeper-studio — 2026-10-15, craft-пакеты — 2026-10-16); список уходит
 # в образ base64-командой

@@ -15,6 +15,20 @@ idle-delay=uint32 0
 sleep-display-ac=3600
 button-power='shutdown'
 
+# Терминал по умолчанию — Ghostty БЕЗ single-instance (решение
+# 2026-10-17). Nemo «Открыть в терминале» запускает терминал с рабочим
+# каталогом папки (g_spawn_async с cwd). При single-instance второй
+# запуск уходит через D-Bus уже работающему процессу, окно рисует
+# первичный процесс со СВОИМ каталогом, и папка Nemo теряется —
+# всегда открывалась домашняя директория. Опыт 2026-10-17: бага не
+# было в репозитории — cinnamon сам брал Exec из штатного .desktop
+# Ghostty (там --gtk-single-instance=true) и записывал его в dconf.
+# Явный дефолт чинит и каталог, и пустое поле «Терминал» в
+# «Приложениях по умолчанию» на чистой установке. Второй терминал
+# xfce4-terminal остаётся в составе для VirtualBox (см. README).
+[org/cinnamon/desktop/default-applications/terminal]
+exec='/usr/bin/ghostty'
+
 # Съёмные носители: переключатель «Спрашивать или запускать программы
 # при подключении носителя» — выключен. Виджет инвертирует ключ
 # (InvertedSwitch в cs_default.py): выключен = autorun-never=true,
