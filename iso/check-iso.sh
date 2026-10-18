@@ -455,14 +455,15 @@ if "d['group-apps']['value'] = False" in cd_payload:
     ok('панель: группировка окон отменена (group-apps=false) в форсе')
 else:
     fail('панель: нет group-apps=False в cinnamon-defaults')
-# Двойная запись списка (опыт 2026-10-18): перенос меню-applet'а между
-# зонами НЕ пересоздаёт его — иконка оставалась дефолтной до второго
-# входа; пересоздание даёт временная позиция center:2 → финальная 0
-if ('panel1:center:2:menu@cinnamon.org:0' in cd_payload
-        and 'panel1:center:0:menu@cinnamon.org:0' in cd_payload):
-    ok('панель: двойная запись списка (меню center:2 → center:0) на месте')
+# Instance меню :5 + посев 5.json (опыт 2026-10-18, установки
+# user2/user3/user4): «Reloading applet» настройки не перечитывает,
+# перенос между зонами не пересоздаёт — надёжное пересоздание даёт
+# только новый instance id с готовым файлом JSON
+if ('menu@cinnamon.org:5' in cd_payload
+        and 'menu@cinnamon.org/5.json' in cd_payload):
+    ok('панель: меню instance :5 с посевом 5.json в cinnamon-defaults')
 else:
-    fail('панель: нет двойной записи enabled-applets в cinnamon-defaults')
+    fail('панель: нет instance :5/посева 5.json в cinnamon-defaults')
 gwl_seed = [c for c in cmds
             if 'grouped-window-list@cinnamon.org/2.json' in c]
 # В команде несколько echo-payload (ghostty + этот JSON) — ищем тот,

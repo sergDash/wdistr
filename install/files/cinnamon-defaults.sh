@@ -89,10 +89,16 @@ SCREEN_HEIGHT=$(xrandr 2>/dev/null | grep " primary" | sed -n 's/.* connected pr
 # applet'а, к моменту autostart он уже есть; подождём до 5 с.
 # Патчим только value-поля, схему (type/default/description) не трогаем.
 #
-# ПОРЯДОК ВАЖЕН (опыт 2026-10-18): applet читает JSON при СОЗДАНИИ и
-# на лету не перечитывает. Патч идёт ДО записи enabled-applets (ниже):
-# первый вход подхватывает готовый размер через вынужденное пересоздание
-# applet'а двойной записью списка (см. комментарий у enabled-applets).
+# ПОРЯДОК ВАЖЕН (опыт 2026-10-18, установки user2/user3/user4):
+# applet читает JSON при СОЗДАНИИ; «Reloading applet» настройки НЕ
+# перечитывает (проверено на user4: перезагрузка в логе, иконка не
+# выросла), перенос между зонами — тоже (Cinnamon перемещает applet
+# без пересоздания). Надёжное пересоздание — НОВЫЙ instance id:
+# список использует menu@cinnamon.org:5, и перед сменой списка копия
+# пропатченного 0.json кладётся в 5.json — свежий instance читает
+# готовый файл с первого входа. Экземпляр 5 закрепится в dconf,
+# дальше applet сам ведёт 5.json; нулевой (дефолтный) после смены
+# списка выгружается, его файл остаётся без дела.
 MENU_JSON="$HOME/.config/cinnamon/spices/menu@cinnamon.org/0.json"
 for _ in 1 2 3 4 5 6 7 8 9 10; do
     [ -f "$MENU_JSON" ] && break
@@ -113,21 +119,16 @@ d['menu-icon-size']['value'] = $MENU_SIZE
 d['menu-label']['value'] = ''
 p.write_text(json.dumps(d, indent=4))
 "
+    # Копия для instance 5 — читается при пересоздании (см. выше)
+    cp "$MENU_JSON" "$HOME/.config/cinnamon/spices/menu@cinnamon.org/5.json"
 fi
 
 # Панель задач: меню и список окон в центральной зоне без разделителя
 # (решение 2026-10-16) — это раскладка, применяется ВСЕГДА, независимо
-# от высоты. Дубль в dconf-дефолте (10-wdistr-desktop).
-# ДВЕ записи списка — не опечатка (опыт 2026-10-18, установки
-# user2/user3): перенос меню-applet'а из дефолтной левой зоны в
-# центральную applet НЕ пересоздаёт — он держит в памяти размер,
-# прочитанный при создании, и пропатченный выше JSON не
-# подхватывает (иконка оставалась малой до второго входа).
-# Пересоздание даёт смена позиции: временный список с меню на
-# center:2, затем финальный — applet создаётся заново и читает
-# готовый 50/32 (проверено переключением на тестовой).
-gsettings set org.cinnamon enabled-applets "['panel1:center:2:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
-gsettings set org.cinnamon enabled-applets "['panel1:center:0:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
+# от высоты. Дубль в dconf-дефолте (10-wdistr-desktop). Instance меню —
+# 5 (см. комментарий выше): закрепляет пересоздание applet'а с
+# готовым размером иконки.
+gsettings set org.cinnamon enabled-applets "['panel1:center:0:menu@cinnamon.org:5', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
 
 # Размеры панели и масштаб текста — ТОЛЬКО на экранах выше 1500 px
 # (решение 2026-10-16). На дефолтных 1080/1200/1440 эти значения
