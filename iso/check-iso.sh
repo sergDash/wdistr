@@ -432,9 +432,13 @@ else:
 gh_cfg = [c for c in cmds if '/home/$U/.config/ghostty/config' in c]
 gh_payload = ''
 if gh_cfg:
-    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", gh_cfg[0])
-    if m:
-        gh_payload = base64.b64decode(m.group(1)).decode()
+    # В команде посева несколько echo-payload — ищем тот, что
+    # декодируется в конфиг ghostty (по ключевой строке)
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", gh_cfg[0]):
+        decoded = base64.b64decode(m.group(1)).decode()
+        if 'window-decoration' in decoded:
+            gh_payload = decoded
+            break
 if 'window-decoration = server' in gh_payload and 'theme = Andromeda' in gh_payload:
     ok('ghostty: конфиг в ~/.config/ghostty/config первого пользователя')
 else:
@@ -578,9 +582,13 @@ else:
 aud_cfg = [c for c in cmds if '/home/$U/.config/audacity/audacity.cfg' in c]
 aud_payload = ''
 if aud_cfg:
-    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", aud_cfg[0])
-    if m:
-        aud_payload = base64.b64decode(m.group(1)).decode()
+    # В команде посева несколько echo-payload (ghostty + audacity +
+    # JSON applet'ов) — ищем тот, что декодируется в audacity.cfg
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", aud_cfg[0]):
+        decoded = base64.b64decode(m.group(1)).decode()
+        if 'Theme=' in decoded:
+            aud_payload = decoded
+            break
 if '[GUI]' in aud_payload and 'Theme=dark' in aud_payload:
     ok('audacity: посев audacity.cfg с Theme=dark в домашнюю папку')
 else:
