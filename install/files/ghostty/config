@@ -8,10 +8,11 @@
 # системный файл доехал в цель, но +show-config его не видел).
 #
 # window-decoration = server — рамка окна родная (рисует менеджер окон),
-# не рисует её сам Ghostty.
+# не рисует её сам Ghostty. Размер окна — 120×40 (пожелание 2026-10-18;
+# прежние 250×80 с рабочей машины пересмотрены).
 window-decoration = server
-window-width = 250
-window-height = 80
+window-width = 120
+window-height = 40
 
 # Скроллбэк большой — 200 МБ в байтах (удобно читать длинные логи)
 scrollback-limit = 200_000_000
@@ -36,5 +37,6 @@ keybind = ctrl+v=paste_from_clipboard
 keybind = ctrl+shift+е=new_tab
 keybind = ctrl+shift+ц=close_tab:this
 
-# Колесо прокручивает по 3 строки за щелчок
-mouse-scroll-multiplier = 3
+# Колесо: множитель 3 отменён (пожелание 2026-10-18) — оставлена
+# штатная скорость скролла Ghostty
+# mouse-scroll-multiplier = 3
