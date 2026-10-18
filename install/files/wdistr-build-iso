@@ -25,7 +25,14 @@ if [ ! -f "$REPO/iso/profiledef.sh" ]; then
 fi
 
 # Маркеры mkarchiso живут в work/: без чистки повторный запуск молча
-# пропускает шаги и завершается «успехом» без ISO (случай 2026-09-26)
+# пропускает шаги и завершается «успехом» без ISO (случай 2026-09-26).
+# Перед чисткой снимаем случайные монтирования в work/: опыт
+# 2026-10-18 — после падения сборки под airootfs остался смонтированный
+# /proc (pacstrap не распустил), rm -rf по нему ходит, а mkarchiso
+# умирал на find по live-/proc под set -e. umount -R не годится:
+# work/ сам не mountpoint — идём по строкам /proc/mounts глубже вглубь.
+grep " $REPO/work/" /proc/mounts | cut -d' ' -f2 | sort -r | \
+    while read -r m; do umount -- "$m" 2>/dev/null || true; done
 rm -rf -- "$REPO/work"
 
 # Выход в iso/out (читает тестовый стенд vm/create-test-vm.sh),

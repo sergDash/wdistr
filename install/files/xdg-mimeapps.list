@@ -9,10 +9,10 @@
 # Файл действует на всех пользователей; выбор пользователя в
 # ~/.config/mimeapps.list его перекрывает — это ожидаемо.
 #
-# Ассоциации по умолчанию (решение 2026-10-16): значения с рабочей
-# машины. Категории Cinnamon «Программы по умолчанию» отображаются
-# на MIME-типы; здесь — системные дефолты, пользователь может
-# переключить в настройках.
+# Ассоциации по умолчанию (решение 2026-10-16, уточнение 2026-10-18):
+# значения с рабочей машины. Категории Cinnamon «Программы по
+# умолчанию» отображаются на MIME-типы; здесь — системные дефолты,
+# пользователь может переключить в настройках.
 [Default Applications]
 inode/directory=nemo.desktop
 
@@ -69,3 +69,13 @@ text/tab-separated-values=ai.storyteller.gridcraft.desktop
 
 # Офис.PDF: Okular (вместо Firefox)
 application/pdf=okularApplication_pdf.desktop
+
+# Офис.Исходный текст: VSCodium (пожелание 2026-10-18). Категория
+# Cinnamon «Исходный текст» в настройках по умолчанию пишет MIME
+# text/x-python (cs_default.py, preferred_app_defs["office"])
+text/x-python=codium.desktop
+
+# Система.Текст: VSCodium (пожелание 2026-10-18) — редактор кода
+# открыт и обычный текст. Категория Cinnamon «Текст» пишет
+# text/plain (cs_default.py, preferred_app_defs["system"])
+text/plain=codium.desktop
