@@ -4,12 +4,12 @@
 Server = https://archlinux.koyanet.lv/archlinux/$repo/os/$arch
 Server = https://repository.su/archlinux/$repo/os/$arch
 Server = https://mirror.sunred.org/archlinux/$repo/os/$arch
-Server = https://mirror.init7.net/archlinux/$repo/os/$arch
 Server = https://mirror.server.net/archlinux/$repo/os/$arch
 Server = https://mirror.peeres-telecom.fr/archlinux/$repo/os/$arch
-Server = https://mirrors.teamcloud.am/archlinux/$repo/os/$arch
 Server = https://mirror.nyaa.vc/archlinux/$repo/os/$arch
 Server = https://ftp.energotel.sk/pub/linux/arch/$repo/os/$arch
 Server = https://www.sooftware.com/mirrors/Arch-Linux/$repo/os/$arch
-Server = https://mirror.famaserver.com/archlinux/$repo/os/$arch
-Server = https://arch.sakamoto.pl/$repo/os/$arch
+Server = https://gluttony.sin.cvut.cz/arch/$repo/os/$arch
+Server = https://mirror.hb9hil.org/archlinux/$repo/os/$arch
+Server = https://no.mirror.cx/archlinux/$repo/os/$arch
+Server = https://mirror1.sox.rs/archlinux/$repo/os/$arch
