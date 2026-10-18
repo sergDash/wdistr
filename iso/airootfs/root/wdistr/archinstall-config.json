@@ -353,7 +353,8 @@
         "docker",
         "bluetooth",
         "smartd",
-        "systemd-resolved"
+        "systemd-resolved",
+        "vboxservice"
     ],
     "swap": {
         "algorithm": "zstd",

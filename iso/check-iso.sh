@@ -279,12 +279,15 @@ else:
 
 # 14. Сервисы в services[]: bluetooth (иначе GUI blueman есть, а демон
 # disabled — опыт 2026-10-15 на рабочей машине), smartd (мониторинг
-# SMART дисков — пакет ставится, сервис без включения молчит) и
-# systemd-resolved (локальный кэширующий резолвер — опыт 2026-10-16)
+# SMART дисков — пакет ставится, сервис без включения молчит),
+# systemd-resolved (локальный кэширующий резолвер — опыт 2026-10-16) и
+# vboxservice (Guest Additions: без сервиса гость не получает режимы
+# от хоста — lightdm сидит в 1280x800, setvideomodehint не применяется;
+# опыт 2026-10-18 на тестовой; пакет guest-utils в составе намеренно)
 services = cfg.get('services', [])
-svc_missing = [s for s in ('bluetooth', 'smartd', 'systemd-resolved') if s not in services]
+svc_missing = [s for s in ('bluetooth', 'smartd', 'systemd-resolved', 'vboxservice') if s not in services]
 if not svc_missing:
-    ok(f'сервисы: bluetooth, smartd, systemd-resolved включены ({", ".join(services)})')
+    ok(f'сервисы: bluetooth, smartd, systemd-resolved, vboxservice включены ({", ".join(services)})')
 else:
     fail(f'сервисы: нет {svc_missing}, services[] = {services}')
 
