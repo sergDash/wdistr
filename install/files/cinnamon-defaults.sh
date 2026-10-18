@@ -90,11 +90,9 @@ SCREEN_HEIGHT=$(xrandr 2>/dev/null | grep " primary" | sed -n 's/.* connected pr
 # Патчим только value-поля, схему (type/default/description) не трогаем.
 #
 # ПОРЯДОК ВАЖЕН (опыт 2026-10-18): applet читает JSON при СОЗДАНИИ и
-# на лету не перечитывает. На чистой установке дефолтный меню-applet
-# живёт в panel1:left и создаёт 0.json с дефолтами; наш enabled-applets
-# (ниже) переносит его в panel1:center — applet пересоздаётся и читает
-# файл в момент записи. Патч ДО смены списка: пересоздание подхватывает
-# готовый размер (50 на 4K, 32 на обычных), проверено на тестовой.
+# на лету не перечитывает. Патч идёт ДО записи enabled-applets (ниже):
+# первый вход подхватывает готовый размер через вынужденное пересоздание
+# applet'а двойной записью списка (см. комментарий у enabled-applets).
 MENU_JSON="$HOME/.config/cinnamon/spices/menu@cinnamon.org/0.json"
 for _ in 1 2 3 4 5 6 7 8 9 10; do
     [ -f "$MENU_JSON" ] && break
@@ -119,8 +117,16 @@ fi
 
 # Панель задач: меню и список окон в центральной зоне без разделителя
 # (решение 2026-10-16) — это раскладка, применяется ВСЕГДА, независимо
-# от высоты. Дубль в dconf-дефолте (10-wdistr-desktop). Смена списка —
-# пересоздание applet'ов: они читают свои JSON (см. порядок выше).
+# от высоты. Дубль в dconf-дефолте (10-wdistr-desktop).
+# ДВЕ записи списка — не опечатка (опыт 2026-10-18, установки
+# user2/user3): перенос меню-applet'а из дефолтной левой зоны в
+# центральную applet НЕ пересоздаёт — он держит в памяти размер,
+# прочитанный при создании, и пропатченный выше JSON не
+# подхватывает (иконка оставалась малой до второго входа).
+# Пересоздание даёт смена позиции: временный список с меню на
+# center:2, затем финальный — applet создаётся заново и читает
+# готовый 50/32 (проверено переключением на тестовой).
+gsettings set org.cinnamon enabled-applets "['panel1:center:2:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
 gsettings set org.cinnamon enabled-applets "['panel1:center:0:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']"
 
 # Размеры панели и масштаб текста — ТОЛЬКО на экранах выше 1500 px
