@@ -31,8 +31,11 @@ fi
 # /proc (pacstrap не распустил), rm -rf по нему ходит, а mkarchiso
 # умирал на find по live-/proc под set -e. umount -R не годится:
 # work/ сам не mountpoint — идём по строкам /proc/mounts глубже вглубь.
+# «|| true» после конвейера обязателен: при пустом выводе grep
+# возвращает 1, и под pipefail скрипт умирал бы молча (опыт
+# 2026-10-18: сборка не стартовала при чистом work/).
 grep " $REPO/work/" /proc/mounts | cut -d' ' -f2 | sort -r | \
-    while read -r m; do umount -- "$m" 2>/dev/null || true; done
+    while read -r m; do umount -- "$m" 2>/dev/null || true; done || true
 rm -rf -- "$REPO/work"
 
 # Выход в iso/out (читает тестовый стенд vm/create-test-vm.sh),
