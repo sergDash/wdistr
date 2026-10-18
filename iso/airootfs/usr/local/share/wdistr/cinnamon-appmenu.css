@@ -1,0 +1,32 @@
+/* wdistr-appmenu: меню Пуск — квадратное, рамка 2px #999999; левая
+ * колонка меню (аватар/пользователь) — в цвет правой части, скругления
+ * её углов не видны; скроллбары — квадратные (решение 2026-10-18).
+ * Блок идёт В КОНЦЕ стокового cinnamon.css: при равной специфичности
+ * позднее правило перебивает раннее (там 16px у панели меню, 8px у
+ * кнопок и скроллбаров). Фон #242424 — из стокового .popup-menu-content.
+ * Маркер wdistr-appmenu — идемпотентность хука и немедленной доставки.
+ * Опыт 2026-10-18: вариант «своя тема-насадка Mint-Y-Dark-Aqua-10/cinnamon»
+ * отклонён — после перечитывания темы Cinnamon подменяет фон вместо
+ * наследования, панель и меню становятся прозрачными. */
+.appmenu-background.popup-menu {
+  border-radius: 0; }
+.appmenu-background .popup-menu-content {
+  border-radius: 0;
+  border-width: 2px;
+  border-color: #999999; }
+.appmenu-background .appmenu-category-button,
+.appmenu-background .appmenu-category-button-selected,
+.appmenu-background .appmenu-category-button-greyed,
+.appmenu-background .appmenu-application-button,
+.appmenu-background .appmenu-application-button-selected,
+.appmenu-background .appmenu-sidebar-button {
+  border-radius: 0; }
+.appmenu-background #appmenu-search-entry {
+  border-radius: 0; }
+.appmenu-sidebar {
+  background-color: #242424; }
+StScrollBar StBin#trough {
+  border-radius: 0; }
+StScrollBar StButton#vhandle,
+StScrollBar StButton#hhandle {
+  border-radius: 0; }

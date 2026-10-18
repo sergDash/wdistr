@@ -1,0 +1,26 @@
+# Дописывает блок wdistr-appmenu в /usr/share/cinnamon/theme/cinnamon.css,
+# если маркера нет (решение 2026-10-18): квадратное меню Пуск с рамкой
+# 2px #999999, квадратные кнопки/строка поиска/скроллбары, левая колонка
+# меню в цвет правой. Файл cinnamon.css принадлежит пакету cinnamon —
+# при обновлении пакета сток затирает блок, хук добивает его снова.
+# Источник блока — /usr/local/share/wdistr/cinnamon-appmenu.css (лежит
+# и в живой среде, и в цели). Порядок событий: при сборке ISO cinnamon
+# ставится в живую — хук читает источник из airootfs и правит живую;
+# при установке в цель pacstrap читает хуки живой среды, но источник
+# в цели ещё не доставлен (custom_commands идут после archinstall) —
+# хук безопасно выходит (test -f), блок в цель дописывает немедленная
+# команда custom_commands (паттерн gai: хук + немедленное действие).
+# ВНИМАНИЕ: служебный маркер сборочного хука в этот файл не вставлять —
+# иначе хук удалят из живой среды при сборке (zzzz99 в этой папке).
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = cinnamon
+
+[Action]
+Description = Applying wdistr appmenu CSS (square menu)...
+When = PostTransaction
+Depends = sh
+Depends = grep
+Exec = /bin/sh -c "grep -q wdistr-appmenu /usr/share/cinnamon/theme/cinnamon.css || { test -f /usr/local/share/wdistr/cinnamon-appmenu.css && cat /usr/local/share/wdistr/cinnamon-appmenu.css >> /usr/share/cinnamon/theme/cinnamon.css; }"

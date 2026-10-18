@@ -46,6 +46,8 @@ unsquashfs -d "$TMP/x" -f "$SFS" \
     etc/pacman.d/hooks/wdistr-gai.hook \
     etc/pacman.d/hooks/wdistr-mirrors.hook \
     etc/pacman.d/hooks/wdistr-ghostty.hook \
+    etc/pacman.d/hooks/wdistr-cinnamon.hook \
+    usr/local/share/wdistr/cinnamon-appmenu.css \
     usr/local/bin/opencode >/dev/null
 
 # Листинг всех файлов образа: права и состав без распаковки
@@ -59,7 +61,9 @@ python3 - "$TMP/x/root/wdistr/archinstall-config.json" \
          "$REPO_DIR/mirrors.txt" \
          "$TMP/x/etc/pacman.d/hooks/wdistr-gai.hook" \
          "$TMP/x/etc/pacman.d/hooks/wdistr-mirrors.hook" \
-         "$TMP/x/etc/pacman.d/hooks/wdistr-ghostty.hook" <<'PYEOF'
+         "$TMP/x/etc/pacman.d/hooks/wdistr-ghostty.hook" \
+         "$TMP/x/etc/pacman.d/hooks/wdistr-cinnamon.hook" \
+         "$TMP/x/usr/local/share/wdistr/cinnamon-appmenu.css" <<'PYEOF'
 import base64
 import json
 import os
@@ -68,7 +72,8 @@ import sys
 
 (cfg_path, setup_path, mirror_path, symlink_path, list_path,
  mirrors_path, gai_hook_path, mirrors_hook_path,
- ghostty_hook_path) = sys.argv[1:10]
+ ghostty_hook_path, cinnamon_hook_path,
+ cinnamon_css_path) = sys.argv[1:12]
 
 fails = 0
 
@@ -580,6 +585,31 @@ if '[GUI]' in aud_payload and 'Theme=dark' in aud_payload:
     ok('audacity: посев audacity.cfg с Theme=dark в домашнюю папку')
 else:
     fail('audacity: нет посева audacity.cfg или ключа Theme=dark')
+
+# 34. Меню Пуск — квадратное, скроллбары квадратные (решение
+# 2026-10-18). cinnamon.css — файл пакета, сток затирает правки при
+# обновлениях: хук на пакет cinnamon добивает блок, немедленная
+# команда в custom_commands чинит цель сразу (пакет установлен до
+# custom_commands, хук при pacstrap не сработал — источник в цели
+# ещё не доставлен, паттерн gai). Три стороны: хук, источник, команда
+# На старых ISO файлов ещё нет — os.path.exists, не open (иначе
+# traceback вместо FAIL)
+cin_hook = open(cinnamon_hook_path).read() if os.path.exists(cinnamon_hook_path) else ''
+cin_css = open(cinnamon_css_path).read() if os.path.exists(cinnamon_css_path) else ''
+if 'Target = cinnamon' in cin_hook and 'wdistr-appmenu' in cin_hook:
+    ok('меню: хук на пакет cinnamon дописывает wdistr-appmenu')
+else:
+    fail('меню: хук без Target = cinnamon или без wdistr-appmenu')
+if 'wdistr-appmenu' in cin_css and 'border-color: #999999' in cin_css:
+    ok('меню: источник cinnamon-appmenu.css в /usr/local/share/wdistr/')
+else:
+    fail('меню: нет cinnamon-appmenu.css или нет рамки #999999')
+if any('wdistr-appmenu' in c and 'cinnamon-appmenu.css' in c
+       and '>> /usr/share/cinnamon/theme/cinnamon.css' in c
+       for c in cmds):
+    ok('меню: немедленное дописывание блока в custom_commands')
+else:
+    fail('меню: нет немедленного append блока в custom_commands')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

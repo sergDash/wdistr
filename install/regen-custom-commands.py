@@ -45,6 +45,13 @@ EMOTE_HOOK = FILES / "wdistr-emote.hook"
 # .desktop, а штатный файл пакета несёт =true
 GHOSTTY_HOOK = FILES / "wdistr-ghostty.hook"
 PROFILE_GHOSTTY_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-ghostty.hook"
+# cinnamon: квадратное меню Пуск и скроллбары (решение 2026-10-18) —
+# хук на пакет cinnamon дописывает блок CSS в cinnamon.css после
+# установки/обновления (файл пакетный, сток его затирает)
+CINNAMON_HOOK = FILES / "wdistr-cinnamon.hook"
+CINNAMON_CSS = FILES / "cinnamon-appmenu.css"
+PROFILE_CINNAMON_HOOK = INSTALL.parent / "iso/airootfs/etc/pacman.d/hooks/wdistr-cinnamon.hook"
+PROFILE_CINNAMON_CSS = INSTALL.parent / "iso/airootfs/usr/local/share/wdistr/cinnamon-appmenu.css"
 
 
 def deliver(src: pathlib.Path, dest: str, mode: str | None = None, compress: bool = False) -> str:
@@ -157,6 +164,18 @@ def main() -> None:
         deliver(GHOSTTY_HOOK, "/etc/pacman.d/hooks/wdistr-ghostty.hook"),
         "sed -i 's/--gtk-single-instance=true/--gtk-single-instance=false/' "
         "/usr/share/applications/com.mitchellh.ghostty.desktop",
+        # Меню Пуск — квадратное, рамка 2px #999999, скроллбары
+        # квадратные, левая колонка меню в цвет правой (решение
+        # 2026-10-18). cinnamon.css — файл пакета cinnamon, сток его
+        # затирает при обновлениях: хук на пакет добивает блок после
+        # установки/обновления (паттерн gai: хук + немедленное действие
+        # — сам пакет уже установлен archinstall'ом до custom_commands).
+        # Источник блока едет отдельным файлом — хук cat'ит его
+        deliver(CINNAMON_HOOK, "/etc/pacman.d/hooks/wdistr-cinnamon.hook"),
+        deliver(CINNAMON_CSS, "/usr/local/share/wdistr/cinnamon-appmenu.css"),
+        "grep -q wdistr-appmenu /usr/share/cinnamon/theme/cinnamon.css "
+        "|| cat /usr/local/share/wdistr/cinnamon-appmenu.css "
+        ">> /usr/share/cinnamon/theme/cinnamon.css",
         # Системная рамка окна у craft-приложений (решение 2026-10-17):
         # photocraft/vectorcraft по умолчанию рисуют свою (CSD), опция
         # systemTitleBar переключает на системную. Настройка живёт в
@@ -468,6 +487,11 @@ def main() -> None:
     # среду — хук правит его .desktop сразу (в цель .desktop правится
     # немедленным sed в custom_commands)
     shutil.copyfile(GHOSTTY_HOOK, PROFILE_GHOSTTY_HOOK)
+    # Хук cinnamon и источник CSS в профиль: при сборке пакет cinnamon
+    # ставится в живую — хук правит cinnamon.css живой среды, источник
+    # лежит рядом в /usr/local/share/wdistr (та же схема, что у зеркал)
+    shutil.copyfile(CINNAMON_HOOK, PROFILE_CINNAMON_HOOK)
+    shutil.copyfile(CINNAMON_CSS, PROFILE_CINNAMON_CSS)
     print(f"custom_commands: {len(config['custom_commands'])} команд(ы)")
     print(f"конфиг синхронизирован с профилем: {PROFILE_COPY}")
     print(f"mirrorlist из {MIRRORS.name} ({len(urls)} зеркал): {PROFILE_MIRRORLIST}")
