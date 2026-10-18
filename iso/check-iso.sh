@@ -565,6 +565,22 @@ if ('useX11LegacyScreenshot=true' in fh_payload
 else:
     fail('flameshot: нет /etc/xdg/flameshot/flameshot.ini или ключей')
 
+# 33. Audacity: тема тёмная (решение 2026-10-18). Панели Audacity
+# рисуются собственной системой тем classic/light/dark — GTK/dconf
+# приложение не читает, без ключа Theme действует светлый classic
+# (опыт установки 2026-10-18). Посев минимального audacity.cfg в
+# ~/.config первого пользователя (паттерн ghostty), guard test -f
+aud_cfg = [c for c in cmds if '/home/$U/.config/audacity/audacity.cfg' in c]
+aud_payload = ''
+if aud_cfg:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", aud_cfg[0])
+    if m:
+        aud_payload = base64.b64decode(m.group(1)).decode()
+if '[GUI]' in aud_payload and 'Theme=dark' in aud_payload:
+    ok('audacity: посев audacity.cfg с Theme=dark в домашнюю папку')
+else:
+    fail('audacity: нет посева audacity.cfg или ключа Theme=dark')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

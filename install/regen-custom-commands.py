@@ -98,6 +98,8 @@ def main() -> None:
     # заранее, код команд ниже вставляет его в echo
     gh_cfg_b64 = base64.b64encode(
         (FILES / "ghostty/config").read_bytes()).decode()
+    aud_cfg_b64 = base64.b64encode(
+        (FILES / "audacity/audacity.cfg").read_bytes()).decode()
     gwl_b64 = base64.b64encode(
         (FILES / "cinnamon/grouped-window-list-2.json").read_bytes()).decode()
     cal_b64 = base64.b64encode(
@@ -164,6 +166,12 @@ def main() -> None:
         # пользователя»: ghostty читает ТОЛЬКО ~/.config/ghostty/config,
         # XDG_CONFIG_DIRS (/etc/xdg) игнорирует (опыт 2026-10-17:
         # системный файл доехал в цель, но +show-config его не видел).
+        # Посев конфига Audacity: приложение рисует свои панели
+        # собственной темой (classic/light/dark), GTK-тему не читает —
+        # без ключа Theme действует светлый classic (опыт 2026-10-18).
+        # audacity.cfg — тот же паттерн «минимальный файл, приложение
+        # сам дополняет дефолтами»; guard test -f не даёт затереть
+        # пользовательские правки.
         # Посев JSON applet'ов панели (2.json grouped-window-list,
         # 13.json calendar): applet не перечитывает JSON на лету —
         # cinnamon-defaults.sh дописывает файл уже ПОСЛЕ первой загрузки
@@ -176,7 +184,7 @@ def main() -> None:
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
         "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
-        "/home/$U/.config/ghostty "
+        "/home/$U/.config/ghostty /home/$U/.config/audacity "
         "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org "
         "/home/$U/.config/cinnamon/spices/calendar@cinnamon.org && "
         "{ test -f /home/$U/.config/photocraft/preferences.json || "
@@ -185,6 +193,8 @@ def main() -> None:
         "echo '{\"engine_prefs\":{\"systemTitleBar\":true}}' > /home/$U/.config/vectorcraft/ui.json; } && "
         "{ test -f /home/$U/.config/ghostty/config || "
         f"echo '{gh_cfg_b64}' | base64 -d > /home/$U/.config/ghostty/config; }} && "
+        "{ test -f /home/$U/.config/audacity/audacity.cfg || "
+        f"echo '{aud_cfg_b64}' | base64 -d > /home/$U/.config/audacity/audacity.cfg; }} && "
         "{ test -f /home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json || "
         f"echo '{gwl_b64}' | base64 -d "
         "> /home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json; } && "
@@ -192,7 +202,7 @@ def main() -> None:
         f"echo '{cal_b64}' | base64 -d "
         "> /home/$U/.config/cinnamon/spices/calendar@cinnamon.org/13.json; } && "
         "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
-        "/home/$U/.config/ghostty /home/$U/.config/cinnamon",
+        "/home/$U/.config/ghostty /home/$U/.config/audacity /home/$U/.config/cinnamon",
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).
