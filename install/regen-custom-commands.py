@@ -100,6 +100,8 @@ def main() -> None:
         (FILES / "ghostty/config").read_bytes()).decode()
     gwl_b64 = base64.b64encode(
         (FILES / "cinnamon/grouped-window-list-2.json").read_bytes()).decode()
+    cal_b64 = base64.b64encode(
+        (FILES / "cinnamon/calendar-13.json").read_bytes()).decode()
 
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
@@ -162,18 +164,21 @@ def main() -> None:
         # пользователя»: ghostty читает ТОЛЬКО ~/.config/ghostty/config,
         # XDG_CONFIG_DIRS (/etc/xdg) игнорирует (опыт 2026-10-17:
         # системный файл доехал в цель, но +show-config его не видел).
-        # Посев 2.json grouped-window-list: applet не перечитывает JSON
-        # на лету — cinnamon-defaults.sh дописывает файл уже ПОСЛЕ первой
-        # загрузки applet'а, и первая сессия оставалась сгруппированной
-        # (опыт 2026-10-17). Заложенный заранее файл applet читает с
-        # самого начала. Guard test -f защищает всё от затирания при
+        # Посев JSON applet'ов панели (2.json grouped-window-list,
+        # 13.json calendar): applet не перечитывает JSON на лету —
+        # cinnamon-defaults.sh дописывает файл уже ПОСЛЕ первой загрузки
+        # applet'а, и первая сессия оставалась с дефолтами (груп-
+        # пировка — опыт 2026-10-17, формат календаря — 2026-10-18).
+        # Заложенный заранее файл applet читает с самого начала.
+        # Guard test -f защищает всё от затирания при
         # повторе setup-continue. Скрипт обёрнут в {...} группы: без
         # них цепочка || при пустом $U создала бы файл в /home/.config
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
         "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty "
-        "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org && "
+        "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org "
+        "/home/$U/.config/cinnamon/spices/calendar@cinnamon.org && "
         "{ test -f /home/$U/.config/photocraft/preferences.json || "
         "echo '{\"interface\":{\"systemTitleBar\":true}}' > /home/$U/.config/photocraft/preferences.json; } && "
         "{ test -f /home/$U/.config/vectorcraft/ui.json || "
@@ -183,6 +188,9 @@ def main() -> None:
         "{ test -f /home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json || "
         f"echo '{gwl_b64}' | base64 -d "
         "> /home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org/2.json; } && "
+        "{ test -f /home/$U/.config/cinnamon/spices/calendar@cinnamon.org/13.json || "
+        f"echo '{cal_b64}' | base64 -d "
+        "> /home/$U/.config/cinnamon/spices/calendar@cinnamon.org/13.json; } && "
         "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty /home/$U/.config/cinnamon",
         # systemd-resolved — локальный кэширующий резолвер (опыт

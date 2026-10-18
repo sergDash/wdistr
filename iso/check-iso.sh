@@ -473,6 +473,24 @@ if '"group-apps"' in gwl_payload and '"value": false' in gwl_payload:
     ok('панель: посев 2.json с group-apps=false в домашней папке')
 else:
     fail('панель: посева 2.json с group-apps=false нет в custom_commands')
+# Посев 13.json calendar — тот же паттерн (опыт 2026-10-18: формат
+# даты не применялся в первую сессию, applet создавал файл с дефолтами
+# после патча cinnamon-defaults)
+cal_seed = [c for c in cmds if 'calendar@cinnamon.org/13.json' in c]
+cal_payload = ''
+if cal_seed:
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", cal_seed[0]):
+        try:
+            text = base64.b64decode(m.group(1)).decode()
+        except Exception:
+            continue
+        if 'use-custom-format' in text:
+            cal_payload = text
+            break
+if '"value": true' in cal_payload and '%a, %e %b' in cal_payload:
+    ok('панель: посев 13.json календаря с кастомным форматом даты')
+else:
+    fail('панель: посева 13.json календаря нет в custom_commands')
 
 # 28. Перетаскивание окон — Win, не Alt (решение 2026-10-17): ключ в
 # системном dconf-дефолте и в форсе первого входа (паттерн тем/шрифтов)
