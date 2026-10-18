@@ -540,6 +540,31 @@ if sticky_key and sticky_val:
 else:
     fail(f'sticky: ключ = {bool(sticky_key)}, autostart=true = {bool(sticky_val)}')
 
+# 31. setup-continue при провале archinstall печатает ГОТОВУЮ команду
+# продолжения с параметрами пользователя (запрос 2026-10-17: «повторите
+# с теми же аргументами» путало — не было видно, что повторять)
+if ('Попробуйте продолжить командой' in setup
+        and 'setup-continue $1 $2 $3' in setup):
+    ok('setup-continue: при провале archinstall печатается готовая команда')
+else:
+    fail('setup-continue: нет готовой команды продолжения в сообщении об ошибке')
+
+# 32. Flameshot: системный дефолт /etc/xdg/flameshot/flameshot.ini —
+# устаревший X11-снимок и захват активного монитора (запрос 2026-10-17).
+# QSettings в UserScope падает к системному скоупу, личный файл
+# пользователя дефолт перекрывает
+fh = [c for c in cmds if '/etc/xdg/flameshot/flameshot.ini' in c]
+fh_payload = ''
+if fh:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", fh[0])
+    if m:
+        fh_payload = base64.b64decode(m.group(1)).decode()
+if ('useX11LegacyScreenshot=true' in fh_payload
+        and 'captureActiveMonitor=true' in fh_payload):
+    ok('flameshot: системный дефолт с X11-снимком и активным монитором')
+else:
+    fail('flameshot: нет /etc/xdg/flameshot/flameshot.ini или ключей')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

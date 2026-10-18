@@ -274,6 +274,13 @@ def main() -> None:
         # системный дефолт GTK3: тёмная тема и Papirus для всех, включая
         # root (решение 2026-09-30; см. чек-лист «Комфортный рабочий стол»)
         deliver(FILES / "gtk3-settings.ini", "/etc/gtk-3.0/settings.ini"),
+        # Системный дефолт Flameshot (запрос 2026-10-17): устаревший X11-
+        # снимок и захват активного монитора. QSettings flameshot в
+        # UserScope при чтении падает к системному скоупу —
+        # /etc/xdg/flameshot/flameshot.ini работает дефолтом для всех,
+        # личный ~/.config/flameshot/flameshot.ini пользователя его
+        # перекрывает (проверено на Qt 6.12)
+        deliver(FILES / "flameshot.ini", "/etc/xdg/flameshot/flameshot.ini"),
         # Курсоры McMojave, тема дистрибутива и карты раскладок keyd с
         # 2026-10-12 доставляются копированием из живой среды (шаг setup
         # после archinstall) — раньше шли gzip+base64 в JSON, для 3.4 МБ
