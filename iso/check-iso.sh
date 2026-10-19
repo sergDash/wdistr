@@ -205,10 +205,14 @@ if mm:
     if m:
         payload = base64.b64decode(m.group(1)).decode('utf-8', 'replace')
 checks = {
-    'inode/directory=nemo.desktop': 'Nemo',
-    'x-scheme-handler/mailto=org.mozilla.Thunderbird.desktop': 'Thunderbird',
+    'inode/directory=nemo.desktop': 'Nemo-папки',
+    'message/rfc822=org.mozilla.Thunderbird.desktop': 'Thunderbird',
     'image/png=viewnior.desktop': 'Viewnior',
     'application/msword=ai.storyteller.wordcraft.desktop': 'WordCraft',
+    # application/msexcel — легаси-тип, который Cinnamon читает в строке
+    # «Таблица» (cs_default.py); без него GUI показывал LibreOffice Calc
+    # (опыт установки 2026-10-19)
+    'application/msexcel=ai.storyteller.gridcraft.desktop': 'GridCraft-легаси',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=ai.storyteller.gridcraft.desktop': 'GridCraft',
     'application/pdf=okularApplication_pdf.desktop': 'Okular',
     'text/x-python=codium.desktop': 'VSCodium-исходный',

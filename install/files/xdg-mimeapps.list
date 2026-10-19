@@ -59,7 +59,15 @@ application/vnd.oasis.opendocument.text=ai.storyteller.wordcraft.desktop
 application/rtf=ai.storyteller.wordcraft.desktop
 text/rtf=ai.storyteller.wordcraft.desktop
 
-# Офис.Таблица: GridCraft (вместо LibreOffice Calc)
+# Офис.Таблица: GridCraft (вместо LibreOffice Calc). Строка GUI
+# «Предпочтительные приложения → Таблица» в Cinnamon читает легаси-тип
+# application/msexcel (cs_default.py, preferred_app_defs["office"]),
+# а не реальные MIME-типы — без этой записи GIO отвечал LibreOffice
+# Calc (он декларирует легаси-тип в своём .desktop), хотя xlsx/ods/csv
+# открывались в GridCraft штатно (опыт установки 2026-10-19).
+# Соседняя строка «Текст» показывала WordCraft именно потому, что
+# application/msword в списке уже был.
+application/msexcel=ai.storyteller.gridcraft.desktop
 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=ai.storyteller.gridcraft.desktop
 application/vnd.ms-excel.sheet.macroEnabled.12=ai.storyteller.gridcraft.desktop
 application/vnd.ms-excel.sheet.binary.macroEnabled.12=ai.storyteller.gridcraft.desktop
