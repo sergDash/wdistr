@@ -122,12 +122,22 @@ else:
 cfg = json.load(open(cfg_path, encoding='utf-8'))
 cmds = cfg.get('custom_commands', [])
 
-# 3. Dispatcher NetworkManager: доставка ровно одной командой, с +x
+# 3. Dispatcher NetworkManager: доставка ровно одной командой, с +x.
+# Фикс 2026-10-19: диспетчер перезапускает ОБА сервиса — только
+# ip-routing не восстанавливал таблицу port после перезапуска Amnezia
+# (опыт: обход VPN по sport молча ломался, правила указывали в пустую
+# таблицу)
 disp = [c for c in cmds if '90-ip-routing-restart' in c]
-if len(disp) == 1 and 'chmod 755' in disp[0]:
-    ok('dispatcher 90-ip-routing-restart: доставка с chmod 755')
+disp_payload = ''
+if len(disp) == 1:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d", disp[0])
+    if m:
+        disp_payload = base64.b64decode(m.group(1)).decode()
+if (len(disp) == 1 and 'chmod 755' in disp[0]
+        and 'port-routing.service' in disp_payload):
+    ok('dispatcher 90-ip-routing-restart: доставка с chmod 755, перезапуск port-routing')
 else:
-    fail(f'dispatcher: команд доставки {len(disp)}, chmod 755 = {"chmod 755" in (disp[0] if disp else "")}')
+    fail(f'dispatcher: команд {len(disp)}, chmod 755 = {"chmod 755" in (disp[0] if disp else "")}, port-routing в файле = {"port-routing.service" in disp_payload}')
 
 # 4. Шаблон ip-routing: минус на ExecStop (игнор RTNETLINK «No such process»)
 ipr = [c for c in cmds if 'ip-routing.service' in c and 'dispatcher' not in c]

@@ -1,8 +1,11 @@
 #!/bin/bash
-# Dispatcher NetworkManager: перезапуск ip-routing.service при событиях сети.
+# Dispatcher NetworkManager: перезапуск ip-routing и port-routing при событиях сети.
 # Аргументы от NM: $1 — имя интерфейса, $2 — действие (up, down, ...).
 #
 # Логика событий:
+#   Опыт 2026-10-19: без перезапуска port-routing обход VPN по sport молча
+#   ломался после перезапуска Amnezia — таблица port оставалась пустой,
+#   правила ip rule указывали в пустоту и трафик проваливался в amn0.
 #   enp6s0 up    — после магания кабеля ядро вычистило маршруты через интерфейс,
 #                  адрес снова получен, сервис должен проставить их заново.
 #                  На down не реагируем: маршрутов уже нет, а ExecStartPre
@@ -21,14 +24,16 @@ TAG="ip-routing-dispatcher"
 case "$INTERFACE" in
     enp6s0)
         if [ "$ACTION" = "up" ]; then
-            logger -t "$TAG" "enp6s0 up: перезапуск ip-routing.service"
+            logger -t "$TAG" "enp6s0 up: перезапуск ip-routing и port-routing"
             systemctl --no-block restart ip-routing.service
+            systemctl --no-block restart port-routing.service
         fi
         ;;
     amn0)
         if [ "$ACTION" = "up" ] || [ "$ACTION" = "down" ]; then
-            logger -t "$TAG" "amn0 $ACTION: перезапуск ip-routing.service"
+            logger -t "$TAG" "amn0 $ACTION: перезапуск ip-routing и port-routing"
             systemctl --no-block restart ip-routing.service
+            systemctl --no-block restart port-routing.service
         fi
         ;;
 esac
