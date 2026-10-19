@@ -15,18 +15,20 @@
 # far.fi из нашей сети не отвечает (замер 2026-10-14) — это факт
 # измерения, не запрет: при изменении сети проверяется заново.
 # 12 стран; порядок строк = приоритет по средней скорости):
-# Свежий отбор — прогон 2026-10-18 второй (VPN выключен): 313/373
-# ответили; teamcloud.am выпал по отказу с установки (404, отметка
-# в базе), Словения/Чехия/Норвегия/Сербия сменили прежние позиции.
+# Свежий отбор — прогон 2026-10-19 (VPN выключен): лидер koyanet 13.8,
+# Россия — repository.su 10.8; выпали sunred (Sweden), nyaa.vc,
+# sox.rs (Serbia) — вытеснены по средней; вошли ludd.ltu.se (Sweden),
+# xtom.de (Germany), nl.mirror.cx (Netherlands), ourhost.az
+# (Azerbaijan). Оператор mirror.cx — 2 позиции (NL/NO) из потолка 3.
 https://archlinux.koyanet.lv/archlinux/$repo/os/$arch
 https://repository.su/archlinux/$repo/os/$arch
-https://mirror.sunred.org/archlinux/$repo/os/$arch
+https://ftp.ludd.ltu.se/mirrors/archlinux/$repo/os/$arch
 https://mirror.server.net/archlinux/$repo/os/$arch
+https://mirrors.xtom.de/archlinux/$repo/os/$arch
 https://mirror.peeres-telecom.fr/archlinux/$repo/os/$arch
-https://mirror.nyaa.vc/archlinux/$repo/os/$arch
 https://ftp.energotel.sk/pub/linux/arch/$repo/os/$arch
-https://www.sooftware.com/mirrors/Arch-Linux/$repo/os/$arch
-https://gluttony.sin.cvut.cz/arch/$repo/os/$arch
+https://nl.mirror.cx/archlinux/$repo/os/$arch
 https://mirror.hb9hil.org/archlinux/$repo/os/$arch
-https://no.mirror.cx/archlinux/$repo/os/$arch
-https://mirror1.sox.rs/archlinux/$repo/os/$arch
+https://gluttony.sin.cvut.cz/arch/$repo/os/$arch
+https://www.sooftware.com/mirrors/Arch-Linux/$repo/os/$arch
+https://mirror.ourhost.az/archlinux/$repo/os/$arch
