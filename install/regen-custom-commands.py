@@ -115,6 +115,8 @@ def main() -> None:
         (FILES / "session/config.json").read_bytes()).decode()
     cod_cfg_b64 = base64.b64encode(
         (FILES / "codium/settings.json").read_bytes()).decode()
+    fh_ast_b64 = base64.b64encode(
+        (FILES / "flameshot-autostart.desktop").read_bytes()).decode()
 
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
@@ -220,6 +222,7 @@ def main() -> None:
         "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty /home/$U/.config/audacity "
         "/home/$U/.config/Session /home/$U/.config/VSCodium/User "
+        "/home/$U/.config/autostart "
         "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org "
         "/home/$U/.config/cinnamon/spices/calendar@cinnamon.org && "
         "{ test -f /home/$U/.config/photocraft/preferences.json || "
@@ -247,10 +250,21 @@ def main() -> None:
         # дополняет. Guard test -f — от затирания правок пользователя
         "{ test -f /home/$U/.config/VSCodium/User/settings.json || "
         f"echo '{cod_cfg_b64}' | base64 -d > /home/$U/.config/VSCodium/User/settings.json; }} && "
+        # Посев пользовательского автозапуска Flameshot: файл в точности
+        # тот, что flameshot сам пишет при включении галки «Запускать в
+        # фоне при старте» (решение 2026-10-19). Чужой системный файл
+        # /etc/xdg/autostart/flameshot.desktop убран: flameshot его не
+        # видит (verifyLaunchFile ищет Flameshot.desktop с большой буквы
+        # в каталогах конфига), галка оставалась снятой при работающем
+        # автозапуске. Теперь ключ startupLaunch=true (системный дефолт
+        # flameshot.ini) + этот файл = согласованное состояние; снятие
+        # галки в настройках удалит файл и остановит запуск
+        "{ test -f /home/$U/.config/autostart/Flameshot.desktop || "
+        f"echo '{fh_ast_b64}' | base64 -d > /home/$U/.config/autostart/Flameshot.desktop; }} && "
         "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty /home/$U/.config/audacity "
         "/home/$U/.config/Session /home/$U/.config/VSCodium "
-        "/home/$U/.config/cinnamon",
+        "/home/$U/.config/autostart /home/$U/.config/cinnamon",
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).

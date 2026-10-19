@@ -347,12 +347,20 @@ for c in autostart:
     m = re.search(r"/etc/xdg/autostart/([A-Za-z0-9._-]+\.desktop)", c)
     if m:
         names.add(m.group(1))
-need_autostart = {'AmneziaVPN.desktop', 'copyq.desktop', 'flameshot.desktop'}
+need_autostart = {'AmneziaVPN.desktop', 'copyq.desktop'}
 missing = need_autostart - names
 if not missing:
-    ok(f'автозапуск: AmneziaVPN/copyq/flameshot в /etc/xdg/autostart (всего {len(names)} файлов)')
+    ok(f'автозапуск: AmneziaVPN/copyq в /etc/xdg/autostart (всего {len(names)} файлов)')
 else:
     fail(f'автозапуск: не хватает {sorted(missing)}, найдено {sorted(names)}')
+# Flameshot в системном автозапуске НЕТ по решению 2026-10-19: его
+# галка «Запускать в фоне при старте» видит только собственный
+# ~/.config/autostart/Flameshot.desktop (с большой буквы), чужой
+# системный файл давал запуск при снятой галке
+if 'flameshot.desktop' not in names:
+    ok('автозапуск: flameshot НЕ в /etc/xdg/autostart (собственный механизм)')
+else:
+    fail('автозапуск: flameshot остался в системном автозапуске — убрать')
 
 # 19. emote: автозапуск отключён хуком (решение 2026-10-17: пакет AUR
 # при установке/обновлении кладёт свой autostart-файл, окно при входе
@@ -564,7 +572,10 @@ else:
     fail('setup-continue: нет готовой команды продолжения в сообщении об ошибке')
 
 # 32. Flameshot: системный дефолт /etc/xdg/flameshot/flameshot.ini —
-# устаревший X11-снимок и захват активного монитора (запрос 2026-10-17).
+# устаревший X11-снимок, захват активного монитора (запрос 2026-10-17)
+# и автозапуск (решение 2026-10-19: startupLaunch=true + посев
+# ~/.config/autostart/Flameshot.desktop первого пользователя — галка
+# «Запускать в фоне при старте» включена и отражает реальность).
 # QSettings в UserScope падает к системному скоупу, личный файл
 # пользователя дефолт перекрывает
 fh = [c for c in cmds if '/etc/xdg/flameshot/flameshot.ini' in c]
@@ -574,10 +585,24 @@ if fh:
     if m:
         fh_payload = base64.b64decode(m.group(1)).decode()
 if ('useX11LegacyScreenshot=true' in fh_payload
-        and 'captureActiveMonitor=true' in fh_payload):
-    ok('flameshot: системный дефолт с X11-снимком и активным монитором')
+        and 'captureActiveMonitor=true' in fh_payload
+        and 'startupLaunch=true' in fh_payload):
+    ok('flameshot: системный дефолт с X11-снимком, активным монитором и startupLaunch')
 else:
     fail('flameshot: нет /etc/xdg/flameshot/flameshot.ini или ключей')
+fh_ast = [c for c in cmds if '/home/$U/.config/autostart/Flameshot.desktop' in c]
+fh_ast_payload = ''
+if fh_ast:
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", fh_ast[0]):
+        decoded = base64.b64decode(m.group(1)).decode()
+        if 'Flameshot' in decoded or 'flameshot' in decoded:
+            fh_ast_payload = decoded
+            break
+if ('Exec=flameshot' in fh_ast_payload
+        and 'X-GNOME-Autostart-enabled=true' in fh_ast_payload):
+    ok('flameshot: посев ~/.config/autostart/Flameshot.desktop первого пользователя')
+else:
+    fail('flameshot: нет посева пользовательского автозапуска Flameshot.desktop')
 
 # 33. Audacity: тема тёмная (решение 2026-10-18). Панели Audacity
 # рисуются собственной системой тем classic/light/dark — GTK/dconf

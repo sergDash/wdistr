@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Flameshot
-Comment=Powerful yet simple to use screenshot software
-Exec=flameshot
-Icon=flameshot
-Terminal=false
-Categories=Graphics;Utility;
-X-GNOME-Autostart-enabled=true
