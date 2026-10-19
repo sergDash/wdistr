@@ -700,11 +700,16 @@ else:
     fail('codium: нет посева settings.json или ключа titleBarStyle native')
 
 # 37. Java в составе (запрос 2026-10-19): дефолтная тулчейн-версия
-# (jdk-openjdk) и LTS 25 (jdk25-openjdk) — обе из extra, в packages[]
+# (jdk-openjdk) и LTS 25 (jdk25-openjdk) — обе из extra, в packages[];
+# github-cli (gh) — CLI GitHub для релизов (запрос 2026-10-19)
 if 'jdk-openjdk' in utils and 'jdk25-openjdk' in utils:
     ok('состав: java — jdk-openjdk (дефолт) и jdk25-openjdk (LTS)')
 else:
     fail('состав: в packages[] нет jdk-openjdk и/или jdk25-openjdk')
+if 'github-cli' in utils:
+    ok('состав: github-cli (gh) в packages[]')
+else:
+    fail('состав: в packages[] нет github-cli')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
