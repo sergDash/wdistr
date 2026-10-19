@@ -30,12 +30,24 @@ fi
 # live-/proc. Опыт 2026-10-19: /proc остался ВНУТРИ удачно начатой
 # сборки — mkarchiso умер на своей чистке pacstrap, ISO не создан.
 # umount -R не годится: work/ сам не mountpoint — идём по строкам
-# /proc/mounts глубже вглубь. «|| true» обязателен: при пустом выводе
-# grep возвращает 1, и под pipefail скрипт умирал бы молча (опыт
-# 2026-10-18: сборка не стартовала при чистом work/).
+# /proc/mounts глубже вглубь. Опыт 2026-10-19 (второй): обычный umount
+# падал с EBUSY — файловый watcher codium держал дескрипторы внутри
+# work/ (папка репозитория открыта в редакторе), ошибка уходила в
+# 2>/dev/null, rm -rf бился о файлы proc и ронял скрипт. Теперь при
+# busy — ленивое размонтирование umount -l: точка немедленно
+# отцепляется от дерева, ресурсы освобождаются при закрытии
+# дескрипторов, rm -rf видит пустой каталог.
 unmount_work() {
-    grep " $REPO/work/" /proc/mounts | cut -d' ' -f2 | sort -r | \
-        while read -r m; do umount -- "$m" 2>/dev/null || true; done || true
+    local mounts m
+    mounts="$(grep " $REPO/work/" /proc/mounts | cut -d' ' -f2 | sort -r || true)"
+    [ -z "$mounts" ] && return 0
+    while read -r m; do
+        [ -z "$m" ] && continue
+        if ! umount -- "$m" 2>/dev/null; then
+            umount -l -- "$m" 2>/dev/null || \
+                echo "предупреждение: не удалось размонтировать $m" >&2
+        fi
+    done <<< "$mounts"
 }
 
 # Маркеры mkarchiso живут в work/: без чистки повторный запуск молча
