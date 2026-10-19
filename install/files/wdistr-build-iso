@@ -24,20 +24,31 @@ if [ ! -f "$REPO/iso/profiledef.sh" ]; then
     exit 1
 fi
 
+# Снятие случайных монтирований внутри work/. Опыт 2026-10-18: после
+# падения сборки под airootfs остался смонтированный /proc (pacstrap
+# не распустил), rm -rf по нему ходит, а mkarchiso умирал на find по
+# live-/proc. Опыт 2026-10-19: /proc остался ВНУТРИ удачно начатой
+# сборки — mkarchiso умер на своей чистке pacstrap, ISO не создан.
+# umount -R не годится: work/ сам не mountpoint — идём по строкам
+# /proc/mounts глубже вглубь. «|| true» обязателен: при пустом выводе
+# grep возвращает 1, и под pipefail скрипт умирал бы молча (опыт
+# 2026-10-18: сборка не стартовала при чистом work/).
+unmount_work() {
+    grep " $REPO/work/" /proc/mounts | cut -d' ' -f2 | sort -r | \
+        while read -r m; do umount -- "$m" 2>/dev/null || true; done || true
+}
+
 # Маркеры mkarchiso живут в work/: без чистки повторный запуск молча
 # пропускает шаги и завершается «успехом» без ISO (случай 2026-09-26).
-# Перед чисткой снимаем случайные монтирования в work/: опыт
-# 2026-10-18 — после падения сборки под airootfs остался смонтированный
-# /proc (pacstrap не распустил), rm -rf по нему ходит, а mkarchiso
-# умирал на find по live-/proc под set -e. umount -R не годится:
-# work/ сам не mountpoint — идём по строкам /proc/mounts глубже вглубь.
-# «|| true» после конвейера обязателен: при пустом выводе grep
-# возвращает 1, и под pipefail скрипт умирал бы молча (опыт
-# 2026-10-18: сборка не стартовала при чистом work/).
-grep " $REPO/work/" /proc/mounts | cut -d' ' -f2 | sort -r | \
-    while read -r m; do umount -- "$m" 2>/dev/null || true; done || true
+unmount_work
 rm -rf -- "$REPO/work"
+
+# При любом выходе (падение mkarchiso, Ctrl+C, ошибка обёртки)
+# снимаем монтирования, оставшиеся в work/: без этого следующий запуск
+# стартует с примонтированным /proc (опыт 2026-10-19). exec mkarchiso
+# убран — он заменяет процесс обёртки, и падсказка не отработала бы.
+trap unmount_work EXIT
 
 # Выход в iso/out (читает тестовый стенд vm/create-test-vm.sh),
 # профиль — явным путём от корня репозитория
-exec mkarchiso -v -w "$REPO/work" -o "$REPO/iso/out" "$REPO/iso"
+mkarchiso -v -w "$REPO/work" -o "$REPO/iso/out" "$REPO/iso"
