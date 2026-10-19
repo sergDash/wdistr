@@ -444,16 +444,21 @@ if 'window-decoration = server' in gh_payload and 'theme = Andromeda' in gh_payl
 else:
     fail('ghostty: конфиг не доставлен в домашнюю папку или неполон')
 
-# 26. Системная рамка окна у craft-приложений (решение 2026-10-17):
-# photocraft/vectorcraft по умолчанию рисуют свою (CSD) — минимальные
-# пользовательские конфиги с systemTitleBar=true пишутся до установки
-# пакетов (она в first-boot), guard от затирания при повторе
+# 26. Системная рамка окна у craft-приложений (решение 2026-10-17) и
+# масштаб колесом мыши в photocraft (решение 2026-10-18): photocraft/
+# vectorcraft по умолчанию рисуют свою (CSD) — минимальные пользовательские
+# конфиги пишутся до установки пакетов (она в first-boot), guard от
+# затирания при повторе
 craft_ok = ('"interface":{"systemTitleBar":true}' in ' '.join(cmds)
             and '"engine_prefs":{"systemTitleBar":true}' in ' '.join(cmds))
 if craft_ok:
     ok('craft: photocraft/vectorcraft — systemTitleBar=true в конфигах')
 else:
     fail('craft: нет минимальных конфигов systemTitleBar=true')
+if '"general":{"zoomWithScrollWheel":true}' in ' '.join(cmds):
+    ok('photocraft: масштаб колесом мыши включён (zoomWithScrollWheel)')
+else:
+    fail('photocraft: нет zoomWithScrollWheel=true в конфиге')
 
 # 27. Группировка окон на панели отменена (решение 2026-10-17): ключ
 # group-apps=false в JSON-патче applet'а (cinnamon-defaults) И посев
@@ -618,6 +623,39 @@ if any('wdistr-appmenu' in c and 'cinnamon-appmenu.css' in c
     ok('меню: немедленное дописывание блока в custom_commands')
 else:
     fail('меню: нет немедленного append блока в custom_commands')
+
+# 35. Session: автообновление отключено (решение 2026-10-18) — дистрибутив
+# обновляется своими средствами (та же pacman -Syu по таймеру), приложение
+# само себя не тянет. Посев минимального config.json в ~/.config первого
+# пользователя (паттерн ghostty), guard test -f
+ses_cfg = [c for c in cmds if '/home/$U/.config/Session/config.json' in c]
+ses_payload = ''
+if ses_cfg:
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", ses_cfg[0]):
+        decoded = base64.b64decode(m.group(1)).decode()
+        if 'autoUpdate' in decoded:
+            ses_payload = decoded
+            break
+if '"autoUpdate": false' in ses_payload:
+    ok('session: посев config.json с autoUpdate=false в домашнюю папку')
+else:
+    fail('session: нет посева config.json или ключа autoUpdate=false')
+
+# 36. VSCodium: системная рамка окна (решение 2026-10-18) — titleBarStyle
+# native, своя кастомная панель не рисуется. Посев settings.json в
+# ~/.config/VSCodium/User первого пользователя, guard test -f
+cod_cfg = [c for c in cmds if '/home/$U/.config/VSCodium/User/settings.json' in c]
+cod_payload = ''
+if cod_cfg:
+    for m in re.finditer(r"echo '([A-Za-z0-9+/=]+)'", cod_cfg[0]):
+        decoded = base64.b64decode(m.group(1)).decode()
+        if 'titleBarStyle' in decoded:
+            cod_payload = decoded
+            break
+if '"window.titleBarStyle": "native"' in cod_payload:
+    ok('codium: посев settings.json с системной рамкой (titleBarStyle native)')
+else:
+    fail('codium: нет посева settings.json или ключа titleBarStyle native')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

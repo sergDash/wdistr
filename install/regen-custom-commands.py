@@ -101,8 +101,8 @@ def main() -> None:
     config["mirror_config"]["mirror_regions"] = {"wdistr": urls}
 
     # Payload для доставки в домашнюю папку первого пользователя
-    # (конфиг Ghostty и посев JSON applet'а панели) — считается
-    # заранее, код команд ниже вставляет его в echo
+    # (конфиги Ghostty, Audacity, Session и посев JSON applet'ов
+    # панели) — считается заранее, код команд ниже вставляет его в echo
     gh_cfg_b64 = base64.b64encode(
         (FILES / "ghostty/config").read_bytes()).decode()
     aud_cfg_b64 = base64.b64encode(
@@ -111,6 +111,10 @@ def main() -> None:
         (FILES / "cinnamon/grouped-window-list-2.json").read_bytes()).decode()
     cal_b64 = base64.b64encode(
         (FILES / "cinnamon/calendar-13.json").read_bytes()).decode()
+    ses_cfg_b64 = base64.b64encode(
+        (FILES / "session/config.json").read_bytes()).decode()
+    cod_cfg_b64 = base64.b64encode(
+        (FILES / "codium/settings.json").read_bytes()).decode()
 
     config["custom_commands"] = [
         # multilib: конфиг archinstall включить его сам не умеет
@@ -200,14 +204,28 @@ def main() -> None:
         # Guard test -f защищает всё от затирания при
         # повторе setup-continue. Скрипт обёрнут в {...} группы: без
         # них цепочка || при пустом $U создала бы файл в /home/.config
+        # Посев конфига Session: автообновление мессенджера отключено
+        # (решение 2026-10-18) — дистрибутив обновляется своими
+        # средствами (та же pacman -Syu по таймеру), приложение само себя
+        # не тянет. Session хранит настройки в JSON ~/.config/Session/
+        # config.json; минимальный файл приложение само дополняет
+        # остальными ключами (машинозависимый key и прочее) — тот же
+        # паттерн, что ghostty/audacity. Guard test -f не даёт затереть
+        # правки пользователя.
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
+        # Посев конфига photocraft: системная рамка + масштаб колесом
+        # мыши (решение 2026-10-18); guard test -f
+        # Посев конфига Session: автообновление мессенджера отключено
         "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty /home/$U/.config/audacity "
+        "/home/$U/.config/Session /home/$U/.config/VSCodium/User "
         "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org "
         "/home/$U/.config/cinnamon/spices/calendar@cinnamon.org && "
         "{ test -f /home/$U/.config/photocraft/preferences.json || "
-        "echo '{\"interface\":{\"systemTitleBar\":true}}' > /home/$U/.config/photocraft/preferences.json; } && "
+        "echo '{\"interface\":{\"systemTitleBar\":true},"
+        "\"general\":{\"zoomWithScrollWheel\":true}}' "
+        "> /home/$U/.config/photocraft/preferences.json; } && "
         "{ test -f /home/$U/.config/vectorcraft/ui.json || "
         "echo '{\"engine_prefs\":{\"systemTitleBar\":true}}' > /home/$U/.config/vectorcraft/ui.json; } && "
         "{ test -f /home/$U/.config/ghostty/config || "
@@ -220,8 +238,19 @@ def main() -> None:
         "{ test -f /home/$U/.config/cinnamon/spices/calendar@cinnamon.org/13.json || "
         f"echo '{cal_b64}' | base64 -d "
         "> /home/$U/.config/cinnamon/spices/calendar@cinnamon.org/13.json; } && "
+        "{ test -f /home/$U/.config/Session/config.json || "
+        f"echo '{ses_cfg_b64}' | base64 -d > /home/$U/.config/Session/config.json; }} && "
+        # Посев конфига VSCodium: системная рамка окна (решение
+        # 2026-10-18) — titleBarStyle native, своя кастомная панель
+        # не рисуется. settings.json хранит пользовательские настройки
+        # поверх дефолтов приложения; минимальный файл VSCodium сам
+        # дополняет. Guard test -f — от затирания правок пользователя
+        "{ test -f /home/$U/.config/VSCodium/User/settings.json || "
+        f"echo '{cod_cfg_b64}' | base64 -d > /home/$U/.config/VSCodium/User/settings.json; }} && "
         "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
-        "/home/$U/.config/ghostty /home/$U/.config/audacity /home/$U/.config/cinnamon",
+        "/home/$U/.config/ghostty /home/$U/.config/audacity "
+        "/home/$U/.config/Session /home/$U/.config/VSCodium "
+        "/home/$U/.config/cinnamon",
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).

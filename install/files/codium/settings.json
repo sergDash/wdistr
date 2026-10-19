@@ -1,0 +1,11 @@
+// Системная рамка окна (решение 2026-10-18): titleBarStyle native —
+// VSCodium рисует заголовок средствами оконного менеджера, а не своей
+// кастомной панелью; customTitleBarVisibility never — гарантия, что своя
+// рамка не появится. Путь ~/.config/VSCodium/User/settings.json — там
+// VSCodium хранит пользовательские настройки (читает их поверх своих
+// дефолтов, поэтому минимальный файл приложение само дополнит). Guard
+// test -f не даёт затереть правки при повторе setup-continue.
+{
+  "window.titleBarStyle": "native",
+  "window.customTitleBarVisibility": "never"
+}
