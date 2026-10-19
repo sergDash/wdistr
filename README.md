@@ -26,10 +26,10 @@ btrfs с мгновенными снапшотами (timeshift: снимок и
 
 ## Скачать
 
-Последняя сборка — **2026-10-18**:
+Последняя сборка — **2026-10-19**:
 
-- <https://mega.nz/file/yIlwmJLZ#l35ZabJ3gcHtoiBwaPuZEjVyHTItKvYhMH-4uJ8Cw_w>
-- sha256: `856a900bb507023e419fed80904a2a455b9f4d0b96332a0ee74c758415ae6f5e`
+- <https://mega.nz/file/fQljmQrA#ZgsX8UBAly5ezzUkhsU6Kc3qsTmfB4JUhPMVuC2gSgk>
+- sha256: `1e00566589c9e8a51a2bd4cab82c7cc02b5c9706c821eb78958614b3f4e811d9`
 
 Часть ссылки после `#` — ключ дешифрования MEGA: при открытии ссылки
 без неё MEGA запросит ключ отдельно. Скачивание через `wget` не
