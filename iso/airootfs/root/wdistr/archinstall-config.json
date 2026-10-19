@@ -265,6 +265,8 @@
         "imagemagick",
         "inetutils",
         "inkscape",
+        "jdk-openjdk",
+        "jdk25-openjdk",
         "keepassxc",
         "keyd",
         "less",

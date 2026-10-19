@@ -682,6 +682,13 @@ if '"window.titleBarStyle": "native"' in cod_payload:
 else:
     fail('codium: нет посева settings.json или ключа titleBarStyle native')
 
+# 37. Java в составе (запрос 2026-10-19): дефолтная тулчейн-версия
+# (jdk-openjdk) и LTS 25 (jdk25-openjdk) — обе из extra, в packages[]
+if 'jdk-openjdk' in utils and 'jdk25-openjdk' in utils:
+    ok('состав: java — jdk-openjdk (дефолт) и jdk25-openjdk (LTS)')
+else:
+    fail('состав: в packages[] нет jdk-openjdk и/или jdk25-openjdk')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
