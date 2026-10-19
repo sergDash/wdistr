@@ -596,8 +596,11 @@ if fh:
         fh_payload = base64.b64decode(m.group(1)).decode()
 if ('useX11LegacyScreenshot=true' in fh_payload
         and 'captureActiveMonitor=true' in fh_payload
-        and 'startupLaunch=true' in fh_payload):
-    ok('flameshot: системный дефолт с X11-снимком, активным монитором и startupLaunch')
+        and 'startupLaunch=true' in fh_payload
+        and 'showDesktopNotification=false' in fh_payload
+        and 'showAbortNotification=false' in fh_payload
+        and 'showStartupLaunchMessage=false' in fh_payload):
+    ok('flameshot: системный дефолт — X11-снимок, активный монитор, startupLaunch, уведомления off')
 else:
     fail('flameshot: нет /etc/xdg/flameshot/flameshot.ini или ключей')
 fh_ast = [c for c in cmds if '/home/$U/.config/autostart/Flameshot.desktop' in c]
