@@ -106,8 +106,10 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
 done
 if [ -f "$MENU_JSON" ]; then
     MENU_SIZE=32
+    BIG_SCREEN=0
     if [ -n "$SCREEN_HEIGHT" ] && [ "$SCREEN_HEIGHT" -gt 1500 ]; then
         MENU_SIZE=50
+        BIG_SCREEN=1
     fi
     python3 -c "
 import json, pathlib
@@ -117,6 +119,17 @@ d['menu-custom']['value'] = True
 d['menu-icon']['value'] = 'cinnamon-symbolic'
 d['menu-icon-size']['value'] = $MENU_SIZE
 d['menu-label']['value'] = ''
+# Полноразмерные иконки категорий вместо символьных (пожелание
+# 2026-10-20)
+d['symbolic-category-icons']['value'] = False
+# Иконки боковой панели меню — 32 px (пожелание 2026-10-20, дефолт 24)
+d['sidebar-icon-size']['value'] = 32
+# Размеры иконок категорий и приложений — увеличиваем только на
+# больших экранах (пожелание 2026-10-20); на дефолтных 1080/1200/1440
+# остаются дефолты Cinnamon (16 и 32)
+if $BIG_SCREEN:
+    d['category-icon-size']['value'] = 32
+    d['application-icon-size']['value'] = 48
 p.write_text(json.dumps(d, indent=4))
 "
     # Копия для instance 5 — читается при пересоздании (см. выше)

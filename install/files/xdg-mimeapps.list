@@ -47,6 +47,9 @@ image/x-portable-graymap=viewnior.desktop
 image/x-portable-pixmap=viewnior.desktop
 image/x-xbitmap=viewnior.desktop
 image/x-xpixmap=viewnior.desktop
+# webp — формат веб-изображений; по умолчанию открывался браузером
+# (пожелание 2026-10-20)
+image/webp=viewnior.desktop
 
 # Офис.Текст: WordCraft (вместо LibreOffice Writer)
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.storyteller.wordcraft.desktop

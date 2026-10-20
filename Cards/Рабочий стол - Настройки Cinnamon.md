@@ -104,6 +104,10 @@ type/default/description не трогать).
 | `menu-icon` | `cinnamon-symbolic` | иконка меню; всегда |
 | `menu-icon-size` | `50` (> 1500 px) или `32` (дефолт) | размер иконки в px |
 | `menu-label` | `""` | пустая строка — текста на панели нет; всегда |
+| `symbolic-category-icons` | `false` | полноразмерные иконки категорий вместо символьных; всегда (пожелание 2026-10-20) |
+| `sidebar-icon-size` | `32` | иконки боковой панели меню в px (дефолт 24); всегда (пожелание 2026-10-20) |
+| `category-icon-size` | `32` (> 1500 px) | размер иконок категорий в меню (дефолт 16); на дефолтных экранах не трогаем |
+| `application-icon-size` | `48` (> 1500 px) | размер иконок приложений в меню (дефолт 32); на дефолтных экранах не трогаем |
 
 Патч в `cinnamon-defaults.sh` — python-блок после ожидания файла
 (до 5 с: autostart и загрузка applet'а идут параллельно). Cinnamon
@@ -134,7 +138,7 @@ enabled-applets).
 |---|---|---|
 | Интернет.Сеть | Firefox | `x-scheme-handler/http(s)` — дефолт, не прописан |
 | Интернет.Почта | Thunderbird (`org.mozilla.Thunderbird.desktop`) | `mailto`, `message/rfc822`, `text/calendar` |
-| Мультимедия.Фото | Viewnior | `image/*` (bmp, gif, jpeg, png, svg, tiff и др.) |
+| Мультимедия.Фото | Viewnior | `image/*` (bmp, gif, jpeg, png, svg, tiff, webp и др.) |
 | Офис.Текст | WordCraft (`ai.storyteller.wordcraft.desktop`) | `application/msword`, `.docx`, `.odt`, `.rtf` |
 | Офис.Таблица | GridCraft (`ai.storyteller.gridcraft.desktop`) | `.xlsx`, `.ods`, `text/csv` |
 | Офис.PDF | Okular (`okularApplication_pdf.desktop`) | `application/pdf` |

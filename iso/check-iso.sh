@@ -208,6 +208,9 @@ checks = {
     'inode/directory=nemo.desktop': 'Nemo-папки',
     'message/rfc822=org.mozilla.Thunderbird.desktop': 'Thunderbird',
     'image/png=viewnior.desktop': 'Viewnior',
+    # webp — формат веб-изображений, по умолчанию открывался браузером
+    # (пожелание 2026-10-20)
+    'image/webp=viewnior.desktop': 'Viewnior-webp',
     'application/msword=ai.storyteller.wordcraft.desktop': 'WordCraft',
     # application/msexcel — легаси-тип, который Cinnamon читает в строке
     # «Таблица» (cs_default.py); без него GUI показывал LibreOffice Calc
@@ -710,6 +713,22 @@ if 'github-cli' in utils:
     ok('состав: github-cli (gh) в packages[]')
 else:
     fail('состав: в packages[] нет github-cli')
+
+# 38. Меню: иконки (пожелание 2026-10-20). Символьные иконки категорий
+# отключены и размер боковой панели (32 px) — всегда; размеры иконок
+# категорий (32) и приложений (48) — только на экранах выше 1500 px.
+# Ключи в JSON-патче cinnamon-defaults (applet-JSON, не dconf)
+menu_icon_keys = [
+    "d['symbolic-category-icons']['value'] = False",
+    "d['sidebar-icon-size']['value'] = 32",
+    "d['category-icon-size']['value'] = 32",
+    "d['application-icon-size']['value'] = 48",
+]
+missing_keys = [k for k in menu_icon_keys if k not in cd_payload]
+if not missing_keys:
+    ok('меню: символьные иконки откл, боковая панель 32, категории/приложения 32/48 (>1500)')
+else:
+    fail(f'меню: в cinnamon-defaults нет ключей: {missing_keys}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
