@@ -292,27 +292,33 @@ else:
 # 13. Консольные утилиты второй волны (решение 2026-10-15): pv
 # добавлен следом за bc/httrack/time/bind; sticky — заметки (2026-10-16);
 # man-db + man-pages + man-pages-ru — man-страницы (2026-10-17: без
-# man-db в составе pacman спрашивал поставщика молча ставить всё)
+# man-db в составе pacman спрашивал поставщика молча ставить всё);
+# cups + system-config-printer — печать (2026-10-20: иконка printers
+# в панели есть всегда, клик запускает system-config-printer, статус
+# читает lpstat из cups)
 utils = cfg.get('packages', [])
 missing = [p for p in ('bc', 'bind', 'httrack', 'time', 'pv', 'sticky',
-                       'man-db', 'man-pages', 'man-pages-ru')
+                       'man-db', 'man-pages', 'man-pages-ru',
+                       'cups', 'system-config-printer')
            if p not in utils]
 if not missing:
-    ok(f'состав: утилиты bc/bind/httrack/time/pv/sticky и man (всего {len(utils)} пакетов)')
+    ok(f'состав: утилиты bc/bind/httrack/time/pv/sticky/man и печать cups/system-config-printer (всего {len(utils)} пакетов)')
 else:
     fail(f'состав: в packages[] {len(utils)}, не хватает: {missing}')
 
 # 14. Сервисы в services[]: bluetooth (иначе GUI blueman есть, а демон
 # disabled — опыт 2026-10-15 на рабочей машине), smartd (мониторинг
 # SMART дисков — пакет ставится, сервис без включения молчит),
-# systemd-resolved (локальный кэширующий резолвер — опыт 2026-10-16) и
+# systemd-resolved (локальный кэширующий резолвер — опыт 2026-10-16),
 # vboxservice (Guest Additions: без сервиса гость не получает режимы
 # от хоста — lightdm сидит в 1280x800, setvideomodehint не применяется;
 # опыт 2026-10-18 на тестовой; пакет guest-utils в составе намеренно)
+# и cups (печать: иконка printers@cinnamon.org в панели есть всегда,
+# без запущенного cupsd она молчит — пожелание 2026-10-20)
 services = cfg.get('services', [])
-svc_missing = [s for s in ('bluetooth', 'smartd', 'systemd-resolved', 'vboxservice') if s not in services]
+svc_missing = [s for s in ('bluetooth', 'smartd', 'systemd-resolved', 'vboxservice', 'cups') if s not in services]
 if not svc_missing:
-    ok(f'сервисы: bluetooth, smartd, systemd-resolved, vboxservice включены ({", ".join(services)})')
+    ok(f'сервисы: bluetooth, smartd, systemd-resolved, vboxservice, cups включены ({", ".join(services)})')
 else:
     fail(f'сервисы: нет {svc_missing}, services[] = {services}')
 

@@ -241,6 +241,7 @@
         "cinnamon",
         "cinnamon-translations",
         "copyq",
+        "cups",
         "dconf",
         "deltachat-desktop",
         "discord",
@@ -317,6 +318,7 @@
         "stellarium",
         "sticky",
         "syncthing",
+        "system-config-printer",
         "teamspeak3",
         "terminus-font",
         "thunderbird",
@@ -360,7 +362,8 @@
         "bluetooth",
         "smartd",
         "systemd-resolved",
-        "vboxservice"
+        "vboxservice",
+        "cups"
     ],
     "swap": {
         "algorithm": "zstd",
