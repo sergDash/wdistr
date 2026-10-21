@@ -736,6 +736,16 @@ if not missing_keys:
 else:
     fail(f'меню: в cinnamon-defaults нет ключей: {missing_keys}')
 
+# 39. Подсказки панели и превью окон — квадрат, рамка 1px #999999
+# (решение 2026-10-21). Тот же cinnamon-appmenu.css (проверка 34),
+# второй блок с маркером wdistr-tooltip — в источнике из образа
+if 'wdistr-tooltip' in cin_css and '#Tooltip {' in cin_css \
+        and '.grouped-window-list-thumbnail-menu {' in cin_css \
+        and 'border: 1px solid #999999' in cin_css:
+    ok('подсказки: блок wdistr-tooltip (#Tooltip, превью) в источнике CSS')
+else:
+    fail('подсказки: в cinnamon-appmenu.css нет блока wdistr-tooltip')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

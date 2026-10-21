@@ -1,6 +1,9 @@
-/* wdistr-appmenu: меню Пуск — квадратное, рамка 2px #999999; левая
- * колонка меню (аватар/пользователь) — в цвет правой части, скругления
- * её углов не видны; скроллбары — квадратные (решение 2026-10-18).
+/* wdistr-appmenu: блоки тёмного «квадратного» стиля для cinnamon.css.
+ * Меню Пуск — квадратное, рамка 2px #999999; левая колонка меню
+ * (аватар/пользователь) — в цвет правой части, скругления её углов
+ * не видны; скроллбары — квадратные (решение 2026-10-18). Ниже —
+ * подсказки панели и превью окон: квадрат, рамка 1px #999999
+ * (решение 2026-10-21).
  * Блок идёт В КОНЦЕ стокового cinnamon.css: при равной специфичности
  * позднее правило перебивает раннее (там 16px у панели меню, 8px у
  * кнопок и скроллбаров). Фон #242424 — из стокового .popup-menu-content.
@@ -29,4 +32,27 @@ StScrollBar StBin#trough {
   border-radius: 0; }
 StScrollBar StButton#vhandle,
 StScrollBar StButton#hhandle {
+  border-radius: 0; }
+
+/* wdistr-tooltip: подсказки панели (#Tooltip — tooltips.js создаёт их
+ * с name: 'Tooltip') и превью окон grouped-window-list — квадратные,
+ * рамка 1px #999999 в цвет меню (решение 2026-10-21). Сток: скругление
+ * 8px и тёмная рамка rgba(51,51,51)/#333333, на тёмном фоне почти не
+ * видна. Маркер wdistr-tooltip — идемпотентность для обновления систем,
+ * где блок appmenu уже дописан (общий grep wdistr-appmenu не даст
+ * повторно вставить файл целиком). */
+#Tooltip {
+  border-radius: 0;
+  border: 1px solid #999999; }
+.grouped-window-list-thumbnail-menu {
+  border-radius: 0;
+  border: 1px solid #999999; }
+.grouped-window-list-thumbnail-menu .item-box:first-child,
+.grouped-window-list-thumbnail-menu .item-box:last-child,
+.grouped-window-list-thumbnail-menu .item-box:outlined:first-child,
+.grouped-window-list-thumbnail-menu .item-box:outlined:last-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:only-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:first-child:last-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:first-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:last-child {
   border-radius: 0; }
