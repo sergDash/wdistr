@@ -746,6 +746,14 @@ if 'wdistr-tooltip' in cin_css and '#Tooltip {' in cin_css \
 else:
     fail('подсказки: в cinnamon-appmenu.css нет блока wdistr-tooltip')
 
+# 40. Vulkan-драйверы AMD (2026-10-21): vulkan-radeon — RADV-ICD для
+# Godot/Vulkan-приложений (без него err != VK_SUCCESS, ERR_CANT_CREATE);
+# lib32-vulkan-radeon — 32-бит для Steam/Proton из multilib
+if 'vulkan-radeon' in utils and 'lib32-vulkan-radeon' in utils:
+    ok('состав: vulkan-radeon и lib32-vulkan-radeon (Vulkan AMD) в packages[]')
+else:
+    fail(f'состав: в packages[] нет vulkan-radeon и/или lib32-vulkan-radeon')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
