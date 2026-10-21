@@ -8,6 +8,19 @@
 # Таблица mirrors хранит по зеркалу: url, страну, официальный score,
 # флаг exist, накопительное среднее по ВСЕМ удачным замерам, последний
 # замер, число замеров (вес нового = 1/n), отклик и число отказов.
+# Журнал fail_log хранит ПРИЧИНЫ отказов: одна строка = одна
+# неудачная проба (url, момент, фаза screen/measure/install, текст
+# ошибки). Счётчик failures в mirrors — быстрый индекс для отбора,
+# по журналу видно, из чего он сложился — отказ самого зеркала (404)
+# или сбой нашей сети (таймаут). Опыт 2026-10-21: голый счётчик без
+# причин превращал прощение в угадайку — после починки провайдера
+# непонятно, кого прощать, а кого оставить с отметкой.
+#
+# Режимы (помимо обычного прогона):
+#   --pardon [подстрока]  обнулить failures и журнал (всем, у кого
+#                         отказы; с подстрокой — только по URL);
+#   --fail <url> <причина>  ручная отметка отказа с причиной (например,
+#                         зеркало отдало 404 при установке).
 #
 # Синхронизация при каждом запуске (список зеркал закрыт только в
 # mirrors.txt, здесь база следует за официальным статусом):
@@ -71,7 +84,27 @@ def db_open():
         response_ms REAL,           -- отклик последнего скрининга
         failures INTEGER NOT NULL DEFAULT 0 -- суммарно неудачных проб
     )''')
+    db.execute('''CREATE TABLE IF NOT EXISTS fail_log (
+        id INTEGER PRIMARY KEY,
+        url TEXT NOT NULL,          -- шаблон зеркала, как в mirrors
+        ts TEXT NOT NULL,           -- момент пробы, UTC
+        phase TEXT NOT NULL,        -- screen | measure | install
+        reason TEXT NOT NULL        -- текст ошибки: тип и суть
+    )''')
     return db
+
+
+def record_failure(db, mirror, phase, reason):
+    """Одна неудачная проба: +1 в счётчик и строка в журнал причин.
+
+    Счётчик нужен отбору (failures = 0), журнал — разбору: чем
+    отличить отказ зеркала от сбоя сети и прощать выборочно.
+    """
+    db.execute('UPDATE mirrors SET failures = failures + 1 WHERE url = ?',
+               (mirror['url'],))
+    db.execute('INSERT INTO fail_log (url, ts, phase, reason) '
+               'VALUES (?, datetime("now"), ?, ?)',
+               (mirror['url'], phase, reason))
 
 
 def sync_candidates(db):
@@ -148,8 +181,7 @@ def measure(mirror):
 
 def record_screen(db, mirror, ttfb, err):
     if err:
-        db.execute('UPDATE mirrors SET failures = failures + 1 WHERE url = ?',
-                   (mirror['url'],))
+        record_failure(db, mirror, 'screen', err)
     else:
         db.execute('UPDATE mirrors SET response_ms = ? WHERE url = ?',
                    (round(ttfb * 1000), mirror['url']))
@@ -157,8 +189,7 @@ def record_screen(db, mirror, ttfb, err):
 
 def record_speed(db, mirror, speed, err):
     if err:
-        db.execute('UPDATE mirrors SET failures = failures + 1 WHERE url = ?',
-                   (mirror['url'],))
+        record_failure(db, mirror, 'measure', err)
         return
     # Накопительное среднее (без окна): avg += (x - avg) / n после
     # инкремента счётчика — эквивалент суммы удачных скоростей / n;
@@ -173,7 +204,67 @@ def record_speed(db, mirror, speed, err):
                (round(avg, 2), round(speed, 2), n, mirror['url']))
 
 
+def pardon(db, needle=None):
+    """Прощение: обнуление счётчика и журнала.
+
+    Без подстроки — всем, у кого есть отказы; с подстрокой — только
+    чьи URL содержат её (выборочное прощение после разбора журнала:
+    прощаем жертв сети, оставляем отметки настоящим отказникам).
+    """
+    where = 'failures > 0'
+    params = []
+    if needle:
+        where += ' AND url LIKE ?'
+        params.append(f'%{needle}%')
+    rows = db.execute(
+        f'SELECT url, failures FROM mirrors WHERE {where} '
+        'ORDER BY failures DESC', params).fetchall()
+    if not rows:
+        print('Прощать некого: подходящих строк с отказами нет.')
+        return
+    for url, _ in rows:
+        db.execute('DELETE FROM fail_log WHERE url = ?', (url,))
+    db.execute(f'UPDATE mirrors SET failures = 0 WHERE {where}', params)
+    db.commit()
+    print(f'Прощено зеркал: {len(rows)}'
+          + (f' (подстрока «{needle}»)' if needle else ''))
+    for url, fails in rows:
+        print(f'  снято {fails:3} отказов  {url}')
+
+
+def manual_fail(db, url, reason):
+    """Ручная отметка отказа с причиной (фаза install).
+
+    Для случаев вне прогона: зеркало отдало 404 при установке,
+    замечен таймаут и т.п. Нормализация URL — по образцу зеркал
+    (без слэша в конце база его не хранит).
+    """
+    norm = url.rstrip('/') + '/'
+    exist = db.execute('SELECT 1 FROM mirrors WHERE url = ?',
+                       (norm,)).fetchone()
+    if not exist:
+        print(f'Внимание: {norm} нет в базе (ушёл из статуса?) — '
+              'отметка запишется только в журнал.')
+    db.execute('UPDATE mirrors SET failures = failures + 1 WHERE url = ?',
+               (norm,))
+    db.execute('INSERT INTO fail_log (url, ts, phase, reason) '
+               'VALUES (?, datetime("now"), ?, ?)',
+               (norm, 'install', reason))
+    db.commit()
+    print(f'Отметка +1 записана: {norm}\n  причина: {reason}')
+
+
 def main():
+    # Режимы работы с журналом — до прогона, замер не запускают
+    if len(sys.argv) > 1 and sys.argv[1] == '--pardon':
+        db = db_open()
+        pardon(db, sys.argv[2] if len(sys.argv) > 2 else None)
+        return
+    if len(sys.argv) > 2 and sys.argv[1] == '--fail':
+        db = db_open()
+        manual_fail(db, sys.argv[2], ' '.join(sys.argv[3:]) or 'без причины')
+        return
+
     limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
 
     db = db_open()
