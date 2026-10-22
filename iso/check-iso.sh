@@ -197,7 +197,8 @@ else:
 # картинки → Viewnior, документы → WordCraft, таблицы → GridCraft,
 # PDF → Okular (решение 2026-10-16), исходный текст и простой текст →
 # VSCodium (пожелание 2026-10-18); без inode/directory codium
-# открывал диск в редакторе (опыт 2026-10-15)
+# открывал диск в редакторе (опыт 2026-10-15); .ai → VectorCraft
+# (пожелание 2026-10-23)
 mm = [c for c in cmds if '/etc/xdg/mimeapps.list' in c]
 payload = ''
 if mm:
@@ -220,10 +221,12 @@ checks = {
     'application/pdf=okularApplication_pdf.desktop': 'Okular',
     'text/x-python=codium.desktop': 'VSCodium-исходный',
     'text/plain=codium.desktop': 'VSCodium-текст',
+    # .ai открывает VectorCraft; тип объявляет глоб freedesktop, не пакет
+    'application/illustrator=ai.storyteller.vectorcraft.desktop': 'VectorCraft-.ai',
 }
 missing = [name for key, name in checks.items() if key not in payload]
 if len(mm) == 1 and not missing:
-    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium')
+    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft')
 else:
     fail(f'mimeapps.list: команд {len(mm)}, отсутствует: {missing or "—"}')
 

@@ -143,6 +143,7 @@ enabled-applets).
 | Офис.Таблица | GridCraft (`ai.storyteller.gridcraft.desktop`) | `.xlsx`, `.ods`, `text/csv` |
 | Офис.PDF | Okular (`okularApplication_pdf.desktop`) | `application/pdf` |
 | Папки | Nemo | `inode/directory` |
+| — (не категория Cinnamon) | VectorCraft (`ai.storyteller.vectorcraft.desktop`) | `application/illustrator` — `.ai` (пожелание 2026-10-23; тип даёт глоб freedesktop, .desktop VectorCraft его не объявляет) |
 
 Имена .desktop-файлов: Thunderbird в Arch — `org.mozilla.Thunderbird.desktop`
 (не `thunderbird.desktop`); Okular PDF — `okularApplication_pdf.desktop`

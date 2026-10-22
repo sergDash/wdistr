@@ -51,6 +51,14 @@ image/x-xpixmap=viewnior.desktop
 # (пожелание 2026-10-20)
 image/webp=viewnior.desktop
 
+# .ai (Adobe Illustrator): VectorCraft (пожелание 2026-10-23, значение
+# с рабочей машины — xdg-mime query default application/illustrator
+# отвечает VectorCraft). Тип application/illustrator даёт глоб *.ai из
+# freedesktop; сам .desktop VectorCraft тип не объявляет (MimeType=
+# image/svg+xml;application/pdf;) — это отдельная тема для списка
+# «Открыть с помощью» Cinnamon, на дефолт по mimeapps.list не влияет.
+application/illustrator=ai.storyteller.vectorcraft.desktop
+
 # Офис.Текст: WordCraft (вместо LibreOffice Writer)
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.storyteller.wordcraft.desktop
 application/vnd.ms-word.document.macroEnabled.12=ai.storyteller.wordcraft.desktop
