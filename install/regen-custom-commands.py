@@ -214,6 +214,13 @@ def main() -> None:
         # остальными ключами (машинозависимый key и прочее) — тот же
         # паттерн, что ghostty/audacity. Guard test -f не даёт затереть
         # правки пользователя.
+        # Посев конфига drawio: галка «Automatic Updates» (Extras) — это
+        # ключ dontCheckUpdates electron-store в ~/.config/draw.io/
+        # config.json (получено опытом рабочей машины 2026-10-23:
+        # переключение галки пишет ровно этот файл). Встроенный
+        # electron-updater отключён по той же причине, что Session:
+        # drawio-desktop-bin — AUR-пакет, его обновляет недельный
+        # aur-update (yay -Sua), приложение само себя не тянет.
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
         # Посев конфига photocraft: системная рамка + масштаб колесом
@@ -222,7 +229,7 @@ def main() -> None:
         "mkdir -p /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty /home/$U/.config/audacity "
         "/home/$U/.config/Session /home/$U/.config/VSCodium/User "
-        "/home/$U/.config/autostart "
+        "/home/$U/.config/autostart /home/$U/.config/draw.io "
         "/home/$U/.config/cinnamon/spices/grouped-window-list@cinnamon.org "
         "/home/$U/.config/cinnamon/spices/calendar@cinnamon.org && "
         "{ test -f /home/$U/.config/photocraft/preferences.json || "
@@ -243,6 +250,12 @@ def main() -> None:
         "> /home/$U/.config/cinnamon/spices/calendar@cinnamon.org/13.json; } && "
         "{ test -f /home/$U/.config/Session/config.json || "
         f"echo '{ses_cfg_b64}' | base64 -d > /home/$U/.config/Session/config.json; }} && "
+        # Посев конфига drawio: dontCheckUpdates=true — встроенный
+        # автообновлящик выключен (решение 2026-10-23). JSON мал —
+        # пишется строкой, как photocraft/vectorcraft; приложение
+        # само дополнит файл остальными ключами (lastWinSize и др.)
+        "{ test -f /home/$U/.config/draw.io/config.json || "
+        "echo '{\"dontCheckUpdates\": true}' > /home/$U/.config/draw.io/config.json; } && "
         # Посев конфига VSCodium: системная рамка окна (решение
         # 2026-10-18) — titleBarStyle native, своя кастомная панель
         # не рисуется. settings.json хранит пользовательские настройки
@@ -264,7 +277,8 @@ def main() -> None:
         "chown -R $U:$U /home/$U/.config/photocraft /home/$U/.config/vectorcraft "
         "/home/$U/.config/ghostty /home/$U/.config/audacity "
         "/home/$U/.config/Session /home/$U/.config/VSCodium "
-        "/home/$U/.config/autostart /home/$U/.config/cinnamon",
+        "/home/$U/.config/autostart /home/$U/.config/cinnamon "
+        "/home/$U/.config/draw.io",
         # systemd-resolved — локальный кэширующий резолвер (опыт
         # 2026-10-16 на рабочей машине: кэш убирает зависимость от
         # нестабильного туннеля, повторные имена из памяти за 3 мс).

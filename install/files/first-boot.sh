@@ -167,6 +167,7 @@ photocraft
 vectorcraft
 wordcraft
 gridcraft
+drawio-desktop-bin
 beekeeper-studio
 "
 for pkg in $AUR_PACKAGES; do

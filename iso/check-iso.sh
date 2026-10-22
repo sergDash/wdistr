@@ -198,7 +198,7 @@ else:
 # PDF → Okular (решение 2026-10-16), исходный текст и простой текст →
 # VSCodium (пожелание 2026-10-18); без inode/directory codium
 # открывал диск в редакторе (опыт 2026-10-15); .ai → VectorCraft
-# (пожелание 2026-10-23)
+# (пожелание 2026-10-23); .drawio → drawio (пожелание 2026-10-23)
 mm = [c for c in cmds if '/etc/xdg/mimeapps.list' in c]
 payload = ''
 if mm:
@@ -223,10 +223,12 @@ checks = {
     'text/plain=codium.desktop': 'VSCodium-текст',
     # .ai открывает VectorCraft; тип объявляет глоб freedesktop, не пакет
     'application/illustrator=ai.storyteller.vectorcraft.desktop': 'VectorCraft-.ai',
+    # .drawio открывает drawio; тип объявляет mime-файл самого пакета
+    'application/vnd.jgraph.mxfile=drawio-desktop.desktop': 'drawio-.drawio',
 }
 missing = [name for key, name in checks.items() if key not in payload]
 if len(mm) == 1 and not missing:
-    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft')
+    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft/drawio')
 else:
     fail(f'mimeapps.list: команд {len(mm)}, отсутствует: {missing or "—"}')
 
@@ -274,8 +276,8 @@ else:
     fail(f'терминал: системный дефолт = {bool(term_sys)}, форс = {bool(term_force)}')
 
 # 12. AUR-список first-boot: свежие добавления на месте (emote — 2026-10-15,
-# beekeeper-studio — 2026-10-15, craft-пакеты — 2026-10-16); список уходит
-# в образ base64-командой
+# beekeeper-studio — 2026-10-15, craft-пакеты — 2026-10-16,
+# drawio-desktop-bin — 2026-10-23); список уходит в образ base64-командой
 fb = [c for c in cmds if '/usr/local/bin/wdistr-first-boot' in c]
 fb_payload = ''
 if fb:
@@ -285,10 +287,11 @@ if fb:
 m = re.search(r'AUR_PACKAGES="\n(.*?)\n"', fb_payload, re.S)
 aur_list = m.group(1).split() if m else []
 missing = [p for p in ('emote', 'beekeeper-studio', 'photocraft',
-                       'vectorcraft', 'wordcraft', 'gridcraft')
+                       'vectorcraft', 'wordcraft', 'gridcraft',
+                       'drawio-desktop-bin')
            if p not in aur_list]
 if not missing and len(aur_list) >= 15:
-    ok(f'first-boot: AUR-список — {len(aur_list)} пакетов, emote/beekeeper/craft входят')
+    ok(f'first-boot: AUR-список — {len(aur_list)} пакетов, emote/beekeeper/craft/drawio входят')
 else:
     fail(f'first-boot: AUR-список пакетов {len(aur_list)}, не хватает: {missing or "—"}')
 
@@ -756,6 +759,24 @@ if 'vulkan-radeon' in utils and 'lib32-vulkan-radeon' in utils:
     ok('состав: vulkan-radeon и lib32-vulkan-radeon (Vulkan AMD) в packages[]')
 else:
     fail(f'состав: в packages[] нет vulkan-radeon и/или lib32-vulkan-radeon')
+
+# 41. Drawio: автообновлящик отключён (пожелание 2026-10-23) — ключ
+# dontCheckUpdates electron-store, посев ~/.config/draw.io/config.json
+# первого пользователя (паттерн Session, guard test -f); сам пакет
+# поставляет mime-файл для .drawio — ассоциация проверена в №10
+dwr_cfg = [c for c in cmds if '/home/$U/.config/draw.io/config.json' in c]
+if dwr_cfg and '"dontCheckUpdates": true' in dwr_cfg[0]:
+    ok('drawio: посев config.json с dontCheckUpdates=true в домашнюю папку')
+else:
+    fail(f'drawio: команд с посевом {len(dwr_cfg)}, ключ dontCheckUpdates=true '
+         f'{"есть" if dwr_cfg and "dontCheckUpdates" in dwr_cfg[0] else "отсутствует"}')
+
+# 42. Xephyr — вложенный X-сервер (пожелание 2026-10-23): тесты
+# приложений в изолированном дисплее; пакет extra, в packages[]
+if 'xorg-server-xephyr' in utils:
+    ok('состав: xorg-server-xephyr (вложенный X-сервер) в packages[]')
+else:
+    fail('состав: в packages[] нет xorg-server-xephyr')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

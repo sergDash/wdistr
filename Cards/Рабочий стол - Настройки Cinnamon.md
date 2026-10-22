@@ -144,6 +144,7 @@ enabled-applets).
 | Офис.PDF | Okular (`okularApplication_pdf.desktop`) | `application/pdf` |
 | Папки | Nemo | `inode/directory` |
 | — (не категория Cinnamon) | VectorCraft (`ai.storyteller.vectorcraft.desktop`) | `application/illustrator` — `.ai` (пожелание 2026-10-23; тип даёт глоб freedesktop, .desktop VectorCraft его не объявляет) |
+| — (не категория Cinnamon) | drawio (`drawio-desktop.desktop`) | `application/vnd.jgraph.mxfile` — `.drawio` (пожелание 2026-10-23; тип и глоб даёт mime-файл самого пакета) |
 
 Имена .desktop-файлов: Thunderbird в Arch — `org.mozilla.Thunderbird.desktop`
 (не `thunderbird.desktop`); Okular PDF — `okularApplication_pdf.desktop`

@@ -59,6 +59,14 @@ image/webp=viewnior.desktop
 # «Открыть с помощью» Cinnamon, на дефолт по mimeapps.list не влияет.
 application/illustrator=ai.storyteller.vectorcraft.desktop
 
+# .drawio (diagrams.net): drawio (пожелание 2026-10-23, проверено на
+# рабочей машине: filetype → application/vnd.jgraph.mxfile, default →
+# drawio-desktop.desktop). Тип и глоб *.drawio объявляет сам пакет
+# (drawio.xml из официального .deb, pacman-хук update-mime-database
+# обновляет базу при установке) — строка фиксирует выбор дефолта;
+# до установки пакета ключ безвреден, MIME-типа ещё нет.
+application/vnd.jgraph.mxfile=drawio-desktop.desktop
+
 # Офис.Текст: WordCraft (вместо LibreOffice Writer)
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=ai.storyteller.wordcraft.desktop
 application/vnd.ms-word.document.macroEnabled.12=ai.storyteller.wordcraft.desktop
