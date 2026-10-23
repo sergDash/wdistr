@@ -30,7 +30,7 @@ element-desktop|element-desktop|Papirus|Element
 signal-desktop|signal-desktop|Papirus|Signal
 deltachat-desktop|deltachat-desktop|Papirus|Deltachat
 session-desktop|session-desktop|Papirus|Session
-whatsie|whatsie|Papirus|WhatsApp
+whatsie|whatsie|Papirus|WhatSie
 teamspeak3|teamspeak3|Papirus|TeamSpeak
 mousepad|mousepad|Papirus|Mousepad
 vscodium|vscodium|Papirus|VSCodium
@@ -78,7 +78,7 @@ emote|emote|hicolor|Emote
 stellarium|stellarium|Papirus|Stellarium
 syncthing|syncthing|Papirus|Syncthing
 localsend|localsend|Papirus|LocalSend
-amneziavpn|AmneziaVPN|Papirus|AmneziaVPN
+amneziavpn|AmneziaVPN|Papirus|Amnezia\nVPN
 jan|Jan|hicolor|Jan
 lmstudio|lmstudio-bin|hicolor|LM\nStudio
 qpwgraph|org.rncbc.qpwgraph|hicolor|qpwgraph
@@ -153,9 +153,9 @@ while IFS='|' read -r app icon src label; do
 
     if [ "$done_flag" = "1" ]; then
         # Подпись под иконкой; \n в TSV → перенос строки в подписи.
-        # Иконка прижата к верху клетки (128×176): 48 px прозрачного
+        # Иконка прижата к верху клетки (128×160): 32 px прозрачного
         # поля внизу — место, где montage рисует подпись с отступом.
-        magick "$out" -background none -gravity north -extent 128x176 \
+        magick "$out" -background none -gravity north -extent 128x160 \
             -set label "${label//$'\n'/$'\n'}" "$out"
         FOUND=$((FOUND + 1))
     else
@@ -173,12 +173,12 @@ fi
 # Перемешанный порядок файлов — иконки не идут по категориям
 ls "$WORK/png"/*.png | shuf > "$WORK/order.txt"
 
-# Сетка 11×6 под 63 иконки. Клетка 128×176: иконка 128 вверху,
-# 48 px прозрачного поля внизу — под ним montage рисует подпись.
+# Сетка 11×6 под 63 иконки. Клетка 128×160: иконка 128 вверху,
+# 32 px прозрачного поля внизу — под ним montage рисует подпись.
 # Зазор между рядами 8 px — ряды вплотную, подписи не слипаются.
 montage @"$WORK/order.txt" \
     -tile 11x6 \
-    -geometry 128x176+16+8 \
+    -geometry 128x160+16+8 \
     -background black \
     -fill white \
     -pointsize 26 \
