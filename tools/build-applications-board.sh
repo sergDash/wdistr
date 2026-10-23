@@ -41,6 +41,14 @@ obsidian|obsidian|Papirus|Obsidian
 wordcraft|ai.storyteller.wordcraft|hicolor|WordCraft
 gridcraft|ai.storyteller.gridcraft|hicolor|GridCraft
 drawio|drawio|Papirus|draw.io
+libreoffice-writer|libreoffice-writer|Papirus|Writer
+libreoffice-calc|libreoffice-calc|Papirus|Calc
+libreoffice-impress|libreoffice-impress|Papirus|Impress
+libreoffice-draw|libreoffice-draw|Papirus|Draw
+libreoffice-base|libreoffice-base|Papirus|Base
+libreoffice-math|libreoffice-math|Papirus|Math
+java|java27-openjdk|hicolor|Java
+virtualbox|virtualbox|Papirus|VirtualBox
 gimp|gimp|Papirus|GIMP
 inkscape|inkscape|Papirus|Inkscape
 blender|blender|Papirus|Blender
@@ -97,10 +105,11 @@ while IFS='|' read -r app icon src label; do
     done_flag=0
 
     if [ "$src" = "Papirus" ]; then
-        # SVG из 128×128, затем 96×96, затем растр
+        # SVG: 128×128, затем 96, 64 (у VirtualBox максимум 64), затем растр
         for cand in \
             "/usr/share/icons/Papirus/128x128/apps/${icon}.svg" \
             "/usr/share/icons/Papirus/96x96/apps/${icon}.svg" \
+            "/usr/share/icons/Papirus/64x64/apps/${icon}.svg" \
             "/usr/share/icons/Papirus/128x128/apps/${icon}.png" \
             "/usr/share/icons/Papirus/96x96/apps/${icon}.png"; do
             if [ -f "$cand" ]; then
@@ -132,13 +141,14 @@ while IFS='|' read -r app icon src label; do
             fi
         done
     else
-        # hicolor: крупный растр, затем scalable SVG
+        # hicolor: крупный растр, затем scalable SVG, затем мелкий (Java — макс 48)
         for cand in \
             "/usr/share/icons/hicolor/256x256/apps/${icon}.png" \
             "/usr/share/icons/hicolor/512x512/apps/${icon}.png" \
             "/usr/share/icons/hicolor/128x128/apps/${icon}.png" \
             "/usr/share/icons/hicolor/scalable/apps/${icon}.svg" \
-            "/usr/share/icons/hicolor/256x256@2/apps/${icon}.png"; do
+            "/usr/share/icons/hicolor/256x256@2/apps/${icon}.png" \
+            "/usr/share/icons/hicolor/48x48/apps/${icon}.png"; do
             if [ -f "$cand" ]; then
                 if [[ "$cand" == *.svg ]]; then
                     rsvg-convert -w 128 -h 128 "$cand" -o "$out"
