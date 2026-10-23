@@ -33,12 +33,13 @@ session-desktop|session-desktop|Papirus|Session
 whatsie|whatsie|Papirus|WhatSie
 teamspeak3|teamspeak3|Papirus|TeamSpeak
 mousepad|mousepad|Papirus|Mousepad
+nemo|nemo|Papirus|Nemo
+neovim|nvim|hicolor|NeoVim
 vscodium|vscodium|Papirus|VSCodium
 pragtical|pragtical|hicolor|Pragtical
 obsidian|obsidian|Papirus|Obsidian
 wordcraft|ai.storyteller.wordcraft|hicolor|WordCraft
 gridcraft|ai.storyteller.gridcraft|hicolor|GridCraft
-libreoffice-fresh|libreoffice-startcenter|Papirus|LibreOffice
 drawio|drawio|Papirus|draw.io
 gimp|gimp|Papirus|GIMP
 inkscape|inkscape|Papirus|Inkscape
