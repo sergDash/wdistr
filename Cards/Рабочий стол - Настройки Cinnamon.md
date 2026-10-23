@@ -127,6 +127,26 @@ enabled-applets).
 | `custom-format` | `%a, %e %b, %H:%M` | на панели: «ср, 15 окт, 14:30» |
 | `custom-tooltip-format` | `%A, %e %B, %H:%M` | во всплывающей подсказке: «среда, 15 октября, 14:30» |
 
+## Файловый менеджер Nemo
+
+Пожелание 2026-10-23, значения с рабочей машины. Настройки Nemo живут
+в схемах `org.nemo.*` (обычный пользовательский dconf), механизм
+доставки — тот же двухслойный, что у тем и шрифтов.
+
+| Ключ | Значение | Когда | Где |
+|---|---|---|---|
+| `org.nemo.preferences` `default-folder-viewer` | `compact-view` | всегда | dconf-дефолт + форс |
+| `org.nemo.compact-view` `default-zoom-level` | `large` | высота > 1500 | только форс (условие) |
+
+`default-folder-viewer` — вид папок, с которым Nemo открывает
+каталоги; дефолт схемы `icon-view`, поэтому без записи компактный
+вид не включился бы. `default-zoom-level` — «исходный масштаб»
+в настройках Nemo; уровни enum `smallest..largest` отображаются
+процентами 33/50/66/100/150/200/400, то есть `large` = 150%. Масштаб
+условный (паттерн панели): на экранах ≤1500 остаётся дефолт
+`standard` (100%), в dconf-дефолт ключ не пишется — он условий не
+умеет.
+
 ## Программы по умолчанию (mimeapps.list)
 
 Системный файл `install/files/xdg-mimeapps.list` → `/etc/xdg/mimeapps.list`
@@ -143,7 +163,7 @@ enabled-applets).
 | Офис.Таблица | GridCraft (`ai.storyteller.gridcraft.desktop`) | `.xlsx`, `.ods`, `text/csv` |
 | Офис.PDF | Okular (`okularApplication_pdf.desktop`) | `application/pdf` |
 | Папки | Nemo | `inode/directory` |
-| — (не категория Cinnamon) | VectorCraft (`ai.storyteller.vectorcraft.desktop`) | `application/illustrator` — `.ai` (пожелание 2026-10-23; тип даёт глоб freedesktop, .desktop VectorCraft его не объявляет) |
+| — (не категория Cinnamon) | VectorCraft (`ai.storyteller.vectorcraft.desktop`) | `application/illustrator` — `.ai` (пожелание 2026-10-23; тип даёт глоб freedesktop, .desktop VectorCraft его не объявляет); `image/x-eps` — `.eps` (то же пожелание, тот же механизм глоба) |
 | — (не категория Cinnamon) | drawio (`drawio-desktop.desktop`) | `application/vnd.jgraph.mxfile` — `.drawio` (пожелание 2026-10-23; тип и глоб даёт mime-файл самого пакета) |
 
 Имена .desktop-файлов: Thunderbird в Arch — `org.mozilla.Thunderbird.desktop`

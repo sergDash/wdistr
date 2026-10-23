@@ -223,12 +223,15 @@ checks = {
     'text/plain=codium.desktop': 'VSCodium-текст',
     # .ai открывает VectorCraft; тип объявляет глоб freedesktop, не пакет
     'application/illustrator=ai.storyteller.vectorcraft.desktop': 'VectorCraft-.ai',
+    # .eps открывает VectorCraft; тип image/x-eps — тот же глоб
+    # freedesktop, что и *.ai (пожелание 2026-10-23)
+    'image/x-eps=ai.storyteller.vectorcraft.desktop': 'VectorCraft-.eps',
     # .drawio открывает drawio; тип объявляет mime-файл самого пакета
     'application/vnd.jgraph.mxfile=drawio-desktop.desktop': 'drawio-.drawio',
 }
 missing = [name for key, name in checks.items() if key not in payload]
 if len(mm) == 1 and not missing:
-    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft/drawio')
+    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft(.ai,.eps)/drawio')
 else:
     fail(f'mimeapps.list: команд {len(mm)}, отсутствует: {missing or "—"}')
 
@@ -777,6 +780,36 @@ if 'xorg-server-xephyr' in utils:
     ok('состав: xorg-server-xephyr (вложенный X-сервер) в packages[]')
 else:
     fail('состав: в packages[] нет xorg-server-xephyr')
+
+# 43. Nemo, компактный вид: исходный масштаб 150% (пожелание 2026-10-23)
+# — default-zoom-level large ('large' = 150%: уровни enum smallest..
+# largest отображаются процентами 33/50/66/100/150/200/400). Строка
+# обязана лежать ВНУТРИ блока if >1500 px (отступ 4 пробела, как у панели
+# и масштаба текста) — иначе ключ применится и на маленьких экранах,
+# где дефолт схемы 'standard' (100%) не трогаем
+zoom_line = 'gsettings set org.nemo.compact-view default-zoom-level large'
+zi = cd_payload.find(zoom_line)
+zoom_ok = False
+if zi != -1:
+    zoom_ok = cd_payload.startswith('    ', cd_payload.rfind('\n', 0, zi) + 1)
+if zoom_ok:
+    ok('nemo: компактный вид — исходный масштаб 150% (large) под условие >1500')
+else:
+    fail('nemo: нет default-zoom-level large в блоке if >1500 (cinnamon-defaults)')
+
+# 44. Вид папок по умолчанию — компактный (пожелание 2026-10-23): ключ
+# default-folder-viewer в системном dconf-дефолте и в форсе первого
+# входа (паттерн тем/шрифтов); дефолт схемы Nemo — icon-view, без
+# записи в обоих местах компактный вид не включился бы
+fv_sys = re.search(
+    r"^\s*default-folder-viewer='compact-view'\s*$", dc_payload, re.M)
+fv_force = re.search(
+    r"^\s*gsettings set org\.nemo\.preferences default-folder-viewer 'compact-view'\s*$",
+    cd_payload, re.M)
+if fv_sys and fv_force:
+    ok('nemo: компактный вид по умолчанию в системном дефолте и форсе')
+else:
+    fail(f'nemo: вид по умолчанию — системный дефолт = {bool(fv_sys)}, форс = {bool(fv_force)}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

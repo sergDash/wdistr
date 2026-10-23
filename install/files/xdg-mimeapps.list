@@ -59,6 +59,14 @@ image/webp=viewnior.desktop
 # «Открыть с помощью» Cinnamon, на дефолт по mimeapps.list не влияет.
 application/illustrator=ai.storyteller.vectorcraft.desktop
 
+# .eps (Encapsulated PostScript): VectorCraft (пожелание 2026-10-23,
+# значение с рабочей машины — такая строка уже стоит в
+# ~/.config/mimeapps.list). Тип image/x-eps даёт глоб *.eps из
+# freedesktop — тот же механизм, что у *.ai (application/illustrator);
+# сам .desktop VectorCraft тип не объявляет (MimeType= image/svg+xml;
+# application/pdf;) — на дефолт из mimeapps.list это не влияет.
+image/x-eps=ai.storyteller.vectorcraft.desktop
+
 # .drawio (diagrams.net): drawio (пожелание 2026-10-23, проверено на
 # рабочей машине: filetype → application/vnd.jgraph.mxfile, default →
 # drawio-desktop.desktop). Тип и глоб *.drawio объявляет сам пакет

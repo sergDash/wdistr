@@ -76,6 +76,14 @@ gsettings set org.cinnamon.desktop.wm.preferences mouse-button-modifier '<Super>
 # xsettings-схемы (модуль «Темы»); дубль системного дефолта.
 gsettings set org.cinnamon.settings-daemon.plugins.xsettings buttons-have-icons false
 
+# Вид папок по умолчанию — компактный (пожелание 2026-10-23): значение
+# с рабочей машины, где вид выбран руками. Дефолт схемы Nemo —
+# icon-view; ключ пишется безусловно, независимо от высоты экрана.
+# Масштаб этого вида (150% на больших экранах) задан ниже, в блоке
+# условия по SCREEN_HEIGHT. Дубль системного dconf-дефолта
+# (10-wdistr-desktop) по паттерну тем/шрифтов.
+gsettings set org.nemo.preferences default-folder-viewer 'compact-view'
+
 # Высота основного монитора (решение 2026-10-16): >1500 px — 4K и
 # выше. На таких экранах увеличиваем панель, масштаб текста и иконку
 # меню; на меньших (1080, 1200, 1440) размеры не трогаем — дефолты
@@ -155,6 +163,13 @@ if [ -n "$SCREEN_HEIGHT" ] && [ "$SCREEN_HEIGHT" -gt 1500 ]; then
     gsettings set org.cinnamon panel-zone-symbolic-icon-sizes '[{"panelId": 1, "left": 28, "center": 28, "right": 26}]'
     gsettings set org.gnome.desktop.interface text-scaling-factor 1.5
     gsettings set org.cinnamon.desktop.interface text-scaling-factor 1.5
+    # Nemo, компактный вид: исходный масштаб 150% (пожелание 2026-10-23,
+    # значение с рабочей машины). «Исходный масштаб» в настройках и меню
+    # Nemo — это default-zoom-level; проценты в меню соответствуют
+    # уровням enum smallest..largest = 33/50/66/100/150/200/400, то
+    # есть 150% — это 'large'. Ключ условный, как у панели и масштаба
+    # текста: на экранах ≤1500 остаётся дефолт схемы 'standard' (100%).
+    gsettings set org.nemo.compact-view default-zoom-level large
 fi
 
 # Календарь: кастомные форматы даты (решение 2026-10-16, значения

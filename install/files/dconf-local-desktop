@@ -76,3 +76,12 @@ autostart=true
 # defaults.sh; dconf-дефолт условий не умеет.
 [org/cinnamon]
 enabled-applets=['panel1:center:0:menu@cinnamon.org:0', 'panel1:center:1:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']
+
+# Вид папок по умолчанию — компактный (пожелание 2026-10-23, значение с
+# рабочей машины): дефолт схемы Nemo icon-view заменён на compact-view.
+# Ключ безусловный (в отличие от масштаба компактного вида — он
+# задаётся только при высоте экрана >1500 px в cinnamon-defaults.sh).
+# Дубль в cinnamon-defaults.sh по паттерну тем/шрифтов: Nemo при первом
+# входе мог записать свой дефолт в пользовательский dconf.
+[org/nemo/preferences]
+default-folder-viewer='compact-view'
