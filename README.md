@@ -124,8 +124,10 @@ Shift.
 при ближайшем включении.
 
 Лог каждого обновления — в `~/install-log/` (`sys-update.log`,
-`aur-update.log`, `flatpak-update.log`). Управляются таймерами
-`systemctl list-timers wdistr-*`, остановить —
+`aur-update.log`, `flatpak-update.log`). Папка сделана под носом:
+если обновление прошло не так, открыть её в opencode и попросить
+разобраться — агент по логам сам выяснит, что пошло не так.
+Управляются таймерами `systemctl list-timers wdistr-*`, остановить —
 `sudo systemctl disable --now <имя-таймера>`.
 
 ---
