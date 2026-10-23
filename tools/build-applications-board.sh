@@ -178,7 +178,7 @@ montage @"$WORK/order.txt" \
     -geometry 128x128+16+36 \
     -background black \
     -fill white \
-    -pointsize 13 \
+    -pointsize 26 \
     -gravity south \
     "$OUT"
 
