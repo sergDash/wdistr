@@ -853,6 +853,24 @@ if any('usermod -aG input' in c for c in cmds):
 else:
     fail('ввод: нет usermod -aG input в custom_commands')
 
+# 48. Project Zomboid: StartupWMClass = фактический WM_CLASS окна (опыт
+# 2026-10-26). У Java-игры класс окна не в формате steam_app_<appid>,
+# а собственный "Project Zomboid" (xprop WM_CLASS). При несовпадении
+# панель приписывает окно Steam и рисует второй значок Steam вместо
+# иконки игры (Steam - Иконка игры на панели Cinnamon.md). Имя файла
+# и Icon= остаются steam_app_108600 — связь с иконкой hicolor.
+pz = [c for c in cmds if 'steam_app_108600.desktop' in c]
+pz_payload = ''
+if pz:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", pz[0])
+    if m:
+        pz_payload = base64.b64decode(m.group(1)).decode()
+if pz and 'StartupWMClass=Project Zomboid' in pz_payload:
+    ok('Project Zomboid: StartupWMClass=Project Zomboid (фактический WM_CLASS окна)')
+else:
+    fail(f'Project Zomboid: команд {len(pz)}, '
+         f'StartupWMClass=Project Zomboid = {"StartupWMClass=Project Zomboid" in pz_payload}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

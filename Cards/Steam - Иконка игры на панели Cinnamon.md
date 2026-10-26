@@ -64,6 +64,22 @@ WM_CLASS(STRING) = "steamwebhelper", "steam"
 У него `StartupWMClass=Steam` в штатном `com.valvesoftware.Steam.desktop` —
 совпадение есть, иконка правильная.
 
+### Исключение: игры со своим WM_CLASS
+
+Конвенция `steam_app_<appid>` выполняется не всегда. Java-игры (LWJGL)
+объявляют класс окна сами — например, у Project Zomboid (appid 108600):
+
+```
+WM_CLASS(STRING) = "Project Zomboid", "Project Zomboid"
+```
+
+Если в .desktop записан `StartupWMClass=steam_app_108600`, совпадения
+нет, и на панели у игры — второй значок Steam (опыт 2026-10-26).
+Поэтому `StartupWMClass` всегда берётся из фактического `xprop WM_CLASS`
+запущенной игры, а не из шаблона; имя файла и `Icon=` при этом
+остаются `steam_app_<appid>` — они связаны с иконкой в hicolor, а
+сопоставление с окном держится на `StartupWMClass`.
+
 ## Решение: .desktop-файл с StartupWMClass
 
 Файл кладётся в `~/.local/share/applications/steam_app_<appid>.desktop`:

@@ -3,6 +3,10 @@ Type=Application
 Name=Project Zomboid
 Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/108600
 Icon=steam_app_108600
-StartupWMClass=steam_app_108600
+# Опыт 2026-10-26: у Project Zomboid (Java, LWJGL) класс окна не в формате
+# steam_app_<appid>, а собственный — "Project Zomboid" (xprop WM_CLASS).
+# При несовпадении панель приписывает окно Steam и рисует второй значок
+# Steam. Имя файла и Icon остаются steam_app_108600 (связь с иконкой).
+StartupWMClass=Project Zomboid
 Terminal=false
 Categories=Game;
