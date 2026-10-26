@@ -3,6 +3,9 @@ Type=Application
 Name=Terraria
 Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/105600
 Icon=steam_app_105600
-StartupWMClass=steam_app_105600
+# Опыт 2026-10-26: нативная Linux-версия объявляет в WM_CLASS имя
+# исполняемого файла — "Terraria.bin.x86_64" (xprop WM_CLASS), а не
+# steam_app_<appid>. Cinnamon ищет .desktop по class-части.
+StartupWMClass=Terraria.bin.x86_64
 Terminal=false
 Categories=Game;

@@ -856,12 +856,13 @@ else:
 # 48. Игры со своим WM_CLASS: StartupWMClass = фактический class-части
 # WM_CLASS окна (опыт 2026-10-26). Steam-конвенция steam_app_<appid>
 # выполняется не всегда: у Java-игры PZ класс собственный ("Project
-# Zomboid"), у Godot-игры class — имя игры, instance — имя движка
-# ("Godot_Engine"/"Out of the Ashes"). При несовпадении панель
-# приписывает окно Steam и рисует второй значок Steam вместо иконки
-# игры (Steam - Иконка игры на панели Cinnamon.md). Имя файла и Icon=
-# остаются steam_app_<appid> — связь с иконкой hicolor.
+# Zomboid"), у Godot-игр class — имя игры (instance — имя движка),
+# у нативной Linux-версии Terraria — имя исполняемого файла. При
+# несовпадении панель приписывает окно Steam и рисует второй значок
+# Steam вместо иконки игры (Steam - Иконка игры на панели Cinnamon.md).
+# Имя файла и Icon= остаются steam_app_<appid> — связь с иконкой hicolor.
 wmclass_games = {
+    'steam_app_105600.desktop': 'Terraria.bin.x86_64',
     'steam_app_108600.desktop': 'Project Zomboid',
     'steam_app_4602430.desktop': 'Out of the Ashes',
     'steam_app_863330.desktop': 'RPG in a Box (Demo Version)',

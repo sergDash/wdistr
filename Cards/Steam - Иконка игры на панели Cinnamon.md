@@ -66,8 +66,8 @@ WM_CLASS(STRING) = "steamwebhelper", "steam"
 
 ### Исключение: игры со своим WM_CLASS
 
-Конвенция `steam_app_<appid>` выполняется не всегда — движок объявляет
-класс окна сам. Два подтверждённых случая (опыт 2026-10-26):
+Конвенция `steam_app_<appid>` выполняется не всегда — не-Proton-запуск
+объявляет класс окна сам. Три подтверждённых случая (опыт 2026-10-26).
 
 Java-игра (LWJGL), у Project Zomboid (appid 108600) обе части одинаковы:
 
@@ -87,6 +87,13 @@ WM_CLASS(STRING) = "Godot_Engine", "Out of the Ashes"
 
 ```
 WM_CLASS(STRING) = "Godot_Engine", "RPG in a Box (Demo Version)"
+```
+
+У нативной Linux-версии Terraria (appid 105600) класс — имя
+исполняемого файла:
+
+```
+WM_CLASS(STRING) = "Terraria.bin.x86_64", "Terraria.bin.x86_64"
 ```
 
 Если в .desktop записан шаблонный `StartupWMClass=steam_app_<appid>`,
