@@ -853,23 +853,30 @@ if any('usermod -aG input' in c for c in cmds):
 else:
     fail('ввод: нет usermod -aG input в custom_commands')
 
-# 48. Project Zomboid: StartupWMClass = фактический WM_CLASS окна (опыт
-# 2026-10-26). У Java-игры класс окна не в формате steam_app_<appid>,
-# а собственный "Project Zomboid" (xprop WM_CLASS). При несовпадении
-# панель приписывает окно Steam и рисует второй значок Steam вместо
-# иконки игры (Steam - Иконка игры на панели Cinnamon.md). Имя файла
-# и Icon= остаются steam_app_108600 — связь с иконкой hicolor.
-pz = [c for c in cmds if 'steam_app_108600.desktop' in c]
-pz_payload = ''
-if pz:
-    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", pz[0])
-    if m:
-        pz_payload = base64.b64decode(m.group(1)).decode()
-if pz and 'StartupWMClass=Project Zomboid' in pz_payload:
-    ok('Project Zomboid: StartupWMClass=Project Zomboid (фактический WM_CLASS окна)')
-else:
-    fail(f'Project Zomboid: команд {len(pz)}, '
-         f'StartupWMClass=Project Zomboid = {"StartupWMClass=Project Zomboid" in pz_payload}')
+# 48. Игры со своим WM_CLASS: StartupWMClass = фактический class-части
+# WM_CLASS окна (опыт 2026-10-26). Steam-конвенция steam_app_<appid>
+# выполняется не всегда: у Java-игры PZ класс собственный ("Project
+# Zomboid"), у Godot-игры class — имя игры, instance — имя движка
+# ("Godot_Engine"/"Out of the Ashes"). При несовпадении панель
+# приписывает окно Steam и рисует второй значок Steam вместо иконки
+# игры (Steam - Иконка игры на панели Cinnamon.md). Имя файла и Icon=
+# остаются steam_app_<appid> — связь с иконкой hicolor.
+wmclass_games = {
+    'steam_app_108600.desktop': 'Project Zomboid',
+    'steam_app_4602430.desktop': 'Out of the Ashes',
+}
+for desk_name, wm_class in wmclass_games.items():
+    g = [c for c in cmds if desk_name in c]
+    payload = ''
+    if g:
+        m = re.search(r"echo '([A-Za-z0-9+/=]+)'", g[0])
+        if m:
+            payload = base64.b64decode(m.group(1)).decode()
+    if g and f'StartupWMClass={wm_class}' in payload:
+        ok(f'{wm_class}: StartupWMClass = фактический WM_CLASS окна')
+    else:
+        fail(f'{wm_class}: команд {len(g)}, '
+             f'StartupWMClass={wm_class} = {f"StartupWMClass={wm_class}" in payload}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

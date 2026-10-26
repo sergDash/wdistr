@@ -3,6 +3,9 @@ Type=Application
 Name=Out of the Ashes Demo
 Exec=/usr/bin/flatpak run com.valvesoftware.Steam steam://rungameid/4602430
 Icon=steam_app_4602430
-StartupWMClass=steam_app_4602430
+# Опыт 2026-10-26: Godot-движок объявляет в WM_CLASS имя движка
+# (instance "Godot_Engine"), именем игры служит class — "Out of the
+# Ashes" (xprop WM_CLASS). Cinnamon ищет .desktop по class-части.
+StartupWMClass=Out of the Ashes
 Terminal=false
 Categories=Game;

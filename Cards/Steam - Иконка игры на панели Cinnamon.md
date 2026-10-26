@@ -66,19 +66,28 @@ WM_CLASS(STRING) = "steamwebhelper", "steam"
 
 ### Исключение: игры со своим WM_CLASS
 
-Конвенция `steam_app_<appid>` выполняется не всегда. Java-игры (LWJGL)
-объявляют класс окна сами — например, у Project Zomboid (appid 108600):
+Конвенция `steam_app_<appid>` выполняется не всегда — движок объявляет
+класс окна сам. Два подтверждённых случая (опыт 2026-10-26):
+
+Java-игра (LWJGL), у Project Zomboid (appid 108600) обе части одинаковы:
 
 ```
 WM_CLASS(STRING) = "Project Zomboid", "Project Zomboid"
 ```
 
-Если в .desktop записан `StartupWMClass=steam_app_108600`, совпадения
-нет, и на панели у игры — второй значок Steam (опыт 2026-10-26).
+Godot-игра, у Out of the Ashes (appid 4602430) части разные — instance
+(движок) и class (игра); .desktop ищется по class:
+
+```
+WM_CLASS(STRING) = "Godot_Engine", "Out of the Ashes"
+```
+
+Если в .desktop записан шаблонный `StartupWMClass=steam_app_<appid>`,
+совпадения нет, и на панели у игры — второй значок Steam.
 Поэтому `StartupWMClass` всегда берётся из фактического `xprop WM_CLASS`
-запущенной игры, а не из шаблона; имя файла и `Icon=` при этом
-остаются `steam_app_<appid>` — они связаны с иконкой в hicolor, а
-сопоставление с окном держится на `StartupWMClass`.
+запущенной игры (вторая строка — class), а не из шаблона; имя файла и
+`Icon=` при этом остаются `steam_app_<appid>` — они связаны с иконкой
+в hicolor, а сопоставление с окном держится на `StartupWMClass`.
 
 ## Решение: .desktop-файл с StartupWMClass
 
