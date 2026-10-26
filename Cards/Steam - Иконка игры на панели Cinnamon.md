@@ -82,6 +82,13 @@ Godot-игра, у Out of the Ashes (appid 4602430) части разные — 
 WM_CLASS(STRING) = "Godot_Engine", "Out of the Ashes"
 ```
 
+У RPG in a Box (appid 863330) в class добавлено пояснение из заголовка
+окна — копировать надо со скобками, целиком:
+
+```
+WM_CLASS(STRING) = "Godot_Engine", "RPG in a Box (Demo Version)"
+```
+
 Если в .desktop записан шаблонный `StartupWMClass=steam_app_<appid>`,
 совпадения нет, и на панели у игры — второй значок Steam.
 Поэтому `StartupWMClass` всегда берётся из фактического `xprop WM_CLASS`

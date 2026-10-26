@@ -864,6 +864,7 @@ else:
 wmclass_games = {
     'steam_app_108600.desktop': 'Project Zomboid',
     'steam_app_4602430.desktop': 'Out of the Ashes',
+    'steam_app_863330.desktop': 'RPG in a Box (Demo Version)',
 }
 for desk_name, wm_class in wmclass_games.items():
     g = [c for c in cmds if desk_name in c]
