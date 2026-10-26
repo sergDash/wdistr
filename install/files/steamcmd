@@ -1,0 +1,8 @@
+#!/bin/bash
+# Обёртка над SteamCMD из flatpak-Steam дистрибутива.
+# cd обязателен: steamcmd.sh вычисляет STEAMROOT через dirname "$0",
+# поэтому запускать его нужно из его собственного каталога — прямой
+# симлинк из ~/bin не работает (опыт 2026-10-26: ~/bin ожидает
+# ~/bin/linux32/steamcmd).
+cd ~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamcmd || exit 1
+exec ./steamcmd.sh "$@"

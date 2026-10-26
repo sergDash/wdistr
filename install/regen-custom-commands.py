@@ -439,12 +439,18 @@ def main() -> None:
         "/home/$U/.config/systemd/user/default.target.wants/syncthing.service && "
         "chown -R $U:$U /home/$U/.config",
         # docker: пользователь в группе docker — доступ к демону без sudo.
-        # Поле groups в archinstall-creds.json группа НЕ назначает (проверено
+        # Поле groups в archinstall-creds.json группу НЕ назначает (проверено
         # установкой 2026-10-09: в /etc/group состав пуст) — назначаем сами,
         # как и shell у пользователя
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
         "test -n \"$U\" && "
         "usermod -aG docker \"$U\"",
+        # input: evtest читает /dev/input/event* — без группы input
+        # доступа нет (пожелание 2026-10-26); та же схема с getent,
+        # что у docker (groups в archinstall-creds не назначает)
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        "usermod -aG input \"$U\"",
         # Cinnamon при первом входе перебивает системный dconf-дефолт
         # (gtk-theme, шрифты) — одноразовый скрипт через системный
         # autostart ставит наши значения; маркер в ~/.config/wdistr не
@@ -480,6 +486,16 @@ def main() -> None:
                 "chown -R $U:$U /home/$U/bin",
             ]
         ),
+        # steamcmd: обёртка в ~/bin первого пользователя (пожелание
+        # 2026-10-26). Симлинк на steamcmd.sh не работает — скрипт
+        # ищет STEAMROOT через dirname "$0" и из ~/bin ждёт
+        # ~/bin/linux32/steamcmd; обёртка cd'ит в каталог Steam
+        # (flatpak-путь дистрибутива) и exec'ит оттуда.
+        # Проверка: steamcmd +quit
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        + deliver(FILES / "steamcmd", "/home/$U/bin/steamcmd", "755")
+        + " && chown $U:$U /home/$U/bin/steamcmd",
     ]
 
     # Свои desktop-файлы: всё из files/desktop/ доставляется в

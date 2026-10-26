@@ -228,10 +228,14 @@ checks = {
     'image/x-eps=ai.storyteller.vectorcraft.desktop': 'VectorCraft-.eps',
     # .drawio открывает drawio; тип объявляет mime-файл самого пакета
     'application/vnd.jgraph.mxfile=drawio-desktop.desktop': 'drawio-.drawio',
+    # mpv — вторичный обработчик папок («Открыть с помощью» для
+    # каталогов, пожелание 2026-10-26); дефолт в [Default Applications]
+    # остаётся Nemo, mpv.desktop тип inode/directory не объявляет
+    'inode/directory=mpv.desktop': 'mpv-папки',
 }
 missing = [name for key, name in checks.items() if key not in payload]
 if len(mm) == 1 and not missing:
-    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft(.ai,.eps)/drawio')
+    ok(f'mimeapps.list: Nemo/Thunderbird/Viewnior/WordCraft/GridCraft/Okular/VSCodium/VectorCraft(.ai,.eps)/drawio/mpv-папки')
 else:
     fail(f'mimeapps.list: команд {len(mm)}, отсутствует: {missing or "—"}')
 
@@ -810,6 +814,44 @@ if fv_sys and fv_force:
     ok('nemo: компактный вид по умолчанию в системном дефолте и форсе')
 else:
     fail(f'nemo: вид по умолчанию — системный дефолт = {bool(fv_sys)}, форс = {bool(fv_force)}')
+
+# 45. evtest и nemo-fileroller в составе (пожелание 2026-10-26):
+# evtest — просмотр событий ввода, читает /dev/input/event* (нужна
+# группа input, проверка 47); nemo-fileroller — пункты «Упаковать»/
+# «Распаковать тут» в контекстном меню Nemo (file-roller без него
+# ставит расширение только для Nautilus; подтверждено на рабочей
+# машине 2026-10-26)
+missing = [p for p in ('evtest', 'nemo-fileroller') if p not in utils]
+if not missing:
+    ok('состав: evtest и nemo-fileroller в packages[]')
+else:
+    fail(f'состав: в packages[] нет: {missing}')
+
+# 46. steamcmd: обёртка в ~/bin первого пользователя (пожелание
+# 2026-10-26). Симлинк не работает — steamcmd.sh ищет STEAMROOT
+# через dirname "$0"; обёртка cd'ит в каталог flatpak-Steam и
+# exec'ит оттуда. Проверка на машине: steamcmd +quit (rc=0)
+sc = [c for c in cmds if '/home/$U/bin/steamcmd' in c]
+sc_payload = ''
+if sc:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", sc[0])
+    if m:
+        sc_payload = base64.b64decode(m.group(1)).decode()
+if (len(sc) == 1 and 'chmod 755' in sc[0]
+        and 'cd ~/.var/app/com.valvesoftware.Steam' in sc_payload
+        and 'exec ./steamcmd.sh' in sc_payload):
+    ok('steamcmd: обёртка в ~/bin первого пользователя (cd + exec, 755)')
+else:
+    fail(f'steamcmd: команд {len(sc)}, chmod 755 = {"chmod 755" in (sc[0] if sc else "")}, '
+         f'cd/exec в файле = {"cd ~/.var" in sc_payload and "exec ./steamcmd.sh" in sc_payload}')
+
+# 47. Группа input у первого пользователя (пожелание 2026-10-26):
+# evtest без неё не читает /dev/input/event*; та же схема с getent,
+# что у docker (поле groups в archinstall-creds не назначает)
+if any('usermod -aG input' in c for c in cmds):
+    ok('ввод: usermod -aG input первого пользователя в custom_commands')
+else:
+    fail('ввод: нет usermod -aG input в custom_commands')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

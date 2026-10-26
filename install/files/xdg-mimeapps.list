@@ -114,3 +114,13 @@ text/x-python=codium.desktop
 # открыт и обычный текст. Категория Cinnamon «Текст» пишет
 # text/plain (cs_default.py, preferred_app_defs["system"])
 text/plain=codium.desktop
+
+# Папки: mpv во вторичных обработчиках (пожелание 2026-10-26) —
+# «Открыть с помощью» для каталогов предлагает mpv (проигрывает все
+# видео папки), дефолт в [Default Applications] остаётся за Nemo.
+# Значение с рабочей машины (~/.config/mimeapps.list,
+# [Added Associations]). mpv.desktop inode/directory в своём MimeType
+# не объявляет — без этой строки mpv в списке обработчиков каталогов
+# не появляется; nemo.desktop тип объявляет сам, в списке не нужен.
+[Added Associations]
+inode/directory=mpv.desktop
