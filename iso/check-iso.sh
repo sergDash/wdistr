@@ -880,6 +880,24 @@ for desk_name, wm_class in wmclass_games.items():
         fail(f'{wm_class}: команд {len(g)}, '
              f'StartupWMClass={wm_class} = {f"StartupWMClass={wm_class}" in payload}')
 
+# 49. faillock: мягкая блокировка sudo (2026-10-30) — агент opencode
+# делал несколько неудачных попыток sudo подряд и упирался в стоковую
+# блокировку (deny=3). Доставка /etc/security/faillock.conf с нашими
+# значениями; файл в backup-массиве pam, хук не нужен
+fl_cfg = [c for c in cmds if '/etc/security/faillock.conf' in c]
+fl_payload = ''
+if fl_cfg:
+    m = re.search(r"echo '([A-Za-z0-9+/=]+)'", fl_cfg[0])
+    if m:
+        fl_payload = base64.b64decode(m.group(1)).decode()
+if ('deny = 10' in fl_payload
+        and 'fail_interval = 300' in fl_payload
+        and 'unlock_time = 300' in fl_payload):
+    ok('faillock: доставка faillock.conf (deny=10, fail_interval=300, unlock_time=300)')
+else:
+    fail(f'faillock: команд с faillock.conf {len(fl_cfg)}, '
+         f'значения = {("deny = 10" in fl_payload, "fail_interval = 300" in fl_payload, "unlock_time = 300" in fl_payload)}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')
