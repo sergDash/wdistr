@@ -898,6 +898,21 @@ else:
     fail(f'faillock: команд с faillock.conf {len(fl_cfg)}, '
          f'значения = {("deny = 10" in fl_payload, "fail_interval = 300" in fl_payload, "unlock_time = 300" in fl_payload)}')
 
+# 50. Flatpak-список first-boot: keet (io.keet.Keet) — решение 2026-11-02,
+# в AUR только AppImage с отставшей версией, на Flathub официальная
+# сборка. Список уходит в образ той же base64-командой, что и AUR
+# (проверка 12), fb_payload уже разобран там.
+m = re.search(r'FLATPAK_APPS="\n(.*?)\n"', fb_payload, re.S)
+fp_list = m.group(1).split() if m else []
+missing = [p for p in ('com.valvesoftware.Steam', 'com.ktechpit.whatsie',
+                       'net.xmind.XMind', 'org.dash.dash-core',
+                       'io.keet.Keet')
+           if p not in fp_list]
+if not missing and len(fp_list) >= 5:
+    ok(f'first-boot: flatpak-список — {len(fp_list)} позиций, steam/whatsie/xmind/dash/keet входят')
+else:
+    fail(f'first-boot: flatpak-список {len(fp_list)}, не хватает: {missing or "—"}')
+
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')
 print(f'Итог: провалов — {fails}')

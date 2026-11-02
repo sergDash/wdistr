@@ -97,15 +97,19 @@ fi
 # 3. Flathub
 run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-# 3. Flatpak-программы состава (решение 2026-10-09: приоритет — AUR,
-#    в flatpak остаётся steam — его multilib-версия задаёт интерактивный
-#    вопрос vulkan-драйверов, а flatpak-версия ставится без вопросов;
-#    состав и обоснования — Cards/Базовый набор программ, раздел «Приложения»)
+# 3. Flatpak-программы состава (приоритет — родной репозиторий > AUR >
+#    flatpak; в flatpak — только то, что по остальным путям не устраивает:
+#    steam (вопрос vulkan-драйверов в multilib), whatsie (в AUR тяжёлая
+#    git-сборка Qt WebEngine), xmind/dash (в AUR отстающие версии),
+#    keet (в репозиториях Arch нет, в AUR — AppImage без depends и с
+#    отставшей версией, решение 2026-11-02); состав и обоснования —
+#    Cards/Базовый набор программ, раздел «Приложения»)
 FLATPAK_APPS="
 com.valvesoftware.Steam
 com.ktechpit.whatsie
 net.xmind.XMind
 org.dash.dash-core
+io.keet.Keet
 "
 for app in $FLATPAK_APPS; do
     run flatpak install --noninteractive -y flathub "$app"
