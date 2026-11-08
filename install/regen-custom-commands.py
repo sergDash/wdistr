@@ -416,6 +416,27 @@ def main() -> None:
         deliver(FILES / "flatpak-update.service", "/etc/systemd/system/wdistr-flatpak-update.service"),
         deliver(FILES / "flatpak-update.timer", "/etc/systemd/system/wdistr-flatpak-update.timer"),
         "systemctl enable wdistr-flatpak-update.timer",
+        # Обновления *craft-приложений: версии держит система (pacman/yay),
+        # приложения не предлагают свои — файл-состояние craft-update
+        # (решение 2026-11-08). Формат штатный (versions.json лаунчера
+        # ArtCraft); значение-запись не распознаётся как «Stable» и
+        # означает «версию управляет внешняя сторона»: стартовая проверка
+        # и предложение обновления не выполняются, yay обновляет приложения
+        # как обычно. photocraft в файл не входит — у него своя галочка
+        # «Автоматически проверять обновления», сидируется ниже.
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        + deliver(FILES / "craft-versions.json", "/home/$U/.local/share/ArtCraft/versions/versions.json", "644")
+        + " && chown $U:$U /home/$U/.local/share/ArtCraft/versions/versions.json",
+        # photocraft: галочка «Автоматически проверять обновления» выключена
+        # с первого запуска. Файл частичный — секции настроек приложения
+        # читаются с serde(default): недостающие ключи берут значения по
+        # умолчанию, поэтому достаточно одного ключа (решение 2026-11-08;
+        # поведение загрузки проверено по исходникам photocraft #6611).
+        "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
+        "test -n \"$U\" && "
+        + deliver(FILES / "photocraft-preferences.json", "/home/$U/.config/photocraft/preferences.json", "644")
+        + " && chown $U:$U /home/$U/.config/photocraft/preferences.json",
         # Повтор после сбоя: если обновление упало (обычно — сеть),
         # OnFailure в сервисе активирует шаблон, он спит 4 часа и
         # запускает упавшее обновление заново — не ждём недельного окна

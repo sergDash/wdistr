@@ -1,0 +1,19 @@
+{
+    "apps": {
+        "effectcraft": {
+            "Wdistr": "pacman"
+        },
+        "gridcraft": {
+            "Wdistr": "pacman"
+        },
+        "soundcraft": {
+            "Wdistr": "pacman"
+        },
+        "vectorcraft": {
+            "Wdistr": "pacman"
+        },
+        "wordcraft": {
+            "Wdistr": "pacman"
+        }
+    }
+}

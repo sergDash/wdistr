@@ -13,6 +13,19 @@ echo "== обновление системы: $(date -Is) ==" >>"$LOG"
 pacman -Syu --noconfirm >>"$LOG" 2>&1
 RC=$?
 echo "  rc=$RC" >>"$LOG"
+
+# Решение 2026-11-08: после успеха — полная очистка кэша pacman
+# (/var/cache/pacman/pkg), без хранения старых версий. При падении
+# обновления чистить нельзя: повтор (wdistr-update-retry) добирает
+# пакеты из кэша — та же логика, что в first-boot. --noconfirm на -Scc
+# отвечает умолчанием «нет» (опыт 2026-10-13), поэтому явный yes.
+# Код очистки на RC не влияет: наружу уходит код обновления.
+if [ "$RC" -eq 0 ]; then
+    echo "+ очистка кэша pacman" >>"$LOG"
+    yes | pacman -Scc >>"$LOG" 2>&1
+    echo "  rc=$? (pacman -Scc)" >>"$LOG"
+fi
+
 chown -R "$(stat -c %U:%G "$USER_HOME")" "$LOGDIR"
 # Код сбоя наружу — по нему сервис включает повтор через 4 часа
 # (OnFailure, шаблон wdistr-update-retry@; без exit код гасил chown)

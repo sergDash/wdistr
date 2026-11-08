@@ -2,7 +2,7 @@
 Description=wdistr: еженедельное автообновление системы
 
 [Timer]
-OnCalendar=Sun *-*-* 21:00:00
+OnCalendar=Sun *-*-* 06:00:00
 Persistent=true
 
 [Install]
