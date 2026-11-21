@@ -502,6 +502,9 @@ def main() -> None:
         # пользователя (паттерн с хоста разработки). Сборка на первом
         # запуске отключена (решение 2026-10-13) — opencode приходит
         # бинарником из ISO, обновления вручную: opencode.fish <версия>.
+        # Рядом лежит OpenCode 2 (ветка 2.x): свои скрипт сборки, патчи
+        # и обёртка запуска opencode2 с отдельными базой, состоянием и
+        # конфигом — иначе v2 миграцией переписала бы состояние v1.
         # Переменная U живёт только внутри одной команды: каждая строка
         # custom_commands исполняется отдельным shell
         "U=$(getent passwd | awk -F: '$3>=1000 && $3<65534 {print $1; exit}') && "
@@ -512,7 +515,25 @@ def main() -> None:
                 deliver(FILES / "opencode/opencode-2.patch", "/home/$U/bin/opencode-2.patch"),
                 deliver(FILES / "opencode/opencode-3.patch", "/home/$U/bin/opencode-3.patch"),
                 deliver(FILES / "opencode/opencode-4.patch", "/home/$U/bin/opencode-4.patch"),
+                deliver(FILES / "opencode/opencode-5.patch", "/home/$U/bin/opencode-5.patch"),
                 "chown -R $U:$U /home/$U/bin",
+                # OpenCode 2 (ветка 2.x) рядом с v1: у неё другой скрипт
+                # сборки (packages/cli вместо packages/opencode) и свои
+                # патчи, поэтому набор отдельный. Запуск — через обёртку
+                # opencode2 (v1 и v2 не делят базу, состояние и конфиг);
+                # сама сборка бинарника уже стоит в /usr/local/bin из ISO.
+                deliver(FILES / "opencode/opencode2", "/home/$U/bin/opencode2", "755"),
+                deliver(FILES / "opencode/opencode2.fish", "/home/$U/bin/opencode2.fish", "755"),
+                "chown $U:$U /home/$U/bin/opencode2 /home/$U/bin/opencode2.fish",
+                # патчи v2 — по одной строке на файл: регенератор собирает
+                # шаг циклом, имена фиксированы
+                " && ".join(
+                    [
+                        deliver(FILES / f"opencode/opencode2-{n}.patch", f"/home/$U/bin/opencode2-{n}.patch")
+                        for n in (1, 2, 3, 4)
+                    ]
+                ),
+                "chown $U:$U /home/$U/bin/opencode2-*.patch",
             ]
         ),
         # steamcmd: обёртка в ~/bin первого пользователя (пожелание

@@ -1,0 +1,250 @@
+From 52df7742dd6d6819138b7a497a777e0ea06e9c81 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Wed, 18 Nov 2026 19:32:15 +0300
+Subject: [PATCH] feat(tui): show Go allowance clocks in the sidebar
+
+---
+ packages/core/src/usage-limits.ts             |  66 ++++++----
+ .../src/feature-plugins/sidebar/context.tsx   | 115 ++++++++++++++----
+ 2 files changed, 138 insertions(+), 43 deletions(-)
+
+diff --git a/packages/core/src/usage-limits.ts b/packages/core/src/usage-limits.ts
+index 9d6b0f44dc..fa3de0a39d 100644
+--- a/packages/core/src/usage-limits.ts
++++ b/packages/core/src/usage-limits.ts
+@@ -33,17 +33,34 @@ export const layer = Layer.effect(
+     const http = yield* HttpClient.HttpClient
+ 
+     const get = Effect.fn("UsageLimits.get")(function* () {
+-      const connection = yield* integrations.connection.active(Integration.ID.make("opencode"))
+-      if (!connection) return undefined
+-      const credential = yield* integrations.connection
+-        .resolve(connection)
+-        .pipe(Effect.mapError((error) => new UnavailableError({ message: error.message })))
+-      if (!credential || credential.type === "external") return undefined
+-      const workspaceID = credential.metadata?.orgID
+-      if (typeof workspaceID !== "string") return undefined
+-      const server = ConsoleAccess.server(credential)
++      // Budgets need a Console sign-in with a workspace; the Go allowance only needs the
++      // Go key, so a location without a Console workspace can still show its reset clocks.
++      const connection = Effect.fn(function* (id: string) {
++        const active = yield* integrations.connection.active(Integration.ID.make(id))
++        if (!active) return undefined
++        const resolved = yield* integrations.connection
++          .resolve(active)
++          .pipe(Effect.orElseSucceed(() => undefined))
++        if (!resolved || resolved.type === "external") return undefined
++        return resolved
++      })
++      const consoleCredential = yield* connection("opencode")
++      const goCredential = yield* connection("opencode-go")
++      if (!consoleCredential && !goCredential) return undefined
++      const workspaceID = consoleCredential?.metadata?.orgID
++      const workspace = typeof workspaceID === "string" ? workspaceID : undefined
++      const server = consoleCredential ? ConsoleAccess.server(consoleCredential) : ConsoleAccess.defaultServer
+       const [budgets, go] = yield* Effect.all(
+-        [readBudgets(http, server, credential), readGo(http, server, credential, workspaceID)],
++        [
++          consoleCredential && workspace
++            ? readBudgets(http, server, consoleCredential)
++            : Effect.succeed([]),
++          goCredential
++            ? readGo(http, server, goCredential)
++            : consoleCredential && workspace
++              ? readGo(http, server, consoleCredential, workspace)
++              : Effect.succeed(undefined),
++        ],
+         { concurrency: 2 },
+       ).pipe(
+         Effect.timeoutOrElse({
+@@ -51,12 +68,18 @@ export const layer = Layer.effect(
+           orElse: () => Effect.fail(new UnavailableError({ message: "OpenCode Console usage limits timed out" })),
+         }),
+       )
++      if (!go && budgets.length === 0) return undefined
+       return {
+-        workspace: {
+-          id: workspaceID,
+-          ...(typeof credential.metadata?.orgName === "string" ? { name: credential.metadata.orgName } : {}),
+-          usageURL: `${server}/${workspaceID}/activity/overview`,
+-        },
++        workspace:
++          consoleCredential && workspace
++            ? {
++                id: workspace,
++                ...(typeof consoleCredential.metadata?.orgName === "string"
++                  ? { name: consoleCredential.metadata.orgName }
++                  : {}),
++                usageURL: `${server}/${workspace}/activity/overview`,
++              }
++            : { id: "opencode-go", name: "OpenCode Go", usageURL: "https://opencode.ai/console/go" },
+         ...(go === undefined ? {} : { go }),
+         budgets,
+       }
+@@ -157,15 +180,16 @@ function readGo(
+   http: HttpClient.HttpClient,
+   server: string,
+   credential: Credential.Key | Credential.OAuth,
+-  workspaceID: string,
++  workspaceID?: string,
+ ) {
++  const request = HttpClientRequest.get(`${new URL(server).origin}/zen/go/v1/usage`).pipe(
++    HttpClientRequest.acceptJson,
++    HttpClientRequest.bearerToken(credential.type === "oauth" ? credential.access : credential.key),
++  )
++  // A Console member names the workspace; the Go key alone answers without it.
+   return HttpClient.withScope(http)
+     .execute(
+-      HttpClientRequest.get(`${new URL(server).origin}/zen/go/v1/usage`).pipe(
+-        HttpClientRequest.acceptJson,
+-        HttpClientRequest.bearerToken(credential.type === "oauth" ? credential.access : credential.key),
+-        HttpClientRequest.setHeader("x-opencode-org-id", workspaceID),
+-      ),
++      workspaceID === undefined ? request : request.pipe(HttpClientRequest.setHeader("x-opencode-org-id", workspaceID)),
+     )
+     .pipe(
+       Effect.flatMap((response) =>
+diff --git a/packages/tui/src/feature-plugins/sidebar/context.tsx b/packages/tui/src/feature-plugins/sidebar/context.tsx
+index 519ba691fa..29288057f1 100644
+--- a/packages/tui/src/feature-plugins/sidebar/context.tsx
++++ b/packages/tui/src/feature-plugins/sidebar/context.tsx
+@@ -1,6 +1,6 @@
+ import { Plugin } from "@opencode/plugin/tui"
+-import type { ModelCost, ModelInfo, SessionMessageInfo } from "@opencode/client"
+-import { createMemo, Show } from "solid-js"
++import type { ModelCost, ModelInfo, SessionMessageInfo, UsageLimitsInfo, UsageLimitsMeter } from "@opencode/client"
++import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js"
+ import { contextUsage } from "../../util/session"
+ 
+ const money = new Intl.NumberFormat("en-US", {
+@@ -50,8 +50,26 @@ function catalogSpend(messages: readonly SessionMessageInfo[], models: readonly
+   return total
+ }
+ 
++// The time left in a usage window, in the compact form the sidebar has room for:
++// 4h 50m for the 5-hour window, 4d 8h for the weekly and monthly ones.
++function remaining(resetAt: number, now: number) {
++  const minutes = Math.floor(Math.max(0, resetAt - now) / 60_000)
++  if (minutes >= 1_440) return `${Math.floor(minutes / 1_440)}d ${Math.floor((minutes % 1_440) / 60)}h`
++  if (minutes >= 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
++  return `${minutes}m`
++}
++
++// Percent follows the label so it stays left-aligned; the time starts at a fixed
++// column below, which keeps it from sticking to the percent on longer labels.
++function usageLine(label: string, meter: UsageLimitsMeter, now: number) {
++  const prefix = `${label}: ${meter.percent}%`
++  return `${prefix}${" ".repeat(Math.max(1, 16 - prefix.length))}${remaining(meter.resetsAt, now)}`
++}
++
+ export function SidebarContext(props: { context: Plugin.Context; sessionID: string }) {
+   const theme = props.context.theme
++  const [now, setNow] = createSignal(Date.now())
++  const [limits, setLimits] = createSignal<UsageLimitsInfo | undefined>()
+   const msg = createMemo(() => props.context.data.session.message.list(props.sessionID))
+   const session = createMemo(() => props.context.data.session.get(props.sessionID))
+   const models = createMemo(() => props.context.data.location.model.list(session()?.location))
+@@ -66,27 +84,80 @@ export function SidebarContext(props: { context: Plugin.Context; sessionID: stri
+     contextUsage(msg(), props.context.data.location.model.list(session()?.location), session()?.revert?.messageID),
+   )
+ 
++  // Go meters: how long until the 5-hour, weekly and monthly allowances reset.
++  const meters = createMemo(() => {
++    const go = limits()?.go
++    if (!go) return undefined
++    const current = now()
++    return {
++      rolling: usageLine("5-hour", go.rolling, current),
++      weekly: usageLine("Weekly", go.weekly, current),
++      monthly: usageLine("Monthly", go.monthly, current),
++    }
++  })
++
++  onMount(() => {
++    let fetched = 0
++    const ref = () => props.context.location ?? props.context.data.location.default()
++    const load = async () => {
++      const client = props.context.client
++      // A bare location without Console or Go has no meters, which is not an error.
++      if (!client) return
++      const response = await client.experimental.usage
++        .limits({ location: ref() })
++        .catch(() => undefined)
++      if (!response) return
++      setLimits(response.data ?? undefined)
++    }
++    const refresh = (force: boolean) => {
++      // Percent moves as requests run, so a minute keeps it close without asking
++      // the Go endpoint on every label tick.
++      if (!force && Date.now() - fetched < 60_000) return
++      fetched = Date.now()
++      void load()
++    }
++    refresh(true)
++    // Reset instants and percentages change slowly compared with the clock, so the
++    // server is re-read once a minute while the labels themselves tick every 30 seconds.
++    const timer = setInterval(() => {
++      setNow(Date.now())
++      refresh(false)
++    }, 30_000)
++    onCleanup(() => clearInterval(timer))
++  })
++
+   return (
+-    <Show when={state() || cost() > 0}>
+-      <box>
+-        <text fg={theme.text.base}>
+-          <b>Context</b>
+-        </text>
+-        <Show when={state()}>
+-          {(value) => (
+-            <>
+-              <text fg={theme.text.muted}>{value().tokens.toLocaleString()} tokens</text>
+-              <Show when={value().percent !== undefined}>
+-                <text fg={theme.text.muted}>{value().percent}% used</text>
+-              </Show>
+-            </>
+-          )}
+-        </Show>
+-        <Show when={cost() > 0}>
+-          <text fg={theme.text.muted}>{money.format(cost())} spent</text>
+-        </Show>
+-      </box>
+-    </Show>
++    <>
++      <Show when={state() || cost() > 0}>
++        <box>
++          <text fg={theme.text.base}>
++            <b>Context</b>
++          </text>
++          <Show when={state()}>
++            {(value) => (
++              <>
++                <text fg={theme.text.muted}>{value().tokens.toLocaleString()} tokens</text>
++                <Show when={value().percent !== undefined}>
++                  <text fg={theme.text.muted}>{value().percent}% used</text>
++                </Show>
++              </>
++            )}
++          </Show>
++          <Show when={cost() > 0}>
++            <text fg={theme.text.muted}>{money.format(cost())} spent</text>
++          </Show>
++        </box>
++      </Show>
++      <Show when={meters()}>
++        {(value) => (
++          <box>
++            <text fg={theme.text.muted}>{value().rolling}</text>
++            <text fg={theme.text.muted}>{value().weekly}</text>
++            <text fg={theme.text.muted}>{value().monthly}</text>
++          </box>
++        )}
++      </Show>
++    </>
+   )
+ }
+ 
+-- 
+2.56.1
+

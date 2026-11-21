@@ -31,5 +31,7 @@ file_permissions=(
   # «permission denied»). Версия в имени файла — при смене версии
   # обновлять наравне с симлинком opencode.
   ["/usr/local/bin/opencode-1.19.6"]="0:0:755"
+  # OpenCode 2 (2.3.2) рядом с v1; запись обязательна по той же причине.
+  ["/usr/local/bin/opencode2-2.3.2"]="0:0:755"
   ["/usr/local/bin/keyd-toggle-layout"]="0:0:755"
 )

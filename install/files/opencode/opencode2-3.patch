@@ -1,0 +1,101 @@
+From 62476d7c7a6ce88022882b7812cf8f81fb66dc08 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Wed, 18 Nov 2026 19:42:05 +0300
+Subject: [PATCH] fix(tui): price spend from session totals instead of the
+ loaded page
+
+---
+ .../src/feature-plugins/sidebar/context.tsx   | 62 ++++++++++++++++++-
+ 1 file changed, 61 insertions(+), 1 deletion(-)
+
+diff --git a/packages/tui/src/feature-plugins/sidebar/context.tsx b/packages/tui/src/feature-plugins/sidebar/context.tsx
+index 29288057f1..4c67779424 100644
+--- a/packages/tui/src/feature-plugins/sidebar/context.tsx
++++ b/packages/tui/src/feature-plugins/sidebar/context.tsx
+@@ -1,5 +1,12 @@
+ import { Plugin } from "@opencode/plugin/tui"
+-import type { ModelCost, ModelInfo, SessionMessageInfo, UsageLimitsInfo, UsageLimitsMeter } from "@opencode/client"
++import type {
++  ModelCost,
++  ModelInfo,
++  SessionInfo,
++  SessionMessageInfo,
++  UsageLimitsInfo,
++  UsageLimitsMeter,
++} from "@opencode/client"
+ import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js"
+ import { contextUsage } from "../../util/session"
+ 
+@@ -59,6 +66,37 @@ function remaining(resetAt: number, now: number) {
+   return `${minutes}m`
+ }
+ 
++function findModel(models: readonly ModelInfo[], ref: { readonly providerID: string; readonly id: string } | undefined) {
++  if (!ref) return undefined
++  for (const item of models) {
++    if (item.providerID !== ref.providerID) continue
++    if (item.id !== ref.id) continue
++    return item
++  }
++  return undefined
++}
++
++// Session totals are cumulative in the session record, unlike the transcript the
++// sidebar reads, which loads the newest page first. Pricing those totals keeps the
++// figure stable across restarts of a long session.
++function totalSpend(tokens: SessionInfo["tokens"], model: ModelInfo | undefined) {
++  if (!model) return undefined
++  let price: ModelCost | undefined
++  for (const item of model.cost) {
++    if (item.tier) continue
++    price = item
++    break
++  }
++  if (!price) return undefined
++  return (
++    (tokens.input * price.input +
++      (tokens.output + tokens.reasoning) * price.output +
++      tokens.cache.read * price.cache.read +
++      tokens.cache.write * price.cache.write) /
++    1_000_000
++  )
++}
++
+ // Percent follows the label so it stays left-aligned; the time starts at a fixed
+ // column below, which keeps it from sticking to the percent on longer labels.
+ function usageLine(label: string, meter: UsageLimitsMeter, now: number) {
+@@ -74,9 +112,31 @@ export function SidebarContext(props: { context: Plugin.Context; sessionID: stri
+   const session = createMemo(() => props.context.data.session.get(props.sessionID))
+   const models = createMemo(() => props.context.data.location.model.list(session()?.location))
+   const recorded = createMemo(() => props.context.data.session.cost(props.sessionID))
++  const sessionModel = createMemo(() => {
++    // The model of the latest step, so a later selection change does not reprice
++    // work that already ran on another model.
++    const messages = msg() ?? []
++    for (let index = messages.length - 1; index >= 0; index--) {
++      const message = messages[index]
++      if (message.type !== "assistant") continue
++      if (!message.tokens) continue
++      return message.model
++    }
++    return session()?.model
++  })
+   const cost = createMemo(() => {
+     // A real charge wins; the catalog sum is only the readable substitute for it.
+     if (recorded() > 0) return recorded()
++    const info = session()
++    if (info) {
++      const tokens = info.tokens
++      const used =
++        tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
++      if (used > 0) {
++        const total = totalSpend(tokens, findModel(models() ?? [], sessionModel()))
++        if (total !== undefined) return total
++      }
++    }
+     return catalogSpend(msg() ?? [], models() ?? [])
+   })
+ 
+-- 
+2.56.1
+

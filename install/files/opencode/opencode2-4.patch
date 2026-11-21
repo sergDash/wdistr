@@ -1,0 +1,36 @@
+From 96c3c2f8b4c0464e2354eec25d06739513108123 Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Wed, 18 Nov 2026 20:37:55 +0300
+Subject: [PATCH] chore(tui): poll Go usage every 15 minutes
+
+---
+ packages/tui/src/feature-plugins/sidebar/context.tsx | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/packages/tui/src/feature-plugins/sidebar/context.tsx b/packages/tui/src/feature-plugins/sidebar/context.tsx
+index 4c67779424..7a45445390 100644
+--- a/packages/tui/src/feature-plugins/sidebar/context.tsx
++++ b/packages/tui/src/feature-plugins/sidebar/context.tsx
+@@ -170,15 +170,15 @@ export function SidebarContext(props: { context: Plugin.Context; sessionID: stri
+       setLimits(response.data ?? undefined)
+     }
+     const refresh = (force: boolean) => {
+-      // Percent moves as requests run, so a minute keeps it close without asking
+-      // the Go endpoint on every label tick.
+-      if (!force && Date.now() - fetched < 60_000) return
++      // The allowance window moves slowly, so a quarter of an hour is enough; the
++      // labels themselves stay live from the local clock.
++      if (!force && Date.now() - fetched < 15 * 60_000) return
+       fetched = Date.now()
+       void load()
+     }
+     refresh(true)
+     // Reset instants and percentages change slowly compared with the clock, so the
+-    // server is re-read once a minute while the labels themselves tick every 30 seconds.
++    // server is re-read every 15 minutes while the labels tick every 30 seconds.
+     const timer = setInterval(() => {
+       setNow(Date.now())
+       refresh(false)
+-- 
+2.56.1
+

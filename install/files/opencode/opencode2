@@ -1,0 +1,36 @@
+#!/usr/bin/env fish
+# Обёртка запуска OpenCode 2 рядом с OpenCode 1.
+#
+# У v1 и v2 общий путь состояния по умолчанию: ~/.local/share/opencode/opencode.db,
+# ~/.local/state/opencode и ~/.config/opencode. Если пустить оба на эти пути,
+# v2 при первом старте миграцией перепишет состояние v1. Поэтому база,
+# состояние, кэш и конфиг у v2 свои.
+# Каталог данных (~/.local/share/opencode) намеренно остаётся общим: из него
+# v2 при первом старте забирает учётные данные auth.json.
+#
+# Бинарник берётся в порядке приоритета:
+#   1) ~/bin/opencode2-bin — своя сборка (opencode2.fish <версия>);
+#   2) /usr/local/bin/opencode2-bin — сборка из дистрибутива.
+# Причина явного перебора, а не поиска по PATH: ~/bin идёт в PATH раньше
+# /usr/local/bin, но полагаться на порядок каталогов в PATH молча — значит
+# получать разное поведение на разных машинах.
+
+set -gx XDG_STATE_HOME $HOME/.local/state/opencode2
+set -gx XDG_CACHE_HOME $HOME/.cache/opencode2
+set -gx OPENCODE_CONFIG_DIR $HOME/.config/opencode2
+set -gx OPENCODE_DB $HOME/.local/share/opencode2/opencode.db
+
+mkdir -p $HOME/.local/share/opencode2
+mkdir -p $HOME/.config/opencode2
+
+if test -x $HOME/bin/opencode2-bin
+    exec $HOME/bin/opencode2-bin $argv
+end
+
+if test -x /usr/local/bin/opencode2-bin
+    exec /usr/local/bin/opencode2-bin $argv
+end
+
+echo "Не найден бинарник opencode2: ни ~/bin/opencode2-bin, ни /usr/local/bin/opencode2-bin" >&2
+echo "Своя сборка: opencode2.fish <версия>" >&2
+exit 1

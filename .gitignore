@@ -11,9 +11,15 @@ work/
 # Временный тарбол для передачи профиля в сборочную VM
 iso-profile.tgz
 
-# Бинарник opencode для ISO (170 МБ, в git не версионируется):
-# кладётся перед сборкой ISO, см. Cards/Сборка ISO archiso
+# Бинарники opencode для ISO (197 МБ v1 + 241 МБ v2, в git не
+# версионируются): кладутся перед сборкой ISO, см.
+# Cards/Сборка ISO archiso. Симлинки opencode и opencode2-bin при этом
+# версионируются (шаблоны имён нарочно уже: opencode-* и opencode2-*)
 iso/airootfs/usr/local/bin/opencode-*
+iso/airootfs/usr/local/bin/opencode2-*
+# ...кроме симлинка opencode2-bin: шаблон opencode2-* ловит и его, а он
+# должен версионироваться (симлинк — крошечный файл, указывает на версию)
+!iso/airootfs/usr/local/bin/opencode2-bin
 
 # Шрифты Windows для ISO (342 МиБ, в git не версионируются):
 # копируются из install/files/winfonts перед сборкой, см.

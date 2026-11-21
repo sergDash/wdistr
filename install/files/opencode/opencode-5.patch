@@ -1,0 +1,140 @@
+diff --git a/packages/tui/src/feature-plugins/sidebar/context.tsx b/packages/tui/src/feature-plugins/sidebar/context.tsx
+index f1c99d9679..6b799d480e 100644
+--- a/packages/tui/src/feature-plugins/sidebar/context.tsx
++++ b/packages/tui/src/feature-plugins/sidebar/context.tsx
+@@ -1,7 +1,10 @@
+ import type { AssistantMessage } from "@opencode-ai/sdk/v2"
+ import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
++import { Global } from "@opencode-ai/core/global"
++import { readFile } from "node:fs/promises"
++import path from "path"
++import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js"
+ import type { BuiltinTuiPlugin } from "../builtins"
+-import { createMemo } from "solid-js"
+ 
+ const id = "internal:sidebar-context"
+ 
+@@ -10,8 +13,66 @@ const money = new Intl.NumberFormat("en-US", {
+   currency: "USD",
+ })
+ 
++// The Go inference gateway exposes the allowance windows, but only through this
++// Console endpoint: the models API carries prices, not the meters.
++const GO_USAGE = "https://opencode.ai/zen/go/v1/usage"
++const AUTH_FILE = path.join(Global.Path.data, "auth.json")
++
++type GoMeter = {
++  percent: number
++  status: string
++  resetsAt: string
++}
++
++type GoMeters = {
++  rolling: GoMeter
++  weekly: GoMeter
++  monthly: GoMeter
++}
++
++// The time left in a usage window, in the compact form the sidebar has room for:
++// 4h 50m for the 5-hour window, 4d 8h for the weekly and monthly ones.
++function remaining(resetAt: number, now: number) {
++  if (!Number.isFinite(resetAt)) return "—"
++  const minutes = Math.floor(Math.max(0, resetAt - now) / 60_000)
++  if (minutes >= 1_440) return `${Math.floor(minutes / 1_440)}d ${Math.floor((minutes % 1_440) / 60)}h`
++  if (minutes >= 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
++  return `${minutes}m`
++}
++
++// Percent follows the label so it stays left-aligned; the time starts at a fixed
++// column below, which keeps it from sticking to the percent on longer labels.
++function usageLine(label: string, meter: GoMeter, now: number) {
++  const prefix = `${label}: ${meter.percent}%`
++  const time = remaining(Date.parse(meter.resetsAt), now)
++  return `${prefix}${" ".repeat(Math.max(1, 16 - prefix.length))}${time}`
++}
++
++async function goKey() {
++  if (process.env.OPENCODE_API_KEY) return process.env.OPENCODE_API_KEY
++  const auth = JSON.parse(await readFile(AUTH_FILE, "utf8"))
++  return auth["opencode-go"]?.key as string | undefined
++}
++
++async function goMeters() {
++  const key = await goKey()
++  if (!key) return undefined
++  const response = await fetch(GO_USAGE, {
++    headers: {
++      authorization: `Bearer ${key}`,
++      accept: "application/json",
++      "user-agent": "opencode/1",
++    },
++  })
++  if (!response.ok) return undefined
++  const body = (await response.json()) as { usage?: GoMeters }
++  return body.usage
++}
++
+ function View(props: { api: TuiPluginApi; session_id: string }) {
+   const theme = () => props.api.theme.current
++  const [now, setNow] = createSignal(Date.now())
++  const [go, setGo] = createSignal<GoMeters | undefined>()
+   const msg = createMemo(() => props.api.state.session.messages(props.session_id))
+   const session = createMemo(() => props.api.state.session.get(props.session_id))
+   const cost = createMemo(() => session()?.cost ?? 0)
+@@ -34,6 +95,40 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
+     }
+   })
+ 
++  const meters = createMemo(() => {
++    const value = go()
++    if (!value) return undefined
++    const current = now()
++    return {
++      rolling: usageLine("5-hour", value.rolling, current),
++      weekly: usageLine("Weekly", value.weekly, current),
++      monthly: usageLine("Monthly", value.monthly, current),
++    }
++  })
++
++  onMount(() => {
++    let fetched = 0
++    const load = async () => {
++      const value = await goMeters().catch(() => undefined)
++      if (value) setGo(value)
++    }
++    const refresh = (force: boolean) => {
++      // The allowance window moves slowly, so a quarter of an hour is enough; the
++      // labels themselves stay live from the local clock.
++      if (!force && Date.now() - fetched < 15 * 60_000) return
++      fetched = Date.now()
++      void load()
++    }
++    refresh(true)
++    // Reset instants and percentages change slowly compared with the clock, so the
++    // server is re-read every 15 minutes while the labels tick every 30 seconds.
++    const timer = setInterval(() => {
++      setNow(Date.now())
++      refresh(false)
++    }, 30_000)
++    onCleanup(() => clearInterval(timer))
++  })
++
+   return (
+     <box>
+       <text fg={theme().text}>
+@@ -42,6 +137,15 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
+       <text fg={theme().textMuted}>{state().tokens.toLocaleString()} tokens</text>
+       <text fg={theme().textMuted}>{state().percent ?? 0}% used</text>
+       <text fg={theme().textMuted}>{money.format(cost())} spent</text>
++      <Show when={meters()}>
++        {(value) => (
++          <box paddingTop={1}>
++            <text fg={theme().textMuted}>{value().rolling}</text>
++            <text fg={theme().textMuted}>{value().weekly}</text>
++            <text fg={theme().textMuted}>{value().monthly}</text>
++          </box>
++        )}
++      </Show>
+     </box>
+   )
+ }

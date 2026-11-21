@@ -1,0 +1,84 @@
+From 151ea20eeaa116c858f4bf7575db2806f797758b Mon Sep 17 00:00:00 2001
+From: user <user@example.com>
+Date: Wed, 18 Nov 2026 17:54:01 +0300
+Subject: [PATCH] fix(tui): show catalog spend when the provider reports no
+ charge
+
+---
+ .../src/feature-plugins/sidebar/context.tsx   | 51 ++++++++++++++++++-
+ 1 file changed, 50 insertions(+), 1 deletion(-)
+
+diff --git a/packages/tui/src/feature-plugins/sidebar/context.tsx b/packages/tui/src/feature-plugins/sidebar/context.tsx
+index 3ea5af7b35..519ba691fa 100644
+--- a/packages/tui/src/feature-plugins/sidebar/context.tsx
++++ b/packages/tui/src/feature-plugins/sidebar/context.tsx
+@@ -1,4 +1,5 @@
+ import { Plugin } from "@opencode/plugin/tui"
++import type { ModelCost, ModelInfo, SessionMessageInfo } from "@opencode/client"
+ import { createMemo, Show } from "solid-js"
+ import { contextUsage } from "../../util/session"
+ 
+@@ -7,11 +8,59 @@ const money = new Intl.NumberFormat("en-US", {
+   currency: "USD",
+ })
+ 
++// The server records cost = 0 when a subscription covers a request, so price the
++// recorded tokens from the catalog instead. A cache miss spends fresh input tokens
++// instead of cache reads, which is why this sum jumps when the context stops being
++// cached, even though the reported charge stays at zero.
++function catalogSpend(messages: readonly SessionMessageInfo[], models: readonly ModelInfo[]) {
++  let total = 0
++  for (const message of messages) {
++    if (message.type !== "assistant") continue
++    const tokens = message.tokens
++    if (!tokens) continue
++    let model: ModelInfo | undefined
++    for (const item of models) {
++      if (item.providerID !== message.model.providerID) continue
++      if (item.id !== message.model.id) continue
++      model = item
++      break
++    }
++    if (!model) continue
++    // Long-context pricing replaces the base entry once the request crosses a tier.
++    const context = tokens.input + tokens.cache.read + tokens.cache.write
++    let price: ModelCost | undefined
++    for (const item of model.cost) {
++      if (!item.tier) {
++        if (!price) price = item
++        continue
++      }
++      if (item.tier.type !== "context") continue
++      if (context <= item.tier.size) continue
++      if (price?.tier && price.tier.size >= item.tier.size) continue
++      price = item
++    }
++    if (!price) continue
++    total +=
++      (tokens.input * price.input +
++        (tokens.output + tokens.reasoning) * price.output +
++        tokens.cache.read * price.cache.read +
++        tokens.cache.write * price.cache.write) /
++      1_000_000
++  }
++  return total
++}
++
+ export function SidebarContext(props: { context: Plugin.Context; sessionID: string }) {
+   const theme = props.context.theme
+   const msg = createMemo(() => props.context.data.session.message.list(props.sessionID))
+   const session = createMemo(() => props.context.data.session.get(props.sessionID))
+-  const cost = createMemo(() => props.context.data.session.cost(props.sessionID))
++  const models = createMemo(() => props.context.data.location.model.list(session()?.location))
++  const recorded = createMemo(() => props.context.data.session.cost(props.sessionID))
++  const cost = createMemo(() => {
++    // A real charge wins; the catalog sum is only the readable substitute for it.
++    if (recorded() > 0) return recorded()
++    return catalogSpend(msg() ?? [], models() ?? [])
++  })
+ 
+   const state = createMemo(() =>
+     contextUsage(msg(), props.context.data.location.model.list(session()?.location), session()?.revert?.messageID),
+-- 
+2.56.1
+

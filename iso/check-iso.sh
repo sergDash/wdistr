@@ -50,6 +50,11 @@ unsquashfs -d "$TMP/x" -f "$SFS" \
     usr/local/share/wdistr/cinnamon-appmenu.css \
     usr/local/bin/opencode >/dev/null
 
+# Симлинк opencode2-bin появился 2026-11-21: на образах старше его нет,
+# и отдельный вызов не валит весь чек-лист (set -e). На новом образе
+# проверка 51 увидит симлинк, на старом просто провалится она одна
+unsquashfs -d "$TMP/x" -f "$SFS" usr/local/bin/opencode2-bin >/dev/null 2>&1 || true
+
 # Листинг всех файлов образа: права и состав без распаковки
 unsquashfs -ll "$SFS" > "$TMP/list.txt"
 
@@ -63,7 +68,8 @@ python3 - "$TMP/x/root/wdistr/archinstall-config.json" \
          "$TMP/x/etc/pacman.d/hooks/wdistr-mirrors.hook" \
          "$TMP/x/etc/pacman.d/hooks/wdistr-ghostty.hook" \
          "$TMP/x/etc/pacman.d/hooks/wdistr-cinnamon.hook" \
-         "$TMP/x/usr/local/share/wdistr/cinnamon-appmenu.css" <<'PYEOF'
+         "$TMP/x/usr/local/share/wdistr/cinnamon-appmenu.css" \
+         "$TMP/x/usr/local/bin/opencode2-bin" <<'PYEOF'
 import base64
 import json
 import os
@@ -73,7 +79,7 @@ import sys
 (cfg_path, setup_path, mirror_path, symlink_path, list_path,
  mirrors_path, gai_hook_path, mirrors_hook_path,
  ghostty_hook_path, cinnamon_hook_path,
- cinnamon_css_path) = sys.argv[1:12]
+ cinnamon_css_path, opencode2_link_path) = sys.argv[1:13]
 
 fails = 0
 
@@ -912,6 +918,44 @@ if not missing and len(fp_list) >= 5:
     ok(f'first-boot: flatpak-список — {len(fp_list)} позиций, steam/whatsie/xmind/dash/keet входят')
 else:
     fail(f'first-boot: flatpak-список {len(fp_list)}, не хватает: {missing or "—"}')
+
+# 51. OpenCode 2 (2026-11-21): рядом с v1 в образе второй бинарник,
+# имя у него своё (opencode2-*), поэтому симлинк и права проверяются
+# отдельно — общая проверка 8 смотрит только на v1
+opencode2_target = None
+try:
+    opencode2_target = os.readlink(opencode2_link_path)
+except OSError:
+    pass
+oc2_lines = [l for l in listing
+             if opencode2_target and l.endswith('usr/local/bin/' + opencode2_target)]
+if opencode2_target and oc2_lines and oc2_lines[0].startswith('-rwx'):
+    ok(f'opencode2: симлинк opencode2-bin → {opencode2_target}, бинарник 755')
+else:
+    fail(f'opencode2: симлинк = {opencode2_target}, '
+         f'бинарник в листинге: {len(oc2_lines)}, '
+         f'права: {(oc2_lines[0][:10] if oc2_lines else "—")}')
+
+# 52. Скрипты сборки opencode в ~/bin первого пользователя: v1 с патчем
+# 5 (2026-11-21) и набор v2 (обёртка запуска, скрипт сборки, 4 патча).
+# Шаблон доставки бинарников в setup-continue обязан покрывать имена
+# opencode2-*: с прежним «opencode-*» v2 в целевую систему не уезжала
+oc_cmd = [c for c in cmds if 'opencode2.fish' in c]
+oc_files = {}
+if len(oc_cmd) == 1:
+    for b64, dst in re.findall(r"echo '([A-Za-z0-9+/=\n]+)' \| base64 -d > ([^ &]+)", oc_cmd[0]):
+        oc_files[dst.rsplit('/', 1)[-1]] = base64.b64decode(b64)
+need = ['opencode.fish', 'opencode-5.patch', 'opencode2', 'opencode2.fish',
+        'opencode2-1.patch', 'opencode2-2.patch', 'opencode2-3.patch', 'opencode2-4.patch']
+missing_oc = [n for n in need if n not in oc_files]
+v1_applies5 = b'git apply ~/bin/opencode-5.patch' in oc_files.get('opencode.fish', b'')
+bin_glob = '/usr/local/bin/opencode*' in setup
+if not missing_oc and v1_applies5 and bin_glob:
+    ok(f'opencode: в ~/bin {len(oc_files)} файлов, v1 применяет патч 5, '
+       f'setup-continue копирует /usr/local/bin/opencode*')
+else:
+    fail(f'opencode: файлов {len(oc_files)}, не хватает {missing_oc or "—"}, '
+         f'патч 5 в opencode.fish = {v1_applies5}, шаблон копирования = {bin_glob}')
 
 print()
 print(f'  инфо:   custom_commands — {len(cmds)} команд')

@@ -48,10 +48,31 @@ git apply ~/bin/opencode-1.patch; or fail
 git apply ~/bin/opencode-2.patch; or fail
 git apply ~/bin/opencode-3.patch; or fail
 git apply ~/bin/opencode-4.patch; or fail
+git apply ~/bin/opencode-5.patch; or fail
 
-# Если не указать версию, будет 0.0.0--дата
+# Если не указать версию, будет 0.0.0--дата.
+# --single собирает только хост-платформу, заодно прогоняет smoke-тест бинарника.
 OPENCODE_VERSION=$VER ./packages/opencode/script/build.ts --single; or fail
-cp ./packages/opencode/dist/opencode-linux-x64/bin/opencode ~/bin/opencode-$VER; or fail
+# cp обрезает файл, который сейчас исполняется (ETXTBSY: «Текстовый файл занят»),
+# а install заменяет его новым inode, поэтому пересборка не требует закрывать TUI.
+install -m 0755 ./packages/opencode/dist/opencode-linux-x64/bin/opencode ~/bin/opencode-$VER; or fail
+
+# Windows-сборка. Без --single build.ts берёт все 12 целей (linux, darwin, win32),
+# поэтому нужную цель задаём фильтром. Фильтр вписываем в копию build.ts рядом с
+# оригиналом: скрипт считает все пути от своего каталога (import.meta.dirname),
+# поэтому копия в другом месте не найдёт ни generate.ts, ни package.json.
+# Отслеживаемый build.ts остаётся нетронутым (опыт 2026-11-17: правка оригинала
+# требует ручного git checkout, а при падении сборки забывается).
+set -l win_targets 'allTargets.filter((item) => item.os === "win32" && item.arch === "x64" && item.avx2 !== false)'
+cat packages/opencode/script/build.ts | string replace ': allTargets' ": $win_targets" > packages/opencode/script/build-windows.ts
+set -l win_status 0
+OPENCODE_VERSION=$VER bun run ./packages/opencode/script/build-windows.ts; or set win_status $status
+rm -f packages/opencode/script/build-windows.ts
+test $win_status -eq 0; or fail
+# exe под Linux не запускается, поэтому кладём без исполняемого бита (решение 2026-11-17).
+# На Windows этот файл нужно положить в C:\Users\User\.opencode\bin
+install -m 0644 ./packages/opencode/dist/opencode-windows-x64/bin/opencode.exe ~/bin/opencode-$VER.exe; or fail
+
 cd ~/bin/; or fail
 ln -sf opencode-$VER opencode; or fail
 

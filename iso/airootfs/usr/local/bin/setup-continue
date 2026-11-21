@@ -252,7 +252,11 @@ fi
 # Счётчик сбоев доставки: суммируем и печатаем в конце, чтобы частичная
 # доставка не осталась незамеченной (тихая поломка хуже громкой)
 FAIL=0
-for f in /usr/local/bin/opencode /usr/local/bin/opencode-*; do
+# Шаблон opencode* без дефиса: под него попадают opencode (симлинк v1),
+# opencode-<версия>, opencode2-bin (симлинк v2) и opencode2-<версия>.
+# С шаблоном opencode-* каталог opencode2-* не совпадал, и opencode2
+# в цель не доехала бы вовсе.
+for f in /usr/local/bin/opencode*; do
     [ -e "$f" ] || continue
     mkdir -p /mnt/usr/local/bin
     if ! cp -a "$f" /mnt/usr/local/bin/; then
@@ -311,7 +315,7 @@ if ! ln -sf /run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf; then
 fi
 
 if [ "$FAIL" -eq 0 ]; then
-    echo "Доставка из живой среды готова: opencode, шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n), resolv.conf."
+    echo "Доставка из живой среды готова: opencode (v1 и v2), шрифты Windows, курсоры, тема, карты keyd, консоль (vconsole + ter-u16n), resolv.conf."
 else
     echo "ВНИМАНИЕ: не доехало файлов: $FAIL — сообщения выше." >&2
 fi
